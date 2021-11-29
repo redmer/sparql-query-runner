@@ -1,6 +1,6 @@
 {
   "name": "sparql-query-runner",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Run SPARQL queries serially on a SPARQL endpoint.",
   "main": "dist/cli/index.js",
   "repository": "https://github.com/redmer/sparql-query-runner.git",
