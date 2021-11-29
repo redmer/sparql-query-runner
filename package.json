@@ -1,10 +1,10 @@
 {
-  "name": "sparql-query-runner",
+  "name": "@rdmr-eu/sparql-query-runner",
   "version": "2.0.4",
   "description": "Run SPARQL queries serially on a SPARQL endpoint.",
   "main": "dist/cli/index.js",
   "repository": "https://github.com/redmer/sparql-query-runner.git",
-  "author": "R. J. Kronemeijer <12477216+redmer@users.noreply.github.com> (https://rdmr.eu/)",
+  "author": "Redmer Kronemeijer <12477216+redmer@users.noreply.github.com> (https://rdmr.eu/)",
   "license": "MPL-2.0",
   "private": false,
   "bin": "dist/cli/index.js",
@@ -21,9 +21,6 @@
     "dist/**/*"
   ],
   "types": "dist",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
   "devDependencies": {
     "@types/command-exists": "^1.2.0",
     "@types/fs-extra": "^9.0.12",

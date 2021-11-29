@@ -16,7 +16,8 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: "14.x"
-          registry-url: "https://npm.pkg.github.com"
+          registry-url: "https://registry.npmjs.org/"
+          scope: "@rdmr-eu"
 
       - name: Make release
         uses: softprops/action-gh-release@v1
@@ -24,9 +25,7 @@ jobs:
           generate_release_notes: true
 
       - run: yarn
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GPR_READ_TOKEN }}
 
-      - run: yarn publish
+      - run: yarn publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
