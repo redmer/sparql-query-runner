@@ -27,6 +27,6 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GPR_READ_TOKEN }}
 
-      - run: yarn publish --access restricted
+      - run: yarn publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
