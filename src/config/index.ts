@@ -1,6 +1,7 @@
 import fs from "fs-extra";
 import { oneOrMore } from "../utils/array";
 import { SQRError } from "../utils/errors";
+import { context } from "./rdfa11-context";
 import { IConfiguration, IPipeline, IStep } from "./types";
 
 export const CONFIG_FILENAME = "sparql-query-runner.json";
@@ -26,20 +27,20 @@ export default async function getConfiguration(
     const configJSON = JSON.parse(configJSONString);
     return { pipeline: await _constructPipelinesFromConfig(configJSON) };
   } catch (err) {
-    SQRError(1520, `Could not parse "${path}" as configuration JSON`);
+    SQRError(1520, `Could not parse "${path}" as configuration JSON (${(err as any).message})`);
   }
 }
 
 async function _constructPipelinesFromConfig(json: any): Promise<IPipeline[]> {
   // This function collects pipeline information from the configuration file, substituting types and defaults.
   const pipelines: IPipeline[] = [];
-  const rdfaContext = await fs.readFile("src/config/rdfa11-context.jsonld", { encoding: "utf-8" });
-  const defaultContext: Record<string, string> = JSON.parse(rdfaContext)["@context"];
   for (const p of oneOrMore<IPipeline>(json["pipeline"])) {
+    let rdfaContext;
+    if (json["include-default-rdfa-context"] === true) rdfaContext = context;
     pipelines.push({
       endpoint: p["endpoint"] ?? SQRError(1519, `Pipeline/endpoint is required`),
       name: p["name"] ?? `linked data pipeline, run ${new Date().toISOString()}`,
-      prefixes: Object.assign({}, /* defaultContext, */ p["prefixes"]),
+      prefixes: Object.assign({}, rdfaContext, p["prefixes"]),
       steps: _constructStepsFromConfig(p),
     });
   }
