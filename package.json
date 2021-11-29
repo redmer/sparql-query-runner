@@ -13,8 +13,8 @@
     "build": "tsc -p ./tsconfig-build.json",
     "util:lint": "cross-env ESLINT_STRICT=true ESLINT_EXPENSIVE=true eslint",
     "prepare": "yarn build",
-    "prepublishOnly": "yarn test && yarn run lint",
-    "preversion": "yarn run lint",
+    "prepublishOnly": "yarn test && yarn run util:lint",
+    "preversion": "yarn run util:lint",
     "postversion": "git push && git push --tags"
   },
   "files": [
