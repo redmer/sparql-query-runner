@@ -5,7 +5,7 @@
   "main": "dist/cli/index.js",
   "repository": "https://github.com/redmer/sparql-query-runner.git",
   "author": "R. J. Kronemeijer <12477216+redmer@users.noreply.github.com> (https://rdmr.eu/)",
-  "license": "MIT",
+  "license": "MPL-2.0",
   "private": true,
   "bin": "dist/cli/index.js",
   "scripts": {
