@@ -74,7 +74,7 @@
   },
   "dependencies": {
     "@rdfjs/parser-n3": "^1.1.4",
-    "@stichting-crow/laces-hub-js": "^0.5.4",
+    "@stichting-crow/laces-hub-js": "^0.5.6",
     "command-exists": "^1.2.9",
     "dotenv": "^10.0.0",
     "fast-csv": "^4.3.6",
