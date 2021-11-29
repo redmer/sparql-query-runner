@@ -11,7 +11,18 @@
   "scripts": {
     "test": "jest",
     "build": "tsc -p ./tsconfig-build.json",
-    "util:lint:precommit": "cross-env ESLINT_STRICT=true eslint"
+    "util:lint": "cross-env ESLINT_STRICT=true ESLINT_EXPENSIVE=true eslint",
+    "prepare": "yarn build",
+    "prepublishOnly": "yarn test && yarn run lint",
+    "preversion": "yarn run lint",
+    "postversion": "git push && git push --tags"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "types": "dist",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   },
   "devDependencies": {
     "@types/command-exists": "^1.2.0",
@@ -39,7 +50,7 @@
   "lint-staged": {
     "*.ts?(x)": [
       "prettier --parser typescript --write",
-      "yarn run util:lint:precommit",
+      "yarn run util:lint",
       "yarn test --findRelatedTests"
     ],
     "*.json": [

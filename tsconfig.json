@@ -3,18 +3,19 @@
     "target": "ES2019",
     "lib": ["ES2019"],
     "module": "commonjs",
-
-    "strict": true,
     "esModuleInterop": true,
-    "noUnusedLocals": true,
+    "listFiles": false,
 
     "removeComments": false,
-    "listFiles": false,
     "outDir": "./dist",
     "rootDir": "./src",
-    "skipLibCheck": true,
     "sourceMap": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+
+    // strict
+    "strict": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true,
   },
   "compileOnSave": true,
   "include": ["src/**/*.ts"],
