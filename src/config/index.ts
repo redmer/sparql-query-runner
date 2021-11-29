@@ -27,7 +27,7 @@ export default async function getConfiguration(
     const configJSON = JSON.parse(configJSONString);
     return { pipeline: await _constructPipelinesFromConfig(configJSON) };
   } catch (err) {
-    SQRError(1520, `Could not parse "${path}" as configuration JSON (${(err as any).message})`);
+    SQRError(1520, `Could not parse "${path}" as configuration JSON (${(err as any)?.message})`);
   }
 }
 

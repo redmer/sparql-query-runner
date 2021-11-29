@@ -34,7 +34,7 @@ export class PipelineSupervisor implements TempdirProvider {
         await info.start();
         if (info.postProcess) await info.postProcess();
       } catch (error) {
-        SQRError(1001, `FAIL: ${(error as any).message}`);
+        SQRError(1001, `FAIL: ${(error as any)?.message}`);
       }
     }
 

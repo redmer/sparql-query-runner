@@ -65,13 +65,17 @@ export default class DownloadFile implements Step {
           }
         },
         postProcess: async () => {
-          if (!(await commandExists("riot"))) return;
-          for (const url of config.url) {
-            const temp = path.join(app.tempdir, randomUUID() + prefFormat[0]);
-            await exec(`mv ${url} ${temp}`);
-            await exec(
-              `riot --nocheck --quiet --syntax=${prefFormat[4]} --formatted=${prefFormat[4]} ${temp} > ${url}`
-            );
+          try {
+            await commandExists("riot");
+            for (const url of config.url) {
+              const temp = path.join(app.tempdir, randomUUID() + prefFormat[0]);
+              await exec(`mv ${url} ${temp}`);
+              await exec(
+                `riot --nocheck --quiet --syntax=${prefFormat[4]} --formatted=${prefFormat[4]} ${temp} > ${url}`
+              );
+            }
+          } catch {
+            SQRInfo(`\t\tSkipped pretty-format`);
           }
         },
       };
