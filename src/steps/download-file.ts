@@ -1,6 +1,6 @@
 import commandExists from "command-exists";
 import { randomUUID } from "crypto";
-import fs from "fs-extra";
+import fs, { move } from "fs-extra";
 import fetch from "node-fetch";
 import path from "path";
 import util from "util";
@@ -69,7 +69,7 @@ export default class DownloadFile implements Step {
             await commandExists("riot");
             for (const url of config.url) {
               const temp = path.join(app.tempdir, randomUUID() + prefFormat[0]);
-              await exec(`mv ${url} ${temp}`);
+              await move(url, temp, { overwrite: true });
               await exec(
                 `riot --nocheck --quiet --syntax=${prefFormat[4]} --formatted=${prefFormat[4]} ${temp} > ${url}`
               );
