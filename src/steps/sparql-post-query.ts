@@ -28,7 +28,13 @@ export default class SparqlPostQuery implements Step {
                 "Content-Type": "application/sparql-update",
               },
             });
-            console.log(`\t\tStatus ${result.status}:\t${config.url[queries.indexOf(q)]}`);
+            if (result.ok) {
+              console.log(`\t\tOK:\t${config.url[queries.indexOf(q)]}`);
+            } else {
+              console.error(`\t\t${result.status}:\t${config.url[queries.indexOf(q)]}`);
+              console.error(await result.text());
+
+            }
           }
         },
       };
