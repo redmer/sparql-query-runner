@@ -73,6 +73,7 @@ export default class DownloadFile implements Step {
               await exec(
                 `riot --nocheck --quiet --syntax=${prefFormat[4]} --formatted=${prefFormat[4]} ${temp} > ${url}`
               );
+              SQRInfo(`\t\tPretty-formatted with riot`);
             }
           } catch {
             SQRInfo(`\t\tSkipped pretty-format`);
