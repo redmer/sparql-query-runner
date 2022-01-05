@@ -11,8 +11,7 @@ export function SQRError(errorCode: number, message: string): never {
 
 /** Report warnings. If TREAT_ERROR_AS_WARNING is set, is fatal instead. */
 export function SQRWarning(errorCode: number, message: string): never | void {
-  console.warn(`W${errorCode}: ${message}`);
-  if (process.env.TREAT_WARNINGS_AS_ERRORS) {
+  if (process.env.TREAT_WARNINGS_AS_ERRORS !== undefined) {
     exit(errorCode);
   }
 }

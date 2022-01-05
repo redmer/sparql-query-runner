@@ -9,6 +9,8 @@ export const CONFIG_FILENAME = "sparql-query-runner.json";
 export interface ConfigOptions {
   /** Specify a different path to find a pipeline config file. */
   customConfigurationFilePath: string;
+  /** Always abort on any error. */
+  abortOnError: boolean;
 }
 
 /**
@@ -21,6 +23,9 @@ export default async function getConfiguration(
   opts: Partial<ConfigOptions>
 ): Promise<IConfiguration> {
   const path = opts.customConfigurationFilePath ?? CONFIG_FILENAME;
+  if (opts.abortOnError || process.env.TREAT_WARNINGS_AS_ERRORS) {
+    process.env.TREAT_WARNINGS_AS_ERRORS = true;
+  }
 
   try {
     const configJSONString = await fs.readFile(path, { encoding: "utf-8" });
@@ -52,7 +57,7 @@ function _constructStepsFromConfig(json: any): IStep[] {
   const steps: IStep[] = [];
   for (const s of oneOrMore<IStep>(json["steps"])) {
     steps.push({
-      ...s, // pass on extra configuration items as-is (not oneOrMore)
+      ...s, // pass on extra configuration items as-is (i.e., not oneOrMore())
       type: s["type"] ?? SQRError(1543, `Pipeline/Step/type is required`),
       url: oneOrMore(s["url"]) ?? SQRError(1544, `Pipeline/Step/url is required`),
     });

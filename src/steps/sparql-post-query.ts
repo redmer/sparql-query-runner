@@ -3,6 +3,7 @@ import fetch from "node-fetch";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
 import { PipelineSupervisor } from "../runner";
+import { SQRInfo, SQRWarning } from "../utils/errors";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
 export default class SparqlPostQuery implements Step {
@@ -29,11 +30,12 @@ export default class SparqlPostQuery implements Step {
               },
             });
             if (result.ok) {
-              console.log(`\t\tOK:\t${config.url[queries.indexOf(q)]}`);
+              SQRInfo(`\t\tOK:\t${config.url[queries.indexOf(q)]}`);
             } else {
-              console.error(`\t\t${result.status}:\t${config.url[queries.indexOf(q)]}`);
-              console.error(await result.text());
-
+              SQRWarning(
+                8001,
+                `\t\t${result.status}:\t${config.url[queries.indexOf(q)]}\n${await result.text()}`
+              );
             }
           }
         },
