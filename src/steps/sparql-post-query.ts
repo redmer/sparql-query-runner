@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import fs from "fs-extra";
 import fetch from "node-fetch";
 import { Step, StepGetter } from ".";
@@ -30,11 +31,13 @@ export default class SparqlPostQuery implements Step {
               },
             });
             if (result.ok) {
-              SQRInfo(`\t\tOK:\t${config.url[queries.indexOf(q)]}`);
+              SQRInfo("\t\t" + chalk.green("OK") + "\t" + `${config.url[queries.indexOf(q)]}`);
             } else {
               SQRWarning(
                 8001,
-                `\t\t${result.status}:\t${config.url[queries.indexOf(q)]}\n${await result.text()}`
+                `\t\t${chalk.red(result.status)}\t${
+                  config.url[queries.indexOf(q)]
+                }\n${await result.text()}`
               );
             }
           }

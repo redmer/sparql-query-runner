@@ -6,7 +6,7 @@ import SHACLValidator from "rdf-validate-shacl";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
 import { PipelineSupervisor } from "../runner";
-import { SQRError, SQRInfo } from "../utils/errors";
+import { SQRError, SQRInfo, SQRWarning } from "../utils/errors";
 
 /**
  * A SHACL validator (shacl-validate-local).
@@ -41,7 +41,7 @@ export default class ShaclValidateLocal implements Step {
             try {
               await store.import(parser.import(stream));
             } catch (err) {
-              SQRError(6192, `Could not import ${url}`);
+              SQRError(6193, `Could not import ${url}`);
             }
           }
 
@@ -52,8 +52,9 @@ export default class ShaclValidateLocal implements Step {
               SQRInfo(`Conforms`);
             }
             for (const r of report.results) {
-              console.warn(
-                `${r.severity}: ${r.message}
+              SQRWarning(
+                6194,
+                `\n${r.severity}: ${r.message}
 \t$    On: {r.focusNode} ${r.path} ${r.term}
 \t$  From: {r.sourceShape} / ${r.sourceConstraintComponent}`
               );

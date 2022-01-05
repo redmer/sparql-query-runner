@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import fs from "fs-extra";
 import os from "os";
 import path from "path";
@@ -20,7 +21,7 @@ export class PipelineSupervisor implements TempdirProvider {
     this.prefixes = config.prefixes;
     this.steps = config.steps;
     this.tempdir = fs.mkdtempSync(path.join(os.tmpdir(), "sqr-"), { encoding: "utf-8" });
-    SQRInfo(`\tDEBUG:\tRun artifacts in "${this.tempdir}"`);
+    if (process.env.DEBUG) SQRInfo(chalk.inverse("\tDEBUG:") + `\tArtifacts in "${this.tempdir}"`);
   }
 
   async start() {
