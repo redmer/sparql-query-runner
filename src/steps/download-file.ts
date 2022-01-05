@@ -8,8 +8,9 @@ import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
 import { PipelineSupervisor } from "../runner";
 import { SQRError, SQRInfo } from "../utils/errors";
+import { exec as _exec } from "child_process";
 
-const exec = util.promisify(require("child_process").exec);
+const exec = util.promisify(_exec);
 
 /** Export to file. Optionally limit the graphs, default: all graphs in store. */
 export default class DownloadFile implements Step {
@@ -52,7 +53,6 @@ export default class DownloadFile implements Step {
             headers: { Accept: prefFormat[2] },
           });
           for (const url of config.url) {
-            // await fs.writeFile(url, await result.text(), { flag: "w" });
             await new Promise<void>((resolve, reject) => {
               const target = fs.createWriteStream(url);
               result.body.pipe(target);
