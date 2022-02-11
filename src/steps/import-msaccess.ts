@@ -9,7 +9,7 @@ import factory from "rdf-ext";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
 import { PipelineSupervisor } from "../runner";
-import { SQRWarning } from "../utils/errors";
+import { SQRInfo, SQRWarning } from "../utils/errors";
 import { csvns, XSD } from "../utils/namespaces";
 import { graphsToFile } from "../utils/quads";
 
@@ -37,23 +37,27 @@ export default class ImportMsAccess implements Step {
           for (const url of config.url) {
             const db = await fs.readFile(url);
             const mdb = new MDBReader(db);
+            let j = 0;
 
             for (const tableName of mdb.getTableNames()) {
-              const context = csvns(`table/${tableName}`);
+              const context = csvns(`table/${encodeURI(tableName)}`);
               let i = 1;
               for (const record of mdb.getTable(tableName).getData()) {
                 for (const [column, value] of Object.entries(record)) {
                   if (!value && !config["keep-nulls"]) continue;
 
-                  const subject = csvns(`table/${tableName}/row/${i}`);
-                  const predicate = csvns(column);
+                  const subject = csvns(`table/${encodeURI(tableName)}/row/${i}`);
+                  const predicate = csvns(encodeURI(column));
                   const object = valueToObject(value);
 
+                  j++;
                   tableStore.addQuad(subject, predicate, object, context);
                 }
                 i++;
               }
             }
+
+            SQRInfo(`\t\t\tQuads generated: ${j}`);
 
             // export to tempfile, ready to be uploaded...
             const exportFile = path.join(app.tempdir, `${randomUUID()}.nq`);
