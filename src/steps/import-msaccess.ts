@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import { randomUUID } from "crypto";
 import fs from "fs-extra";
 import MDBReader from "mdb-reader";
@@ -9,7 +10,7 @@ import factory from "rdf-ext";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
 import { PipelineSupervisor } from "../runner";
-import { SQRInfo, SQRWarning } from "../utils/errors";
+import { SQRError, SQRInfo, SQRWarning } from "../utils/errors";
 import { csvns, XSD } from "../utils/namespaces";
 import { graphsToFile } from "../utils/quads";
 
@@ -34,6 +35,8 @@ export default class ImportMsAccess implements Step {
           }
         },
         start: async () => {
+          const quads: number[] = [];
+
           for (const url of config.url) {
             const db = await fs.readFile(url);
             const mdb = new MDBReader(db);
@@ -57,7 +60,7 @@ export default class ImportMsAccess implements Step {
               }
             }
 
-            SQRInfo(`\t\t\tQuads generated: ${j}`);
+            quads.push(j);
 
             // export to tempfile, ready to be uploaded...
             const exportFile = path.join(app.tempdir, `${randomUUID()}.nq`);
@@ -70,13 +73,25 @@ export default class ImportMsAccess implements Step {
             tableStore = new Store(); // delete all triples
           }
 
-          tempFiles.every(async (tempFile) => {
-            await fetch(app.endpoint, {
+          for (const [index, tempFile] of tempFiles.entries()) {
+            const result = await fetch(app.endpoint, {
               method: "PUT",
               headers: { "Content-Type": "text/x-nquads" },
               body: await fs.readFile(tempFile, { encoding: "utf-8" }),
             });
-          });
+            if (result.ok) {
+              SQRInfo(
+                "\t\t" +
+                  chalk.green("OK") +
+                  `\tUploaded ${quads[index].toLocaleString()} quads from ${config.url[index]}`
+              );
+            } else {
+              SQRError(
+                5171,
+                `\t\t${chalk.red(result.status)}\t${config.url[index]}\n${await result.text()}`
+              );
+            }
+          }
         },
       };
     };
