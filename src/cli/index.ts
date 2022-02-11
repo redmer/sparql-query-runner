@@ -24,11 +24,11 @@ async function main() {
     abortOnError: args["abort-on-error"],
   });
 
-  config.pipeline.forEach((p, i) => {
+  config.pipeline.forEach(async (p, i) => {
     SQRInfo(`Pipeline ${i + 1}:\t${p.name}`);
 
     const runner = new PipelineSupervisor(p);
-    runner.start();
+    await runner.start();
   });
 }
 
