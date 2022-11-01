@@ -13,18 +13,50 @@ export type RecursivePartialOneOrMore<T> = {
 
 /** Represents a configuration file, that contains one or more {@link IPipeline}s. */
 export interface IConfiguration {
-  pipeline: IPipeline[];
+  version: string;
+  pipelines: ArrayOrSingle<IPipeline>;
 }
+
 /** Represents a single sequence of data-operations, on a single endpoint. */
 export interface IPipeline {
-  name: string;
-  endpoint: string;
-  prefixes: Record<string, string>;
-  steps: IStep[];
+  name?: string;
+  endpoint?: ArrayOrSingle<IEndpoint>;
+  sources?: ArrayOrSingle<ISource>;
+  destinations?: ArrayOrSingle<IDestination>;
+  prefixes?: Record<string, string>;
+  steps?: Array<IStep | string>;
 }
+export interface IEndpoint {
+  authentication?: IAuthentication;
+  get?: string;
+  post?: string;
+}
+
+export interface ISourceOrDestination {
+  url: string;
+  graphs?: ArrayOrSingle<string>;
+  authentication?: IAuthentication;
+  type?: string;
+  mediatype?: string;
+}
+
+export interface ISource extends ISourceOrDestination {
+  type: "rdf" | "msaccess";
+}
+
+export interface IDestination extends ISourceOrDestination {
+  type: "rdf" | "sparql-graph-store" | "sparql-quad-store";
+}
+
+export interface IAuthentication {
+  type: "Bearer" | "Basic";
+  token_env?: string;
+  password_env?: string;
+  user_env?: string;
+}
+
 /** Represents a step in the {@link IPipeline}. */
 export interface IStep {
-  type: string;
-  url: string[];
-  [customProperty: string]: any;
+  type: "shacl-validate" | "sparql-update" | "sparql-query";
+  url?: ArrayOrSingle<string>;
 }

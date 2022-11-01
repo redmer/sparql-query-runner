@@ -1,0 +1,245 @@
+{
+  "$id": "https://rdmr.eu/sparql-query-runner/v2-schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "sparql-query-runner Configuration Schema v4",
+  "type": "object",
+  "required": ["version", "pipelines"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^v4(\\.\\d)?$",
+      "description": "Version of the sparql-query-runner configuration"
+    },
+    "pipelines": { "$ref": "#/$defs/Pipeline1N" },
+    "$schema": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "https://rdmr.eu/sparql-query-runner/v2-schema.json"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "Pipeline": {
+      "type": "object",
+      "title": "A pipeline, performing a sequence of steps that MAY mutate an endpoint",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "title": "Reference name of the pipeline", "type": "string" },
+        "endpoint": { "$ref": "#/$defs/Endpoint1N" },
+        "sources": { "$ref": "#/$defs/Source1N" },
+        "destinations": { "$ref": "#/$defs/Dest1N" },
+        "prefixes": { "$ref": "#/$defs/Prefixes" },
+        "steps": { "$ref": "#/$defs/Step1N" },
+        "dependsOn": { "title": "Pipeline depends on pipeline with name", "type": "string" }
+      }
+    },
+    "Pipeline1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/Pipeline" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Pipeline" }
+        }
+      ]
+    },
+
+    "Endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "get": {
+          "type": "string",
+          "format": "iri-reference",
+          "title": "SPARQL endpoint (GET)"
+        },
+        "post": {
+          "type": "string",
+          "format": "iri-reference",
+          "title": "SPARQL endpoint (POST)"
+        },
+        "authentication": { "$ref": "#/$defs/Authentication" }
+      },
+      "anyOf": [{ "required": ["get"] }, { "required": ["post"] }]
+    },
+    "EndpointDirect": {
+      "$ref": "#/$defs/Endpoint/properties/get"
+    },
+    "Endpoint1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/Endpoint" },
+        { "$ref": "#/$defs/EndpointDirect" },
+        {
+          "type": "array",
+          "items": {
+            "oneof": [{ "$ref": "#/$defs/Endpoint" }, { "$ref": "#/$defs/EndpointDirect" }]
+          }
+        }
+      ]
+    },
+
+    "SourceOrDestination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "url": { "$ref": "#/$defs/GraphOrPath" },
+        "graphs": { "$ref": "#/$defs/GraphOrPath1N" },
+        "authentication": { "$ref": "#/$defs/Authentication" },
+        "type": {
+          "type": "string",
+          "default": "rdf"
+        },
+        "mediatype": {
+          "title": "Override default or implicit mediatype",
+          "description": "File mediatype is inferred from file extension.",
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": [
+                "application/ld+json",
+                "application/n-quads",
+                "application/n-triples",
+                "application/rdf+xml",
+                "application/trig",
+                "application/trix",
+                "text/n3",
+                "text/turtle"
+              ]
+            },
+            { "type": "string", "pattern": "\\w+/[-+.\\w]+" }
+          ]
+        }
+      }
+    },
+
+    "Source": {
+      "title": "RDF data source",
+      "properties": {
+        "type": { "enum": ["rdf", "msaccess"] }
+      },
+      "allOf": [{ "$ref": "#/$defs/SourceOrDestination" }]
+    },
+    "SourceDirect": {
+      "$ref": "#/$defs/SourceOrDestination/properties/url"
+    },
+    "Source1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/Source" },
+        { "$ref": "#/$defs/SourceDirect" },
+        {
+          "type": "array",
+          "items": { "anyOf": [{ "$ref": "#/$defs/Source" }, { "$ref": "#/$defs/SourceDirect" }] }
+        }
+      ]
+    },
+
+    "Dest": {
+      "title": "RDF data destination",
+      "properties": {
+        "type": { "enum": ["rdf", "sparql-graph-store", "sparql-quad-store"] }
+      },
+      "allOf": [{ "$ref": "#/$defs/SourceOrDestination" }]
+    },
+    "DestDirect": {
+      "$ref": "#/$defs/SourceOrDestination/properties/url"
+    },
+    "Dest1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/Dest" },
+        { "$ref": "#/$defs/DestDirect" },
+        {
+          "type": "array",
+          "items": { "anyOf": [{ "$ref": "#/$defs/Dest" }, { "$ref": "#/$defs/DestDirect" }] }
+        }
+      ]
+    },
+
+    "GraphOrPath": {
+      "type": "string",
+      "format": "iri-reference",
+      "description": "A http(s):// remote URL or file: local path"
+    },
+    "GraphOrPath1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/GraphOrPath" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/GraphOrPath" }
+        }
+      ]
+    },
+
+    "Authentication": {
+      "title": "Method of authentication",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["Bearer", "Basic"], "title": "Authentication type" },
+        "token_env": {
+          "type": "string",
+          "title": "Environment variable name for the Bearer token"
+        },
+        "user_env": {
+          "type": "string",
+          "title": "Environment variable name for the HTTP-basic authentication username"
+        },
+        "password_env": {
+          "type": "string",
+          "title": "Environment variable name for the HTTP-basic authentication password"
+        }
+      },
+      "required": ["type"],
+      "oneOf": [
+        {
+          "properties": { "type": { "const": "Bearer" } },
+          "required": ["type", "token_env"]
+        },
+        {
+          "properties": { "type": { "const": "Basic" } },
+          "required": ["type", "user_env", "password_env"]
+        }
+      ]
+    },
+
+    "Prefixes": {
+      "title": "Prefixes used to set on the SPARQL endpoint with 'set-prefixes'",
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "title": "prefix: namespace",
+          "type": "string",
+          "format": "iri-reference"
+        }
+      }
+    },
+
+    "Step": {
+      "type": "object",
+      "title": "Transformation step in the pipeline",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["shacl-validate", "sparql-update", "sparql-query"]
+        },
+        "url": {
+          "$ref": "#/$defs/GraphOrPath1N",
+          "title": "URL argument of the step"
+        }
+      },
+      "required": ["type"]
+    },
+    "StepDirect": {
+      "$ref": "#/$defs/Step/properties/url"
+    },
+    "Step1N": {
+      "type": "array",
+      "items": {
+        "anyOf": [{ "$ref": "#/$defs/Step" }, { "$ref": "#/$defs/StepDirect" }]
+      }
+    }
+  }
+}
