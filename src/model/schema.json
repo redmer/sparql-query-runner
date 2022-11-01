@@ -1,0 +1,77 @@
+{
+  "$id": "https://rdmr.eu/ns/sparql-query-runner/schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "sparql-query-runner Configuration Schema",
+  "type": "object",
+  "required": ["pipeline"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "oneOf": [
+        {
+          "type": "string",
+          "const": "https://rdmr.eu/ns/sparql-query-runner/schema.json"
+        },
+        { "type": "object" }
+      ]
+    },
+    "pipeline": {
+      "oneOf": [
+        { "$ref": "#/$defs/pipeline" },
+        { "type": "array", "items": { "$ref": "#/$defs/pipeline" } }
+      ]
+    }
+  },
+  "$defs": {
+    "pipeline": {
+      "title": "A pipeline, performing a sequence of steps on a single endpoint",
+      "properties": {
+        "name": { "title": "The name of the pipeline", "type": "string" },
+        "endpoint": {
+          "type": "string",
+          "format": "iri-reference",
+          "title": "The URI of the endpoint"
+        },
+        "prefixes": { "$ref": "#/$defs/prefixes" },
+        "steps": {
+          "type": "array",
+          "title": "List of steps to be performed",
+          "items": { "$ref": "#/$defs/step" }
+        }
+      }
+    },
+    "prefixes": {
+      "title": "Prefixes used to set on the SPARQL endpoint with 'set-prefixes'",
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "title": "prefix: namespace",
+          "type": "string",
+          "format": "iri-reference"
+        }
+      }
+    },
+    "step": {
+      "title": "A step in the pipeline",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "title": "Type of the pipeline step",
+          "type": "string",
+          "enum": ["sparql", "set-prefixes", "import-msaccess", "delay", "download-file"]
+        },
+        "url": {
+          "title": "URL that this pipeline step actions upon.",
+          "description": "This can be used for input ('sparql', 'import-msaccess'), for output ('download-file') or for an endpoint ('set-prefixes').",
+          "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
+        },
+        "graph": {
+          "title": "Limit step to graphs (for 'download-file')",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

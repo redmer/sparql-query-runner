@@ -4,9 +4,9 @@ import { VersionedRdfPublication } from "@stichting-crow/laces-hub-js/dist/resou
 import fs from "fs-extra";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
+import { PipelineWorker } from "../runner/pipeline-worker";
 import { oneOrMore } from "../utils/array";
-import { SQRError } from "../utils/errors";
+import { error } from "../utils/errors";
 
 /** Upload a local file to Laces.
  *
@@ -20,14 +20,14 @@ export default class LocalFileToLaces implements Step {
   async info(config: IStep): Promise<StepGetter> {
     const targets = oneOrMore(config["target"]);
 
-    return async (app: PipelineSupervisor) => {
+    return async (app: PipelineWorker) => {
       return {
         start: async () => {
           for (const publicationUrl of targets) {
             const pub = await LacesAPI.Publication(publicationUrl);
             await pub.getInfo();
             if (pub.isVersioned && (pub as VersionedRdfPublication).versioningMode === "CUSTOM") {
-              SQRError(
+              error(
                 2100,
                 `Can’t update ${publicationUrl}: only automated versioning modes are supported.`
               );
@@ -38,7 +38,7 @@ export default class LocalFileToLaces implements Step {
                 await fs.readFile(config.url[0])
               );
             } catch (err) {
-              SQRError(2101, `Can't update ${publicationUrl}: ${err}`);
+              error(2101, `Can't update ${publicationUrl}: ${err}`);
             }
           }
         },

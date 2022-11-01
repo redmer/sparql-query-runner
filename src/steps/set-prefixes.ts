@@ -2,8 +2,8 @@ import { parseStream } from "@fast-csv/parse";
 import fetch from "node-fetch";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
-import { SQRError } from "../utils/errors";
+import { PipelineWorker } from "../runner/pipeline-worker";
+import { error } from "../utils/errors";
 
 type GraphDbNamespaceRow = {
   prefix: string;
@@ -31,14 +31,14 @@ export default class SetPrefixes implements Step {
   identifier = () => "set-prefixes";
 
   async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineSupervisor) => {
+    return async (app: PipelineWorker) => {
       return {
         preProcess: async () => {
           // export quads to temp file
         },
         start: async () => {
           if (config.url.length !== 1)
-            SQRError(5711, `Step[type='set-prefixes']/url count must be one`);
+            error(5711, `Step[type='set-prefixes']/url count must be one`);
           const repositoriesBase = config.url[0];
 
           // get all current used prefixes

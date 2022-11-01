@@ -5,8 +5,8 @@ import factory from "rdf-ext";
 import SHACLValidator from "rdf-validate-shacl";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
-import { SQRError, SQRInfo, SQRWarning } from "../utils/errors";
+import { PipelineWorker } from "../runner/pipeline-worker";
+import { error, console.info, SQRWarning } from "../utils/errors";
 
 /**
  * A SHACL validator (shacl-validate-local).
@@ -19,7 +19,7 @@ export default class ShaclValidateLocal implements Step {
   identifier = () => "shacl-validate-local";
 
   async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineSupervisor) => {
+    return async (app: PipelineWorker) => {
       return {
         start: async () => {
           const shapes = factory.dataset();
@@ -31,7 +31,7 @@ export default class ShaclValidateLocal implements Step {
             try {
               await shapes.import(parser.import(stream));
             } catch (err) {
-              SQRError(6192, `Could not import ${url}`);
+              error(6192, `Could not import ${url}`);
             }
           }
 
@@ -41,7 +41,7 @@ export default class ShaclValidateLocal implements Step {
             try {
               await store.import(parser.import(stream));
             } catch (err) {
-              SQRError(6193, `Could not import ${url}`);
+              error(6193, `Could not import ${url}`);
             }
           }
 
@@ -49,7 +49,7 @@ export default class ShaclValidateLocal implements Step {
           try {
             const report = await validator.validate(store);
             if (report.conforms) {
-              SQRInfo(`Conforms`);
+              console.info(`Conforms`);
             }
             for (const r of report.results) {
               SQRWarning(
@@ -60,7 +60,7 @@ export default class ShaclValidateLocal implements Step {
               );
             }
           } catch (err) {
-            SQRError(6191, `Could not validate using the shapes provided.`);
+            error(6191, `Could not validate using the shapes provided.`);
           }
         },
       };

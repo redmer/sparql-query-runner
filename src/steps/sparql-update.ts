@@ -3,15 +3,15 @@ import fs from "fs-extra";
 import fetch from "node-fetch";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
-import { SQRInfo, SQRWarning } from "../utils/errors";
+import { PipelineWorker } from "../runner/pipeline-worker";
+import { console.info, SQRWarning } from "../utils/errors";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
-export default class SparqlPostQuery implements Step {
+export default class SparqlUpdateQuery implements Step {
   identifier = () => "sparql";
 
   async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineSupervisor) => {
+    return async (app: PipelineWorker) => {
       const queries: string[] = [];
 
       return {
@@ -27,11 +27,13 @@ export default class SparqlPostQuery implements Step {
               method: "POST",
               body: q,
               headers: {
-                "Content-Type": "application/sparql-update",
+                "Content-Type": "application/sparql-query",
+                Accept: "text/turtle",
               },
             });
             if (result.ok) {
-              SQRInfo("\t\t" + chalk.green("OK") + "\t" + `${config.url[queries.indexOf(q)]}`);
+              console.info("\t\t" + chalk.green("OK") + "\t" + `${config.url[queries.indexOf(q)]}`);
+              console.info(`${await result.text()}`);
             } else {
               SQRWarning(
                 8001,

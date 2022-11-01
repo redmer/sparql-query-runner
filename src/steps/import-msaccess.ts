@@ -9,8 +9,8 @@ import path from "path";
 import factory from "rdf-ext";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
-import { SQRError, SQRInfo, SQRWarning } from "../utils/errors";
+import { PipelineWorker } from "../runner/pipeline-worker";
+import { error, console.info, SQRWarning } from "../utils/errors";
 import { csvns, XSD } from "../utils/namespaces";
 import { graphsToFile } from "../utils/quads";
 
@@ -18,7 +18,7 @@ export default class ImportMsAccess implements Step {
   identifier = () => "import-msaccess";
 
   async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineSupervisor) => {
+    return async (app: PipelineWorker) => {
       const tempFiles: string[] = [];
       let tableStore = new Store();
       const files = [];
@@ -80,13 +80,13 @@ export default class ImportMsAccess implements Step {
               body: await fs.readFile(tempFile, { encoding: "utf-8" }),
             });
             if (result.ok) {
-              SQRInfo(
+              console.info(
                 "\t\t" +
                   chalk.green("OK") +
                   `\tUploaded ${quads[index].toLocaleString()} quads from ${config.url[index]}`
               );
             } else {
-              SQRError(
+              error(
                 5171,
                 `\t\t${chalk.red(result.status)}\t${config.url[index]}\n${await result.text()}`
               );

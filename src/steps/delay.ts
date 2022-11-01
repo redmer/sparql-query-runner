@@ -1,7 +1,7 @@
 import { StepGetter, Step } from ".";
 import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
-import { SQRInfo } from "../utils/errors";
+import { PipelineWorker } from "../runner/pipeline-worker";
+import { console.info } from "../utils/errors";
 
 function delay(ms: number) {
   return new Promise((resolve) => {
@@ -16,13 +16,13 @@ export default class Delay implements Step {
   async info(config: IStep): Promise<StepGetter> {
     const delayTimeSec = (config["duration"] as number) ?? 5;
 
-    return async (app: PipelineSupervisor) => {
+    return async (app: PipelineWorker) => {
       return {
         matchesSource: async () => {
           return config.type === "delay";
         },
         start: async () => {
-          SQRInfo(`\t\tProcessing delay... (${delayTimeSec} s)`);
+          console.info(`\t\tProcessing delay... (${delayTimeSec} s)`);
           await delay(delayTimeSec * 1000);
         },
       };

@@ -1,0 +1,28 @@
+# v4
+
+- Configuration file can now also be a YAML file
+- Configuration file renames `pipeline:` to `pipelines:`
+- Step `download-file` is removed. Use `pipelines/destinations`.
+  If you run queries after `download-file`, make multiple pipelines instead.
+- Step `delay` is removed.
+- Step `sparql` is split into `sparql-update` and `sparql-query`.
+  The former performs a `INSERT`, `DELETE` to the (POST) SPARQL endpoint,
+  the latter is meant for `CONSTRUCT` or `DESCRIBE` to the SPARQL endpoint.
+  (`SELECT`, `ASK` don't make sense in the context of a RDF set)
+- Step `shacl-validate` is added.
+  This step provides SHACL validation to locally constructed triples.
+  SHACL errors are fatal (i.e., stop pipeline execution).
+  On the CLI, the option `--warnings-as-errors/-e` makes SHACL warnings fatal.
+  SHACL information-level messages are posted to stdout.
+- On the CLI, the option `--as-shacl-rules/-r` collects the construct queries
+- Step `import-msaccess` is removed. This has been replaced with a `pipelines/source`
+- CLI option `--cache-intermediate-results/-i` is added.
+  This makes a `.sparql-query-runner-cache` folder with per-step intermediate results.
+  This can considerably speed-up pipeline development if working on a limited dataset,
+  as the cache also checks for changes to the pipeline and its queries, so it doesn't
+  re-run unchanged queries.
+- Destination `sparql-graph-store` is the W3C Recommendation [SPARQL 1.1 Graph Store][gs].
+  Destination `sparql-quad-store` is not standardized, but is similar to the Graph Store protocol,
+  but with Dataset semantics. I.e., multiple contexts can be passed and quads can be uploaded.
+
+[gs]: https://www.w3.org/TR/2013/REC-sparql11-http-rdf-update-20130321/

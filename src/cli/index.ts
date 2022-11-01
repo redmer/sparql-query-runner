@@ -2,34 +2,46 @@
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import getConfiguration from "../config";
-import { PipelineSupervisor } from "../runner";
-import { SQRInfo } from "../utils/errors";
+import compileConfigData, { CONFIG_FILENAME, CONFIG_FILENAME_YAML } from "../config";
+import { PipelineWorker } from "../runner/pipeline-supervisor";
 
 async function main() {
   // Provide command line arguments
-  const args = yargs(hideBin(process.argv))
-    .option("config", { alias: "c", type: "string", desc: "Path to configuration file" })
+  const args = await yargs(hideBin(process.argv))
     .option("abort-on-error", {
       alias: "ci",
       default: false,
       type: "boolean",
-      desc: "Abort on error. Overrides env var TREAT_WARNINGS_AS_ERRORS.",
+      desc: "Abort on HTTP error.",
+    })
+    .option("cache-intermediate-results", {
+      alias: "i",
+      type: "boolean",
+      default: false,
+      desc: "Cache each step's results locally",
+    })
+    .option("as-shacl-rule", {
+      alias: "r",
+      type: "string",
+      desc: "Generate SHACL Rules from CONSTRUCT steps",
+    })
+    .option("warnings-as-errors", {
+      alias: "e",
+      type: "boolean",
+      default: false,
+      desc: "SHACL warnings are treated as fatal errors",
     })
     .usage("Run a sparql-query-runner.json pipeline")
     .parse();
 
-  const config = await getConfiguration({
-    customConfigurationFilePath: args["config"],
+  const config = await compileConfigData({
     abortOnError: args["abort-on-error"],
+    cacheIntermediateResults: args["cache-intermediate-results"],
+    outputShaclRulesToFilePath: args["as-shacl-rule"],
+    shaclWarningsAsErrors: args["warnings-as-errors"],
   });
 
-  config.pipeline.forEach(async (p, i) => {
-    SQRInfo(`Pipeline ${i + 1}:\t${p.name}`);
-
-    const runner = new PipelineSupervisor(p);
-    await runner.start();
-  });
+  PipelineWorker.runAll(config);
 }
 
 void main();

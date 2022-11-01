@@ -1,23 +1,23 @@
 import { exit } from "process";
 
-/** General exception class for Sparql Query Runner. */
-export class SQRException extends Error {}
-
-/** Reports a fatal error.  */
-export function SQRError(errorCode: number, message: string): never {
-  console.error(`E${errorCode}: ${message}`);
-  exit(errorCode);
+/** Reports a fatal error. */
+export function error(message: string): never {
+  console.error(message);
+  exit(2000);
 }
 
 /** Report warnings. If TREAT_ERROR_AS_WARNING is set, is fatal instead. */
-export function SQRWarning(errorCode: number, message: string): never | void {
-  console.warn(`W${errorCode}: ${message}`);
+export function warn(message: string): never | void {
+  console.warn(message);
   if (process.env.TREAT_WARNINGS_AS_ERRORS !== undefined) {
-    exit(errorCode);
+    exit(1000);
   }
 }
 
-/** Report diagnostic information. */
-export function SQRInfo(message: string): void {
-  console.info(message);
+/**
+ * Report warnings. If TREAT_ERROR_AS_WARNING is set, is fatal instead.
+ * @deprecated
+ */
+export function SQRWarning(errorCode: number, message: string): never | void {
+  console.warn(`W${errorCode}: ${message}`);
 }

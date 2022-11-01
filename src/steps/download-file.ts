@@ -6,8 +6,8 @@ import path from "path";
 import util from "util";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
-import { SQRError, SQRInfo } from "../utils/errors";
+import { PipelineWorker } from "../runner/pipeline-worker";
+import { error, console.info } from "../utils/errors";
 import { exec as _exec } from "child_process";
 
 const exec = util.promisify(_exec);
@@ -17,12 +17,12 @@ export default class DownloadFile implements Step {
   identifier = () => "download-file";
 
   async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineSupervisor) => {
+    return async (app: PipelineWorker) => {
       // enumerate graphs
       let queryParams = "";
       if (config["graphs"]) {
         if (!(config["graphs"] instanceof Array) || config["graphs"].length < 1)
-          SQRError(1991, `Step[type='download-file']/graphs needs to be a list.`);
+          error(1991, `Step[type='download-file']/graphs needs to be a list.`);
 
         const asTriple = (url: string | undefined) => `<${url}>`;
 
@@ -45,7 +45,7 @@ export default class DownloadFile implements Step {
       let prefFormat: any = formats.find(([_, mime, ...__]) => mime === config["format"]);
       if (!prefFormat)
         prefFormat = formats.find(([ext, ...__]) => ext === path.parse(config.url[0]).ext);
-      if (!prefFormat) SQRError(3218, `Step[type='download-file']: supply '/format'.`);
+      if (!prefFormat) error(3218, `Step[type='download-file']: supply '/format'.`);
 
       return {
         start: async () => {
@@ -61,7 +61,7 @@ export default class DownloadFile implements Step {
               target.on("end", resolve);
               target.on("error", reject);
             });
-            SQRInfo(`\t\tCreated:\t${url}`);
+            console.info(`\t\tCreated:\t${url}`);
           }
         },
         postProcess: async () => {
@@ -73,10 +73,10 @@ export default class DownloadFile implements Step {
               await exec(
                 `riot --nocheck --quiet --syntax=${prefFormat[4]} --formatted=${prefFormat[4]} ${temp} > ${url}`
               );
-              SQRInfo(`\t\tPretty-formatted with riot`);
+              console.info(`\t\tPretty-formatted with riot`);
             }
           } catch {
-            SQRInfo(`\t\tSkipped pretty-format`);
+            console.info(`\t\tSkipped pretty-format`);
           }
         },
       };

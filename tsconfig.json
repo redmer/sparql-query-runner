@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "lib": ["ES2019"],
-    "module": "commonjs",
-    "esModuleInterop": true,
-    "listFiles": false,
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
 
+    "listFiles": false,
     "removeComments": false,
     "outDir": "./dist",
     "rootDir": "./src",
@@ -15,7 +16,7 @@
     // strict
     "strict": true,
     "noUnusedLocals": true,
-    "skipLibCheck": true,
+    "skipLibCheck": true
   },
   "compileOnSave": true,
   "include": ["src/**/*.ts"],

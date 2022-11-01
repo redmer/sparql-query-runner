@@ -35,7 +35,10 @@
         "destinations": { "$ref": "#/$defs/Dest1N" },
         "prefixes": { "$ref": "#/$defs/Prefixes" },
         "steps": { "$ref": "#/$defs/Step1N" },
-        "dependsOn": { "title": "Pipeline depends on pipeline with name", "type": "string" }
+        "independent": {
+          "title": "Pipeline does not depend on preceding pipeline",
+          "type": "boolean"
+        }
       }
     },
     "Pipeline1N": {
@@ -85,7 +88,6 @@
     "SourceOrDestination": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type"],
       "properties": {
         "url": { "$ref": "#/$defs/GraphOrPath" },
         "graphs": { "$ref": "#/$defs/GraphOrPath1N" },

@@ -4,11 +4,15 @@ import os from "os";
 import path from "path";
 import { IPipeline, IStep } from "../config/types";
 import Step from "../steps";
-import { SQRError, SQRInfo } from "../utils/errors";
+import { error } from "../utils/errors";
 import { TempdirProvider } from "./types";
 
+export namespace PipelineWorker2 {
+  
+}
+
 /** Runs the a single pipeline */
-export class PipelineSupervisor implements TempdirProvider {
+export class PipelineWorker implements TempdirProvider {
   name: string;
   endpoint: string;
   tempdir: string;
@@ -21,12 +25,13 @@ export class PipelineSupervisor implements TempdirProvider {
     this.prefixes = config.prefixes;
     this.steps = config.steps;
     this.tempdir = fs.mkdtempSync(path.join(os.tmpdir(), "sqr-"), { encoding: "utf-8" });
-    if (process.env.DEBUG) SQRInfo(chalk.inverse("\tDEBUG:") + `\tArtifacts in "${this.tempdir}"`);
+    if (process.env.DEBUG)
+      console.info(chalk.inverse("\tDEBUG:") + `\tArtifacts in "${this.tempdir}"`);
   }
 
   async start() {
     for (const [i, stepConfig] of this.steps.entries()) {
-      SQRInfo(`\tStep ${i + 1}: ${stepConfig.type}`);
+      console.info(`\tStep ${i + 1}: ${stepConfig.type}`);
       const s = await Step(stepConfig);
       const info = await s(this);
 
@@ -34,11 +39,11 @@ export class PipelineSupervisor implements TempdirProvider {
         if (info.preProcess) await info.preProcess();
         await info.start();
         if (info.postProcess) await info.postProcess();
-      } catch (error) {
-        SQRError(1001, `FAIL: ${(error as any)?.message}`);
+      } catch (err) {
+        error(1001, `FAIL: ${(err as any)?.message}`);
       }
     }
 
-    SQRInfo(`Done`);
+    console.info(`Done`);
   }
 }
