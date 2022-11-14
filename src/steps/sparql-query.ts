@@ -4,10 +4,10 @@ import fetch from "node-fetch";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
 import { PipelineWorker } from "../runner/pipeline-worker";
-import { console.info, SQRWarning } from "../utils/errors";
+import { SQRWarning } from "../utils/errors";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
-export default class SparqlPostQuery implements Step {
+export default class SparqlConstructQuery implements Step {
   identifier = () => "sparql";
 
   async info(config: IStep): Promise<StepGetter> {

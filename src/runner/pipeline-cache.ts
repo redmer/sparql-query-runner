@@ -3,7 +3,7 @@
  */
 import { createHash } from "crypto";
 import fs from "fs/promises";
-import { CliOptions } from "../config";
+import { ICliOptions } from "../config";
 import { IConfiguration } from "../config/types";
 
 interface Options {
@@ -16,7 +16,7 @@ interface Manifest {
 
 /** PipelineCache is responsible for saving step output, checking modifications per pipeline, per step */
 export namespace PipelineCache {
-  export function enabled(data: CliOptions) {
+  export function enabled(data: ICliOptions) {
     return data.cacheIntermediateResults;
   }
 
@@ -37,7 +37,7 @@ export namespace PipelineCache {
 
   export function hasConfigurationChanged() {}
 
-  export async function foo(data: IConfiguration, data2: CliOptions, options?: Options) {
+  export async function foo(data: IConfiguration, data2: ICliOptions, options?: Options) {
     if (!enabled(data2)) return;
 
     console.error("PipelineCache not implemented");
@@ -53,7 +53,7 @@ export namespace PipelineCacheDirectory {
   }
 
   /** Clear cache directory */
-  export async function clear(options: CliOptions) {
+  export async function clear(options: ICliOptions) {
     await fs.rm(path, { recursive: true, force: true });
   }
 }

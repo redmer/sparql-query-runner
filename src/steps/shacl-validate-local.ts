@@ -5,8 +5,8 @@ import factory from "rdf-ext";
 import SHACLValidator from "rdf-validate-shacl";
 import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineWorker } from "../runner/pipeline-worker";
-import { error, console.info, SQRWarning } from "../utils/errors";
+import { PipelineWorker } from "../runner/pipeline-worker.js";
+import { error, SQRWarning } from "../utils/errors.js";
 
 /**
  * A SHACL validator (shacl-validate-local).
@@ -31,7 +31,7 @@ export default class ShaclValidateLocal implements Step {
             try {
               await shapes.import(parser.import(stream));
             } catch (err) {
-              error(6192, `Could not import ${url}`);
+              error( `Could not import ${url}`);
             }
           }
 
@@ -41,7 +41,7 @@ export default class ShaclValidateLocal implements Step {
             try {
               await store.import(parser.import(stream));
             } catch (err) {
-              error(6193, `Could not import ${url}`);
+              error(`Could not import ${url}`);
             }
           }
 
@@ -60,7 +60,7 @@ export default class ShaclValidateLocal implements Step {
               );
             }
           } catch (err) {
-            error(6191, `Could not validate using the shapes provided.`);
+            error(`Could not validate using the shapes provided.`);
           }
         },
       };

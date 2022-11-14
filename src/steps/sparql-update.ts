@@ -1,47 +1,51 @@
 import chalk from "chalk";
 import fs from "fs-extra";
 import fetch from "node-fetch";
-import { Step, StepGetter } from ".";
 import { IStep } from "../config/types";
-import { PipelineWorker } from "../runner/pipeline-worker";
-import { console.info, SQRWarning } from "../utils/errors";
+import { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
+import { SQRWarning } from "../utils/errors.js";
+import { QueryEngine } from "@comunica/query-sparql";
+import sources from "../sources";
+import { Quad } from "n3";
+import { resolve } from "path";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
-export default class SparqlUpdateQuery implements Step {
-  identifier = () => "sparql";
+export default class SparqlUpdate implements PipelinePart<IStep> {
+  name = () => "sparql-update-step";
 
-  async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineWorker) => {
+  match(data: IStep): boolean {
+    if (data.type !== "sparql-update") return false;
+    if (data.url.find((url) => url.endsWith(".rq"))) return false;
+    return false;
+  }
+
+  async info(data: IStep): Promise<PipelinePartGetter> {
+    return async (context: RuntimeCtx): Promise<StepPartInfo> => {
       const queries: string[] = [];
+      let engine: QueryEngine;
 
       return {
         preProcess: async () => {
-          for (const url of config.url) {
+          for (const url of data.url) {
             const body = await fs.readFile(url, { encoding: "utf-8" });
             queries.push(body);
           }
+          engine = new QueryEngine();
         },
         start: async () => {
           for (const q of queries) {
-            const result = await fetch(app.endpoint, {
-              method: "POST",
-              body: q,
-              headers: {
-                "Content-Type": "application/sparql-query",
-                Accept: "text/turtle",
-              },
+            const quadStream = await engine.queryQuads(q, {
+              sources: [null, ...context.allSources],
             });
-            if (result.ok) {
-              console.info("\t\t" + chalk.green("OK") + "\t" + `${config.url[queries.indexOf(q)]}`);
-              console.info(`${await result.text()}`);
-            } else {
-              SQRWarning(
-                8001,
-                `\t\t${chalk.red(result.status)}\t${
-                  config.url[queries.indexOf(q)]
-                }\n${await result.text()}`
-              );
-            }
+
+            quadStream.on("data", (quad: Quad) =>
+              context.quadStore.addQuad(quad.subject, quad.predicate, quad.object, quad.graph)
+            );
+
+            await new Promise((resolve, reject) => {
+              quadStream.on("end", resolve);
+              quadStream.on("error", reject);
+            });
           }
         },
       };

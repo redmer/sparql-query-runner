@@ -2,9 +2,10 @@
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import compileConfigData, { CONFIG_FILENAME, CONFIG_FILENAME_YAML } from "../config";
-import { PipelineWorker } from "../runner/pipeline-supervisor";
+import compileConfigData from "../config/index.js";
+import { PipelineSupervisor } from "../runner/pipeline-supervisor.js";
 
+/** Runs CLI, provides options. */
 async function main() {
   // Provide command line arguments
   const args = await yargs(hideBin(process.argv))
@@ -22,7 +23,8 @@ async function main() {
     })
     .option("as-shacl-rule", {
       alias: "r",
-      type: "string",
+      type: "boolean",
+      default: false,
       desc: "Generate SHACL Rules from CONSTRUCT steps",
     })
     .option("warnings-as-errors", {
@@ -34,14 +36,14 @@ async function main() {
     .usage("Run a sparql-query-runner.json pipeline")
     .parse();
 
-  const config = await compileConfigData({
+  const config = await compileConfigData();
+
+  PipelineSupervisor.runAll(config, {
     abortOnError: args["abort-on-error"],
     cacheIntermediateResults: args["cache-intermediate-results"],
     outputShaclRulesToFilePath: args["as-shacl-rule"],
     shaclWarningsAsErrors: args["warnings-as-errors"],
   });
-
-  PipelineWorker.runAll(config);
 }
 
 void main();

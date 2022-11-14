@@ -11,6 +11,7 @@
   "scripts": {
     "test": "jest",
     "build": "tsc -p ./tsconfig-build.json",
+    "watch": "tsc --watch",
     "util:lint": "cross-env ESLINT_STRICT=true ESLINT_EXPENSIVE=true eslint",
     "prepare": "yarn build",
     "prepublishOnly": "yarn test && yarn run util:lint",
@@ -21,6 +22,7 @@
     "dist/**/*"
   ],
   "types": "dist",
+  "type": "module",
   "devDependencies": {
     "@types/command-exists": "^1.2.0",
     "@types/fs-extra": "^9.0.12",
@@ -74,6 +76,8 @@
     "printWidth": 100
   },
   "dependencies": {
+    "@comunica/query-sparql": "^2.5.0",
+    "@comunica/query-sparql-file": "^2.4.3",
     "@rdfjs/parser-n3": "^2.0.0",
     "@stichting-crow/laces-hub-js": "^1.0.0",
     "@types/lodash": "^4.14.186",

@@ -1,68 +1,84 @@
 import fs from "fs/promises";
-import { oneOrMore } from "../utils/array";
-import { error, SQRWarning, warn } from "../utils/errors";
-import { context } from "./rdfa11-context";
+import yaml from "yaml";
+import { oneOrMore } from "../utils/array.js";
+import { error, warn } from "../utils/errors.js";
+import { context } from "./rdfa11-context.js";
 import {
   IAuthentication,
   IConfiguration,
+  IConfigurationIN,
   IDestination,
   IEndpoint,
   IPipeline,
+  IPipelineIN,
   ISource,
   ISourceOrDestination,
   IStep,
 } from "./types";
-import yaml from "yaml";
 
 export const CONFIG_FILENAME = "sparql-query-runner.json";
 export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
 
-export interface CliOptions {
+export interface ICliOptions {
   /** Always abort on any error. */
   abortOnError: boolean;
 
   /** Cache step results */
   cacheIntermediateResults: boolean;
 
-  /** Output CONSTRUCT steps as SHACL rules in specified path */
-  outputShaclRulesToFilePath: string;
+  /** Output CONSTRUCT steps as SHACL rules on stdout */
+  outputShaclRulesToFilePath: boolean;
 
   /** Treat SHACL warnings as errors. */
   shaclWarningsAsErrors: boolean;
 }
 
+/**
+ * This module collects static functions that get, check and validate a Configuration file.
+ */
 export namespace Configuration {
-  /** Returns the YAML or JSON file contents */
-  export async function configurationFileContents(): Promise<any | never> {
-    // Get the JSON or YAML configuration file
-    const filesInPWD = await fs.readdir(".");
-    if (filesInPWD.includes(CONFIG_FILENAME_YAML)) {
+  /** Find preferred configuration file in directory */
+  export async function prefConfigurationPathInDir(dir: string): Promise<string> {
+    const dirContents = await fs.readdir(dir);
+
+    // Look for magic filenames
+    if (dirContents.includes(CONFIG_FILENAME_YAML)) {
       // Prefer YAML over JSON
-      if (filesInPWD.includes(CONFIG_FILENAME))
+      if (dirContents.includes(CONFIG_FILENAME))
         warn(`Found both ${CONFIG_FILENAME_YAML} and ${CONFIG_FILENAME}. Continuing with YAML.`);
 
-      const rawData = await fs.readFile(CONFIG_FILENAME_YAML, { encoding: "utf-8" });
-      return yaml.parse(rawData);
-    } else if (filesInPWD.includes(CONFIG_FILENAME)) {
-      const rawData = await fs.readFile(CONFIG_FILENAME, { encoding: "utf-8" });
-      return JSON.parse(rawData);
+      return `${dir}/${CONFIG_FILENAME_YAML}`;
+    } else if (dir.includes(CONFIG_FILENAME)) {
+      return `${dir}/${CONFIG_FILENAME}`;
     }
 
-    error(`Found neither ${CONFIG_FILENAME_YAML} nor ${CONFIG_FILENAME} in present directory.`);
+    error(`Found neither ${CONFIG_FILENAME_YAML} nor ${CONFIG_FILENAME} in ${dir}`);
   }
 
-  export function validateConfigurationFile(data: Readonly<any>): IConfiguration {
+  /** Parse the configuration file. */
+  export async function configurationFileContents2(path: string): Promise<any> {
+    const contents = fs.readFile(path, { encoding: "utf-8" });
+    if (path.endsWith(".yaml")) {
+      return yaml.parse(await contents, { strict: true });
+    } else if (path.endsWith(".json")) {
+      return JSON.parse(await contents);
+    }
+  }
+
+  /** Validate and hydrate a configuration file. */
+  export function validateConfigurationFile(data: Readonly<IConfigurationIN>): IConfiguration {
     const version: string | undefined = data["version"];
     if (!version || !version.startsWith("v4"))
       error(`Version of sparql-query-runner requires a configuration file of v4+`);
 
     return {
       version: version,
-      pipelines: oneOrMore<IPipeline>(data["pipelines"]).map((p) => validatePipeline(p)),
+      pipelines: oneOrMore<IPipelineIN>(data["pipelines"]).map((p) => validatePipeline(p)),
     };
   }
 
-  function validatePipeline(data: Readonly<Partial<IPipeline>>): IPipeline {
+  /** Validate and hydrate pipeline data. */
+  function validatePipeline(data: Readonly<Partial<IPipelineIN>>): IPipeline {
     return {
       name: data["name"] ?? `linked data pipeline, run ${new Date().toISOString()}`,
       independent: data["independent"] ?? false,
@@ -80,6 +96,7 @@ export namespace Configuration {
     };
   }
 
+  /** Heuristic (on file extension) to determine step type. */
   function determineStepType(urls: string[]): IStep["type"] | never {
     const extensions = urls.filter((u) => "".split(".").pop());
     if (extensions.length > 1)
@@ -93,6 +110,7 @@ export namespace Configuration {
     error(`Provide /type with value ${urls.join(", ")}, as it can't be determined automatically.`);
   }
 
+  /** Validate and hydrate step data. */
   function validateStep(data: Readonly<Partial<IStep> | string>): IStep {
     if (typeof data === "string") return { url: [data], type: determineStepType([data]) };
     if (typeof data["url"] === "undefined") error(`A /url value for a step is missing.`);
@@ -103,6 +121,7 @@ export namespace Configuration {
     };
   }
 
+  /** Validate and hydrate source data or destination data. */
   function validateSourceOrDestination(
     data: Readonly<Partial<ISourceOrDestination> | string>
   ): ISourceOrDestination {
@@ -117,6 +136,7 @@ export namespace Configuration {
     };
   }
 
+  /** Validate endpoint */
   function validateEndpoint(data: Readonly<Partial<IEndpoint> | string>): IEndpoint {
     if (typeof data === "string")
       return {
@@ -135,14 +155,14 @@ export namespace Configuration {
     if (data === undefined) return undefined;
 
     // If token_env, this is a Bearer type
-    if (data["token_env"])
+    if (data["token_env"] !== undefined)
       return {
         type: "Bearer",
         token_env: data["token_env"],
       };
 
     // If password_env and user_env, this is a Basic auth type
-    if (data["password_env"] && data["user_env"])
+    if (data["password_env"] !== undefined && data["user_env"] !== undefined)
       return {
         type: "Basic",
         password_env: data["password_env"],
@@ -150,8 +170,8 @@ export namespace Configuration {
       };
 
     error(
-      `The authentication type was not recognized. Verify authentication details of
-      ${JSON.stringify(data, undefined, 2)}`
+      `The authentication type was not recognized. Verify authentication details of:\n` +
+        JSON.stringify(data, undefined, 2)
     );
   }
 }
@@ -162,14 +182,8 @@ export namespace Configuration {
  * Instead, it loads the pipelines, their sources/destinations/transformations/validations
  * configuration and passes their config values on.
  */
-export default async function compileConfigData(
-  opts: Partial<CliOptions>
-): Promise<IConfiguration> {
-  const data = Configuration.configurationFileContents();
-  const contents = Configuration.validateConfigurationFile(data);
-
-  const path = [CONFIG_FILENAME, CONFIG_FILENAME_YAML];
-  if (opts.abortOnError || process.env.TREAT_WARNINGS_AS_ERRORS) {
-    process.env.TREAT_WARNINGS_AS_ERRORS = true;
-  }
+export default async function compileConfigData(): Promise<IConfiguration> {
+  const configFilePath = Configuration.prefConfigurationPathInDir(".");
+  const data = Configuration.configurationFileContents2(await configFilePath);
+  return Configuration.validateConfigurationFile(await data);
 }
