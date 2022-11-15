@@ -1,9 +1,9 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import fs from "fs/promises";
 import { Quad } from "n3";
-import { IStep } from "../config/types";
-import { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
-import { Report } from "../utils/report";
+import type { IStep } from "../config/types";
+import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
+import { Report } from "../utils/report.js";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
 export default class SparqlUpdate implements PipelinePart<IStep> {

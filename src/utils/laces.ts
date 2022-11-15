@@ -1,7 +1,7 @@
 import fs from "fs";
 import fetch, { FormData, Response } from "node-fetch";
-import { IAuthentication } from "../config/types";
-import {  Auth } from "./authentication";
+import type { IAuthentication } from "../config/types";
+import { Auth } from "./authentication.js";
 
 export interface LacesRepositoryDesc {
   id: string;

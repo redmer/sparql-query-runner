@@ -1,7 +1,7 @@
-import fetch from "node-fetch";
-import { IAuthentication } from "../config/types";
-import { Auth } from "./authentication";
 import fs from "fs";
+import fetch from "node-fetch";
+import type { IAuthentication } from "../config/types";
+import { Auth } from "./authentication.js";
 
 /** Extract basename from a filepath or a external URL */
 export function basename(url: string) {

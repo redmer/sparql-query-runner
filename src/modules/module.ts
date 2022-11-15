@@ -1,12 +1,12 @@
-import { IDestination, IEndpoint, ISource, IStep } from "../config/types";
-import LocalFileDestination from "../destinations/file";
-import LacesDestination from "../destinations/laces";
-import { SPARQLEndpoint } from "../endpoints/sparql";
-import { PipelinePart, PipelinePartGetter } from "../runner/types";
-import { MsAccessSource } from "../sources/msaccess";
-import { CustomFileSource, RemoteBasicFileSource } from "../sources/rdf";
+import type { IDestination, IEndpoint, ISource, IStep } from "../config/types";
+import LocalFileDestination from "../destinations/file.js";
+import LacesDestination from "../destinations/laces.js";
+import { SPARQLEndpoint } from "../endpoints/sparql.js";
+import { PipelinePart, PipelinePartGetter } from "../runner/types.js";
+import { MsAccessSource } from "../sources/msaccess.js";
+import { CustomFileSource, RemoteBasicFileSource } from "../sources/rdf.js";
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";
-import SparqlConstructQuery from "../steps/sparql-query";
+import SparqlConstructQuery from "../steps/sparql-query.js";
 import SparqlUpdate from "../steps/sparql-update.js";
 
 export type MatchResult = [string, PipelinePartGetter];

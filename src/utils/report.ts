@@ -1,5 +1,6 @@
 import chalk from "chalk";
-import { noop } from "lodash";
+import lodash from "lodash";
+const { noop } = lodash;
 
 export namespace Report {
   function reportFormat(type: "info" | "error" | "warning", message: string) {

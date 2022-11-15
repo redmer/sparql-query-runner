@@ -1,10 +1,10 @@
 import fs from "fs-extra";
 import MDBReader from "mdb-reader";
-import { Value } from "mdb-reader/lib/types";
+import type { Value } from "mdb-reader/lib/types";
 import N3, { DataFactory } from "n3";
-import { ISource } from "../config/types";
-import { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types";
-import { basename, download } from "../utils/download-remote";
+import type { ISource } from "../config/types";
+import type { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types";
+import { basename, download } from "../utils/download-remote.js";
 import { CSVNS, XSD } from "../utils/namespaces.js";
 
 export class MsAccessSource implements PipelinePart<ISource> {

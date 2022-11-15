@@ -5,9 +5,9 @@ import os from "os";
 import path from "path";
 import type { ICliOptions } from "../config";
 import type { IPipeline } from "../config/types";
-import { getPipelinePart } from "../modules/module";
-import { notEmpty } from "../utils/array";
-import { Report } from "../utils/report";
+import { getPipelinePart } from "../modules/module.js";
+import { notEmpty } from "../utils/array.js";
+import { Report } from "../utils/report.js";
 import type { PipelinePartInfo, RuntimeCtx } from "./types";
 
 export namespace Workflow {
