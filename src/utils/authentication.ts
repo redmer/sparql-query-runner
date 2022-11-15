@@ -1,57 +1,61 @@
 import { IAuthentication } from "../config/types";
 import process from "process";
 
-export function authAsDictionary(data: IAuthentication) {
-  if (data.type !== "Basic")
-    throw new Error(`authentication type '${data.type}' not supported here`);
+export namespace Auth {
+  export function usernamePasswordDict(data: IAuthentication): {
+    username: string;
+    password: string;
+  } {
+    if (data.type !== "Basic") throw new Error(`authentication type 'Basic' not supported here`);
 
-  return {
-    username: process.env[data.user_env],
-    password: process.env[data.password_env],
-  };
-}
+    const { user_env, password_env } = data;
+    const username = process.env[user_env];
+    const password = process.env[password_env];
 
-export function addAuthToUrl(url: string, data: IAuthentication) {
-  // We need to insert Basic authentication between URL schema and rest...
-  // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-  const newUrl = new URL(url);
-  const { username, password } = authAsDictionary(data);
-  [newUrl.username, newUrl.password] = [username, password];
-  return newUrl.href;
-}
+    if (!username || !password)
+      throw new Error(`could not find environment variables '${user_env}' or '${password}'`);
 
-export function authAsContext(data: IAuthentication) {
-  if (data.type !== "Basic")
-    throw new Error(`authentication type '${data.type}' not supported here`);
-
-  const username = process.env[data.user_env];
-  const password = process.env[data.password_env];
-
-  return `${username}:${password}`;
-}
-
-export function authenticationAsHeader(data: IAuthentication) {
-  if (data.type === "Bearer") {
-    const token = process.env[data.token_env];
     return {
-      Authorization: `${data.type} ${token}`,
+      username,
+      password,
     };
   }
 
-  if (data.type === "Basic") {
-    const encoded = Buffer.from(authAsContext(data)).toString("base64");
-    return {
-      Authorization: `${data.type} ${encoded}`,
-    };
+  export function addToUrl(url: string, data?: IAuthentication): string {
+    // We need to insert Basic authentication between URL schema and rest...
+    // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
+    if (!data) return url;
+    const newUrl = new URL(url);
+    const { username, password } = usernamePasswordDict(data);
+    [newUrl.username, newUrl.password] = [username, password];
+    return newUrl.href;
   }
 
-  // Other authorization tokens in the Auth header are custom
-  if (data.type === "custom-value") {
-    const token = process.env[data.token_env];
-    return {
-      Authorization: token,
-    };
+  export function httpSyntax(data: IAuthentication): string {
+    const { username, password } = usernamePasswordDict(data);
+    return `${username}:${password}`;
   }
 
-  throw new Error(`authentication type '${data.type}' not supported`);
+  export function asHeader(data: IAuthentication): { Authorization: string } {
+    if (data.type === "Basic") {
+      return {
+        Authorization: `Basic ${encode(httpSyntax(data))}`,
+      };
+    }
+
+    if (data.type === "Bearer") {
+      const token = process.env[data.token_env];
+      if (!token) throw new Error(`could not find environment variables '${data.token_env}'`);
+
+      return {
+        Authorization: `Bearer ${token}`,
+      };
+    }
+
+    throw new Error(`Authentication type '${JSON.stringify(data)}' not supported here`);
+  }
+
+  function encode(value: string): string {
+    return Buffer.from(value).toString("base64");
+  }
 }

@@ -3,10 +3,9 @@ import yaml from "yaml";
 import { oneOrMore } from "../utils/array.js";
 import { error, warn } from "../utils/errors.js";
 import { context } from "./rdfa11-context.js";
-import {
+import type {
   IAuthentication,
   IConfiguration,
-  IConfigurationIN,
   IDestination,
   IEndpoint,
   IPipeline,
@@ -66,7 +65,7 @@ export namespace Configuration {
   }
 
   /** Validate and hydrate a configuration file. */
-  export function validateConfigurationFile(data: Readonly<IConfigurationIN>): IConfiguration {
+  export function validateConfigurationFile(data: any): IConfiguration {
     const version: string | undefined = data["version"];
     if (!version || !version.startsWith("v4"))
       error(`Version of sparql-query-runner requires a configuration file of v4+`);
@@ -78,9 +77,9 @@ export namespace Configuration {
   }
 
   /** Validate and hydrate pipeline data. */
-  function validatePipeline(data: Readonly<Partial<IPipelineIN>>): IPipeline {
+  function validatePipeline(data: any): IPipeline {
     return {
-      name: data["name"] ?? `linked data pipeline, run ${new Date().toISOString()}`,
+      name: data["name"] ?? new Date().toISOString(),
       independent: data["independent"] ?? false,
       prefixes: Object.assign({}, context, data["prefixes"]),
       destinations: oneOrMore<IDestination | string>(data["destinations"]).map(
@@ -111,7 +110,7 @@ export namespace Configuration {
   }
 
   /** Validate and hydrate step data. */
-  function validateStep(data: Readonly<Partial<IStep> | string>): IStep {
+  function validateStep(data: any): IStep {
     if (typeof data === "string") return { url: [data], type: determineStepType([data]) };
     if (typeof data["url"] === "undefined") error(`A /url value for a step is missing.`);
 
@@ -122,9 +121,7 @@ export namespace Configuration {
   }
 
   /** Validate and hydrate source data or destination data. */
-  function validateSourceOrDestination(
-    data: Readonly<Partial<ISourceOrDestination> | string>
-  ): ISourceOrDestination {
+  function validateSourceOrDestination(data: any): ISourceOrDestination {
     if (typeof data === "string") return validateSourceOrDestination({ type: "rdf", url: data });
 
     return {
@@ -137,7 +134,7 @@ export namespace Configuration {
   }
 
   /** Validate endpoint */
-  function validateEndpoint(data: Readonly<Partial<IEndpoint> | string>): IEndpoint {
+  function validateEndpoint(data: any): IEndpoint {
     if (typeof data === "string")
       return {
         get: data,
@@ -149,17 +146,8 @@ export namespace Configuration {
     };
   }
 
-  function validateAuthentication(
-    data: Readonly<Partial<IAuthentication>> | undefined
-  ): IAuthentication | undefined {
+  function validateAuthentication(data: any): IAuthentication | undefined {
     if (data === undefined) return undefined;
-
-    // If token_env, this is a Bearer type
-    if (data["token_env"] !== undefined)
-      return {
-        type: "Bearer",
-        token_env: data["token_env"],
-      };
 
     // If password_env and user_env, this is a Basic auth type
     if (data["password_env"] !== undefined && data["user_env"] !== undefined)
@@ -167,6 +155,13 @@ export namespace Configuration {
         type: "Basic",
         password_env: data["password_env"],
         user_env: data["user_env"],
+      };
+
+    // If token_env, this is a Bearer type
+    if (data["token_env"] !== undefined)
+      return {
+        type: "Bearer",
+        token_env: data["token_env"],
       };
 
     error(

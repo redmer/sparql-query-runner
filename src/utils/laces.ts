@@ -1,7 +1,7 @@
 import fs from "fs";
 import fetch, { FormData, Response } from "node-fetch";
 import { IAuthentication } from "../config/types";
-import { authenticationAsHeader } from "./authentication";
+import {  Auth } from "./authentication";
 
 export interface LacesRepositoryDesc {
   id: string;
@@ -32,7 +32,7 @@ export interface LacesPublicationPatch {
 export namespace Laces {
   export async function repositories(auth: IAuthentication): Promise<LacesRepositoryDesc[]> {
     const endpoint = `https://hub.laces.tech/api/v3/repositories`;
-    const resp = await fetch(endpoint, { headers: { ...authenticationAsHeader(auth) } });
+    const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
     return (await resp.json()) as LacesRepositoryDesc[];
   }
 
@@ -41,7 +41,7 @@ export namespace Laces {
     auth: IAuthentication
   ): Promise<LacesPublicationDesc[]> {
     const endpoint = `https://hub.laces.tech/api/v3/repositories/${repositoryId}/publications`;
-    const resp = await fetch(endpoint, { headers: { ...authenticationAsHeader(auth) } });
+    const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
     return (await resp.json()) as LacesPublicationDesc[];
   }
 
@@ -60,7 +60,7 @@ export namespace Laces {
 
     const resp = await fetch(endpoint, {
       method: "PATCH",
-      headers: { ...authenticationAsHeader(auth) },
+      headers: { ...Auth.asHeader(auth) },
       body: form,
     });
     return resp;

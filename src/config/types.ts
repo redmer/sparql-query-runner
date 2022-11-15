@@ -65,15 +65,21 @@ export interface IDestination extends ISourceOrDestination {
   type: "rdf" | "sparql-graph-store" | "sparql-quad-store" | "laces";
 }
 
-export interface IAuthentication {
-  type: "Bearer" | "Basic" | "custom-value";
-  token_env?: string;
-  password_env?: string;
-  user_env?: string;
+export type IAuthentication = IAuthenticationBasic | IAuthenticationBearer;
+
+export interface IAuthenticationBasic {
+  type: "Basic";
+  user_env: string;
+  password_env: string;
+}
+
+export interface IAuthenticationBearer {
+  type: "Bearer";
+  token_env: string;
 }
 
 /** Represents a step in the {@link IPipeline}. */
 export interface IStep {
   type: "shacl-validate" | "sparql-update" | "sparql-query";
-  url?: string[];
+  url: string[];
 }

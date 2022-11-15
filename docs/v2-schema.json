@@ -182,7 +182,7 @@
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["Bearer", "Basic", "custom-value"],
+          "enum": ["Bearer", "Basic"],
           "title": "Authentication type"
         },
         "token_env": {

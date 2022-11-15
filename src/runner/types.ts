@@ -14,19 +14,19 @@ import { IPipeline } from "../config/types";
  */
 export interface PipelinePartInfo {
   /** Called before running the pipeline, use to initialize the pipeline part. */
-  preProcess?: () => Promise<void>;
+  prepare?: () => Promise<void>;
 
   /** Runs the pipeline part, in defined order. */
   start: () => Promise<Iterable<RDF.Quad> | void>;
 
   /** Called after running the pipeline, to clean up artifacts. */
-  postProcess?: () => Promise<void>;
+  cleanup?: () => Promise<void>;
 
   /** Query context for Comunica query */
-  queryContext?: QueryContext;
+  getQueryContext?: QueryContext;
 
   /** An added source for a Comunica query */
-  source?: IDataSource;
+  getQuerySource?: IDataSource;
 
   /** Local file paths that are used by this PipelinePart */
   filepaths?: () => Promise<string[]>;
@@ -59,14 +59,14 @@ export interface RuntimeCtx {
   readonly engine: QueryEngine;
 
   /** All Comunica data sources */
-  allSources: IDataSource[];
+  querySources: IDataSource[];
 
   /** Query context for Comunica query */
-  queryContext?: QueryContext;
+  queryContext: QueryContext;
 }
 
 // Base
-export type PipelinePartGetter = (context: Partial<RuntimeCtx>) => Promise<PipelinePartInfo>;
+export type PipelinePartGetter = (context: Readonly<RuntimeCtx>) => Promise<PipelinePartInfo>;
 
 export interface PipelinePart<T> {
   /** Return true if the PipelinePart can handle this data. */

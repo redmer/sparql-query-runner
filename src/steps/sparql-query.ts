@@ -1,47 +1,51 @@
-import chalk from "chalk";
-import fs from "fs-extra";
-import fetch from "node-fetch";
-import { Step, StepGetter } from ".";
+import { QueryEngine } from "@comunica/query-sparql";
+import fs from "fs/promises";
+import { Quad } from "n3";
 import { IStep } from "../config/types";
-import { PipelineWorker } from "../runner/pipeline-worker";
-import { SQRWarning } from "../utils/errors";
+import { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
+import { Report } from "../utils/report";
 
-/** Run a SPARQL update query (using a POST-enabled endpoint) */
-export default class SparqlConstructQuery implements Step {
-  identifier = () => "sparql";
+/** Run a SPARQL query (CONSTRUCT or DESCRIBE) */
+export default class SparqlQuadQuery implements PipelinePart<IStep> {
+  name = () => "sparql-quads-query-step";
 
-  async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineWorker) => {
+  match(data: IStep): boolean {
+    if (data.type !== "sparql-query") return false;
+    if (data.url.find((url) => url.endsWith(".ru"))) return false;
+    return false;
+  }
+
+  async info(data: IStep): Promise<PipelinePartGetter> {
+    return async (context: Readonly<RuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
+      let engine: QueryEngine;
 
       return {
-        preProcess: async () => {
-          for (const url of config.url) {
+        prepare: async () => {
+          for (const url of data.url) {
             const body = await fs.readFile(url, { encoding: "utf-8" });
             queries.push(body);
           }
+          engine = new QueryEngine();
         },
         start: async () => {
           for (const q of queries) {
-            const result = await fetch(app.endpoint, {
-              method: "POST",
-              body: q,
-              headers: {
-                "Content-Type": "application/sparql-query",
-                Accept: "text/turtle",
-              },
+            const quadStream = await engine.queryQuads(q, {
+              sources: context.querySources as any,
             });
-            if (result.ok) {
-              console.info("\t\t" + chalk.green("OK") + "\t" + `${config.url[queries.indexOf(q)]}`);
-              console.info(`${await result.text()}`);
-            } else {
-              SQRWarning(
-                8001,
-                `\t\t${chalk.red(result.status)}\t${
-                  config.url[queries.indexOf(q)]
-                }\n${await result.text()}`
-              );
-            }
+
+            let i = 0;
+
+            quadStream.on("data", (quad: Quad) => {
+              context.quadStore.addQuad(quad.subject, quad.predicate, quad.object, quad.graph);
+              i++;
+            });
+
+            await new Promise((resolve, reject) => {
+              Report.print("info", `Processed ${i} quads`);
+              quadStream.on("end", resolve);
+              quadStream.on("error", reject);
+            });
           }
         },
       };

@@ -7,5 +7,6 @@
   ],
   "yaml.schemas": {
     "docs/v2-schema.json": "*sparql-query-runner.yaml"
-  }
+  },
+  "typescript.tsdk": "node_modules/typescript/lib"
 }

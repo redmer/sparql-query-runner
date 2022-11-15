@@ -18,7 +18,7 @@ export default class LocalFileDestination implements PipelinePart<IDestination> 
 
   async info(data: IDestination): Promise<PipelinePartGetter> {
     const mimetype = data.mediatype ?? getMediaTypeFromExtension(data.url);
-    return async (context: RuntimeCtx): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<RuntimeCtx>): Promise<DestinationPartInfo> => {
       return {
         start: async () => {
           await serialize(context.quadStore, data.url, {

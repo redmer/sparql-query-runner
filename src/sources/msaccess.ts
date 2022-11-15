@@ -1,8 +1,7 @@
 import fs from "fs-extra";
 import MDBReader from "mdb-reader";
 import { Value } from "mdb-reader/lib/types";
-import RDF, { DataFactory } from "n3";
-import N3 from "n3";
+import N3, { DataFactory } from "n3";
 import { ISource } from "../config/types";
 import { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types";
 import { basename, download } from "../utils/download-remote";
@@ -17,12 +16,12 @@ export class MsAccessSource implements PipelinePart<ISource> {
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: RuntimeCtx): Promise<SourcePartInfo> => {
-      let store: N3.Store;
+    return async (context: Readonly<RuntimeCtx>): Promise<SourcePartInfo> => {
+      const store = new N3.Store();
       let inputFilePath: string;
 
       return {
-        preProcess: async () => {
+        prepare: async () => {
           // if file is remote, download it
           if (data.url.match(/https?:/)) {
             // Determine locally downloaded filename
@@ -57,7 +56,7 @@ export class MsAccessSource implements PipelinePart<ISource> {
             }
           }
         },
-        source: store,
+        getQuerySource: store,
       };
     };
   }

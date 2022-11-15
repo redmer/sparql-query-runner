@@ -19,18 +19,22 @@ export default class LacesDestination implements PipelinePart<IDestination> {
   async info(data: IDestination): Promise<PipelinePartGetter> {
     const [repoName, publName] = data.url.split("/").slice(-2);
 
-    return async (context: RuntimeCtx): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<RuntimeCtx>): Promise<DestinationPartInfo> => {
       const tempFile = `${context.tempdir}/laces-export-${new Date().getTime()}.ttl`;
       let metadata: LacesPublicationDesc;
 
+      const auth = data.authentication;
+      if (auth === undefined) throw new Error(`Laces repositories require auth details`);
+
       return {
-        preProcess: async () => {
+        prepare: async () => {
           // Check if repo and publication URL are correct
-          const repos = await Laces.repositories(data.authentication);
+          const repos = await Laces.repositories(auth);
           const targetRepo = repos.find((r) => r.name == repoName);
           if (!targetRepo) throw new Error(`Laces repository ${repoName} (${data.url}) not found`);
 
-          const publs = await Laces.publications(targetRepo.id, data.authentication);
+          const publs = await Laces.publications(targetRepo.id, auth);
+          //@ts-ignore
           metadata = publs.find((p) => p.name == publName);
           if (!metadata) throw new Error(`Laces publication ${publName} (${data.url}) not found`);
           if (metadata.versioningMode === "CUSTOM")
@@ -55,7 +59,7 @@ export default class LacesDestination implements PipelinePart<IDestination> {
               publisher: metadata.publisher,
               schemaURIs: metadata.schemaURIs,
             },
-            data.authentication
+            auth
           );
         },
       };

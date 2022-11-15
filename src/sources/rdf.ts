@@ -2,7 +2,7 @@ import fs from "fs";
 import N3 from "n3";
 import { ISource } from "../config/types.js";
 import { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types.js";
-import { authAsContext, authAsDictionary, addAuthToUrl } from "../utils/authentication.js";
+import { Auth } from "../utils/authentication.js";
 import { basename, download } from "../utils/download-remote.js";
 import { getMediaTypeFromExtension } from "../utils/rdf-extensions-mimetype.js";
 
@@ -14,22 +14,18 @@ export class RemoteBasicFileSource implements PipelinePart<ISource> {
     return (
       data.type === "rdf" && // Only RDF files
       !!data.url.match(/^https?:/) && // Only remote files
-      data?.authentication.type == "Basic" && // If auth, only Basic auth
+      data.authentication?.type == "Basic" && // If auth, only Basic auth
       !!data.graphs // Not only specific graphs
     );
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: RuntimeCtx): Promise<SourcePartInfo> => {
+    return async (context: Readonly<RuntimeCtx>): Promise<SourcePartInfo> => {
       // We need to insert Basic authentication between URL schema and rest...
       // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-      const url = new URL(data.url);
-      const { username, password } = authAsDictionary(data.authentication);
-      [url.username, url.password] = [username, password];
-
       return {
         start: async () => {},
-        source: { type: "file", value: addAuthToUrl(data.url, data.authentication) },
+        getQuerySource: { type: "file", value: Auth.addToUrl(data.url, data.authentication) },
       };
     };
   }
@@ -43,18 +39,18 @@ export class CustomFileSource implements PipelinePart<ISource> {
     return (
       data.type === "rdf" && // RDF file that is either
       (!data.url.match(/^https?:/) || // non-remote
-        data?.authentication.type !== "Basic" || // with a non-basic auth
+        data.authentication?.type !== "Basic" || // with a non-basic auth
         !!data.graphs) // with a specific graph
     );
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: RuntimeCtx): Promise<SourcePartInfo> => {
-      let store: N3.Store;
+    return async (context: Readonly<RuntimeCtx>): Promise<SourcePartInfo> => {
+      const store = new N3.Store();
       let inputFilePath: string;
 
       return {
-        preProcess: async () => {
+        prepare: async () => {
           // if file is remote, download it
           if (data.url.match(/https?:/)) {
             // Determine locally downloaded filename
@@ -70,7 +66,6 @@ export class CustomFileSource implements PipelinePart<ISource> {
         start: async () => {
           const mimetype = data.mediatype ?? getMediaTypeFromExtension(inputFilePath);
           const stream = fs.createReadStream(inputFilePath);
-          store = new N3.Store();
           const parser = new N3.StreamParser({ format: mimetype });
           const emitter = store.import(parser.import(stream));
 
@@ -81,11 +76,11 @@ export class CustomFileSource implements PipelinePart<ISource> {
           });
 
           // Filter on specified graphs
-          data.graphs.forEach((graph) => {
+          data.graphs?.forEach((graph) => {
             store.deleteGraph(graph);
           });
         },
-        source: store,
+        getQuerySource: store,
       };
     };
   }

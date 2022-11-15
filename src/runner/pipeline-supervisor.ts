@@ -17,11 +17,19 @@ export namespace PipelineSupervisor {
   /** Run all pipelines, parallelizing independent ones and dependent ones serialized. */
   export async function runAll(data: IConfiguration, options: ICliOptions) {
     // Independent pipelines can run parallel
-    await Promise.all(independentPipelines(data).map((p) => Workflow.start(p, options)));
+    await Promise.all(
+      independentPipelines(data).map((p, i) => {
+        console.group(`independent pipeline ${i}`);
+        Workflow.start(p, options);
+        console.groupEnd();
+      })
+    );
 
     // Dependent pipelines must run consecutive
-    dependentPipelines(data).forEach(async (p) => {
+    dependentPipelines(data).forEach(async (p, i) => {
+      console.group(`pipeline ${i}`);
       await Workflow.start(p, options);
+      console.groupEnd();
     });
   }
 }

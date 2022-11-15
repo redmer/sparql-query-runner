@@ -5,70 +5,87 @@ import os from "os";
 import path from "path";
 import type { ICliOptions } from "../config";
 import type { IPipeline } from "../config/types";
-import Destination from "../destinations/index.js";
-import Endpoint from "../endpoints/index.js";
-import Source from "../sources/index.js";
-import Step from "../steps/index.js";
+import { getPipelinePart } from "../modules/module";
+import { notEmpty } from "../utils/array";
+import { Report } from "../utils/report";
 import type { PipelinePartInfo, RuntimeCtx } from "./types";
 
 export namespace Workflow {
+  interface WorkflowCache {
+    info: PipelinePartInfo;
+    name: string;
+  }
+
   /** Initialize and start a workflow runner */
   export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
     // A workflow must process `endpoint`, `sources`, `steps`, `destinations`.
     // `prefixes` and `name` is configuration. `independent` is no longer relevant.
 
+    // Prepare running context
     const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), "sqr-"), { encoding: "utf-8" });
-
-    // Collect all pipeline parts
-    const infos: PipelinePartInfo[] = [];
     const store = new N3.Store();
     const context: RuntimeCtx = {
       pipeline: data,
-      options: options,
+      options: options ?? {},
       tempdir: tempdir,
       quadStore: store,
       engine: new QueryEngine(),
-      allSources: [],
+      querySources: [],
       queryContext: {},
     };
 
+    // Prepare and gather all pipeline parts
+    const infos: WorkflowCache[] = [];
+
     // endpoint -> Queryable Source
-    for (const [i, endpoint] of data.endpoint.entries()) {
-      const part = await Endpoint(endpoint);
-      infos.push(await part(context));
-    }
-
     // sources -> Queryable Source
-    for (const [i, source] of data.sources.entries()) {
-      const part = await Source(source);
-      infos.push(await part(context));
-    }
-
     // steps
-    for (const [i, step] of data.steps.entries()) {
-      const part = await Step(step);
-      infos.push(await part(context));
-    }
-
     // destinations
-    for (const [i, dest] of data.destinations.entries()) {
-      const part = await Destination(dest);
-      infos.push(await part(context));
+    const parts = [data.endpoint, data.sources, data.steps, data.destinations]
+      .flat()
+      .filter(notEmpty);
+
+    for (const [_, partData] of parts.entries()) {
+      console.group("module matching...");
+
+      // Match on all modules
+      const [name, part] = await getPipelinePart(partData);
+      if ((!name || !part) && !process.env["TREAT_WARNINGS_AS_ERRORS"]) continue;
+      const info = await part(context);
+      infos.push({ info, name });
+
+      console.groupEnd();
     }
 
-    // Gather all sources and contexts from Queryable Source`s
-    context.allSources = infos.map((i) => i.source);
-    context.queryContext = infos.reduce((all, i) => Object.assign(all, i?.queryContext), {});
+    // Gather all Query Sources and Query Contexts
+    context.querySources = infos.map((desc) => desc.info.getQuerySource).filter(notEmpty);
+    context.queryContext = infos.reduce(
+      (all, i) => Object.assign(all, i.info?.getQueryContext),
+      {}
+    );
+    // Finalize context, make it readonly
+    Object.freeze(context);
 
-    await Promise.all(infos.map((i) => i?.preProcess));
+    // Start -preProcess
+    console.group("prepare pipeline parts...");
+    await Promise.allSettled(infos.map((i) => i?.info.prepare));
+    console.groupEnd();
 
     for (const [i, part] of infos.entries()) {
-      await part?.start(); // TODO: moet hier nog iets komen met engine / queryContext
+      console.group(`start pipeline part ${i}: ${part.name}`);
+      try {
+        await part?.info.start();
+      } catch (err) {
+        Report.print("error", `${err}`);
+      }
+      console.groupEnd();
     }
 
-    await Promise.all(infos.map((i) => i?.postProcess));
+    console.group("cleanup pipeline parts...");
+    await Promise.allSettled(infos.map((i) => i?.info.cleanup));
+    console.groupEnd();
 
-    console.info(`Done`);
+    Report.print("info", `pipeline ${data.name} DONE`);
 
     // name
     // prefixes

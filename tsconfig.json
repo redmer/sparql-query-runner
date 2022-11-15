@@ -13,9 +13,13 @@
     "sourceMap": true,
     "resolveJsonModule": true,
 
-    "incremental": true
+    "incremental": true,
+    // stricts
+    "strict": true,
+    "noUnusedLocals": true,
+    "skipLibCheck": true
   },
   "compileOnSave": true,
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "**/node_modules/*", "resources"]
+  "exclude": ["node_modules", "resources"]
 }
