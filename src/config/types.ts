@@ -1,4 +1,4 @@
-import { ArrayOrSingle } from "../utils/types";
+import { ArrayOrSingle } from "../utils/types.js";
 
 export type PartialOneOrMore<T> = {
   [P in keyof T]?: ArrayOrSingle<T[P]>;
@@ -82,4 +82,5 @@ export interface IAuthenticationBearer {
 export interface IStep {
   type: "shacl-validate" | "sparql-update" | "sparql-query";
   url: string[];
+  graphs?: string[];
 }

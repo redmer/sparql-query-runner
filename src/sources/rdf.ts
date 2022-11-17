@@ -10,13 +10,13 @@ export class RemoteBasicFileSource implements PipelinePart<ISource> {
   // Remote files are a valid Source for @comunica/query-sparql
   name = () => "remote-file-store-source";
 
-  match(data: ISource): boolean {
-    return (
-      data.type === "rdf" && // Only RDF files
-      !!data.url.match(/^https?:/) && // Only remote files
-      data.authentication?.type == "Basic" && // If auth, only Basic auth
-      !!data.graphs // Not only specific graphs
-    );
+  qualifies(data: ISource): boolean {
+    if (data.type !== "rdf") return false;
+    if (!data.url.match(/^https?:/)) return false;
+    if (data.authentication && data.authentication.type !== "Basic") return false;
+    if (data.graphs) return false;
+
+    return true;
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
@@ -35,13 +35,10 @@ export class CustomFileSource implements PipelinePart<ISource> {
   // Local files are not valid Source for @comunica/query-sparql, but a N3.Store is
   name = () => "local-file-store-source";
 
-  match(data: ISource): boolean {
-    return (
-      data.type === "rdf" && // RDF file that is either
-      (!data.url.match(/^https?:/) || // non-remote
-        data.authentication?.type !== "Basic" || // with a non-basic auth
-        !!data.graphs) // with a specific graph
-    );
+  qualifies(data: ISource): boolean {
+    if (data.type !== "rdf") return false;
+
+    return true;
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
@@ -76,9 +73,9 @@ export class CustomFileSource implements PipelinePart<ISource> {
           });
 
           // Filter on specified graphs
-          data.graphs?.forEach((graph) => {
-            store.deleteGraph(graph);
-          });
+          for (const graph of store.getGraphs(null, null, null)) {
+            if (!data.graphs?.includes(graph.value)) store.deleteGraph(graph);
+          }
         },
         getQuerySource: store,
       };

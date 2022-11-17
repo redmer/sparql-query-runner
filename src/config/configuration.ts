@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import yaml from "yaml";
 import { oneOrMore } from "../utils/array.js";
-import { error, warn } from "../utils/errors.js";
+import { Report } from "../utils/report.js";
 import { context } from "./rdfa11-context.js";
 import type {
   IAuthentication,
@@ -44,14 +44,17 @@ export namespace Configuration {
     if (dirContents.includes(CONFIG_FILENAME_YAML)) {
       // Prefer YAML over JSON
       if (dirContents.includes(CONFIG_FILENAME))
-        warn(`Found both ${CONFIG_FILENAME_YAML} and ${CONFIG_FILENAME}. Continuing with YAML.`);
+        Report.print(
+          "warning",
+          `Found both ${CONFIG_FILENAME_YAML} and ${CONFIG_FILENAME}. Continuing with YAML.`
+        );
 
       return `${dir}/${CONFIG_FILENAME_YAML}`;
     } else if (dir.includes(CONFIG_FILENAME)) {
       return `${dir}/${CONFIG_FILENAME}`;
     }
 
-    error(`Found neither ${CONFIG_FILENAME_YAML} nor ${CONFIG_FILENAME} in ${dir}`);
+    Report.print("error", `Found neither ${CONFIG_FILENAME_YAML} nor ${CONFIG_FILENAME} in ${dir}`);
   }
 
   /** Parse the configuration file. */
@@ -68,7 +71,7 @@ export namespace Configuration {
   export function validateConfigurationFile(data: any): IConfiguration {
     const version: string | undefined = data["version"];
     if (!version || !version.startsWith("v4"))
-      error(`Version of sparql-query-runner requires a configuration file of v4+`);
+      Report.print("error", `Version of sparql-query-runner requires a configuration file of v4+`);
 
     return {
       version: version,
@@ -97,26 +100,32 @@ export namespace Configuration {
 
   /** Heuristic (on file extension) to determine step type. */
   function determineStepType(urls: string[]): IStep["type"] | never {
-    const extensions = urls.filter((u) => "".split(".").pop());
+    const extensions = urls.map((u) => u.split(".").pop());
     if (extensions.length > 1)
-      error(
-        `Multiple query types found in step (${extensions.join(", ")}). 
-        Cannot determine a single step type. Ensure only .rq or .ru files are present.`
+      Report.print(
+        "error",
+        `Multiple query types found in step (${extensions.join(", ")}).` +
+          `Cannot determine a single step type. Ensure only .rq or .ru files are present.`
       );
 
     if (extensions[0] == "rq") return "sparql-query";
     if (extensions[0] == "ru") return "sparql-update";
-    error(`Provide /type with value ${urls.join(", ")}, as it can't be determined automatically.`);
+    Report.print(
+      "error",
+      `Provide /type with value ${urls.join(", ")}, as it can't be determined automatically.`
+    );
   }
 
   /** Validate and hydrate step data. */
   function validateStep(data: any): IStep {
     if (typeof data === "string") return { url: [data], type: determineStepType([data]) };
-    if (typeof data["url"] === "undefined") error(`A /url value for a step is missing.`);
+    if (typeof data["url"] === "undefined")
+      Report.print("error", `A /url value for a step is missing.`);
 
     return {
       type: data["type"] ?? determineStepType(data["url"]),
-      url: data["url"],
+      url: [data["url"]],
+      graphs: data["graphs"] ? [data["graphs"]] : undefined,
     };
   }
 
@@ -126,8 +135,10 @@ export namespace Configuration {
 
     return {
       type: data["type"] ?? "rdf",
-      url: data["url"] ?? error(`Source or destination requires /url with a path or URL value`),
-      graphs: oneOrMore(data["graphs"]),
+      url:
+        data["url"] ??
+        Report.print("error", `Source or destination requires /url with a path or URL value`),
+      graphs: data["graphs"] ?? oneOrMore(data["graphs"]),
       authentication: validateAuthentication(data["authentication"]),
       mediatype: data["mediatype"],
     };
@@ -164,7 +175,8 @@ export namespace Configuration {
         token_env: data["token_env"],
       };
 
-    error(
+    Report.print(
+      "error",
       `The authentication type was not recognized. Verify authentication details of:\n` +
         JSON.stringify(data, undefined, 2)
     );

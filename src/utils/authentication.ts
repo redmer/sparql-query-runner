@@ -1,19 +1,25 @@
-import { IAuthentication } from "../config/types";
-import process from "process";
+import type { IAuthentication } from "../config/types";
+import * as process from "node:process";
 
 export namespace Auth {
+  export class AuthTypeError extends Error {}
+  export class AuthValueError extends Error {}
+
   export function usernamePasswordDict(data: IAuthentication): {
     username: string;
     password: string;
   } {
-    if (data.type !== "Basic") throw new Error(`authentication type 'Basic' not supported here`);
+    if (data.type !== "Basic")
+      throw new AuthTypeError(`authentication type '${data.type}' not supported here`);
 
     const { user_env, password_env } = data;
     const username = process.env[user_env];
     const password = process.env[password_env];
 
     if (!username || !password)
-      throw new Error(`could not find environment variables '${user_env}' or '${password}'`);
+      throw new AuthValueError(
+        `could not find environment variables '${user_env}' or '${password}'`
+      );
 
     return {
       username,
@@ -45,14 +51,15 @@ export namespace Auth {
 
     if (data.type === "Bearer") {
       const token = process.env[data.token_env];
-      if (!token) throw new Error(`could not find environment variables '${data.token_env}'`);
+      if (!token)
+        throw new AuthValueError(`could not find environment variables '${data.token_env}'`);
 
       return {
         Authorization: `Bearer ${token}`,
       };
     }
 
-    throw new Error(`Authentication type '${JSON.stringify(data)}' not supported here`);
+    throw new AuthTypeError(`Authentication type '${JSON.stringify(data)}' not supported here`);
   }
 
   function encode(value: string): string {

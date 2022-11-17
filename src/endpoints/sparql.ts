@@ -10,7 +10,7 @@ import { Auth } from "../utils/authentication.js";
 export class SPARQLEndpoint implements PipelinePart<IEndpoint> {
   name = () => "sparql-endpoint";
 
-  match(data: IEndpoint): boolean {
+  qualifies(data: IEndpoint): boolean {
     return !!data.get || !!data.post;
   }
 

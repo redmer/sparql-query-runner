@@ -12,7 +12,7 @@ export default class LacesDestination implements PipelinePart<IDestination> {
   // Export a(ll) graph(s) to Laces
   name = () => "laces-destination";
 
-  match(data: IDestination): boolean {
+  qualifies(data: IDestination): boolean {
     return data.type === "laces" && !!data.url.match("^https?://hub.laces.tech/");
   }
 

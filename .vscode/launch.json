@@ -10,7 +10,7 @@
       "name": "Launch CLI",
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}/dist/cli/index.js",
-      "preLaunchTask": "tsc: build - tsconfig.json",
+      // "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "cwd": "${workspaceFolder}/testdata"
     }

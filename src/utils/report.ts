@@ -4,8 +4,9 @@ const { noop } = lodash;
 
 export namespace Report {
   function reportFormat(type: "info" | "error" | "warning", message: string) {
-    const color = { info: chalk.bgBlue, error: chalk.bgRed, warning: chalk.bgYellow }[type];
-    return color(` ${type.toUpperCase()}: `) + message;
+    const color = { info: chalk.bgBlue, error: chalk.bgRed, warning: chalk.bgYellowBright }[type];
+    const [lpad, rpad] = { info: [0, 3], error: [0, 2], warning: [0, 0] }[type];
+    return color(" ".repeat(lpad) + ` ${type.toUpperCase()} ` + " ".repeat(rpad)) + " " + message;
   }
 
   function pipe(type: "error" | "info" | "warning" | string): typeof console.error {
@@ -22,9 +23,12 @@ export namespace Report {
    * @param message The message (type will be prefixed). If left out, print() will just write `end`.
    * @param end Optionally, replace the newline at the end of the message.
    */
+  export function print(type: "error", message: string): never;
+  export function print(type: PrintTypes, message: string): void;
   export function print(type: PrintTypes = "info", message: string): void {
     // What is the writing function
     typeof message == "string" ? pipe(type)(reportFormat(type, message)) : noop();
+    if (type === "error") process.exit(-1);
   }
 
   export function done(original: string) {

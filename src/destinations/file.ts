@@ -12,8 +12,10 @@ export default class LocalFileDestination implements PipelinePart<IDestination> 
   // Export a(ll) graph(s) to a file
   name = () => "file-destination";
 
-  match(data: IDestination): boolean {
-    return data.type === "rdf" && !data.url.match(/^https?:/);
+  qualifies(data: IDestination): boolean {
+    if (data.type !== "rdf") return false;
+    if (data.url.match(/^https?:/)) return false;
+    return true;
   }
 
   async info(data: IDestination): Promise<PipelinePartGetter> {

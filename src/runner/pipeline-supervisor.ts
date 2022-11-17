@@ -1,5 +1,5 @@
-import { ICliOptions } from "../config";
-import { IConfiguration, IPipeline } from "../config/types";
+import type { ICliOptions } from "../config/configuration";
+import type { IConfiguration, IPipeline } from "../config/types";
 import { Workflow } from "./pipeline-worker.js";
 
 /** PipelineRunner is responsible for kicking off the right pipeline in the right order. */

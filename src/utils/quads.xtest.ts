@@ -1,8 +1,7 @@
-import { Store, Parser, Util, Quad } from "n3";
-import { readFile, mkdtemp } from "fs/promises";
-import { graphsToFile } from "./quads";
+import { mkdtemp, readFile } from "fs/promises";
+import { Parser, Quad, Store, Util } from "n3";
 import { tmpdir } from "os";
-import _ from "lodash";
+import { graphsToFile } from "./quads";
 
 const EX = Util.prefix("http://example.org/test/");
 

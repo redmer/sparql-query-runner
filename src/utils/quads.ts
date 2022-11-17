@@ -1,4 +1,4 @@
-import fs from "fs-extra";
+import fs from "fs/promises";
 import { Store, WriterOptions, Writer, OTerm } from "n3";
 import path from "path";
 

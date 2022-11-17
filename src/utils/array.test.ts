@@ -8,4 +8,5 @@ test("oneOrMore", () => {
   expect(oneOrMore(inputSingle)).toEqual(inputSingleArray);
   expect(oneOrMore(inputSingleArray)).toEqual(inputSingleArray);
   expect(oneOrMore(inputMultipleArray)).toEqual(inputMultipleArray);
+  expect(oneOrMore(undefined)).toBeUndefined();
 });

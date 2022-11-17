@@ -2,8 +2,8 @@ import type { QueryEngine } from "@comunica/query-sparql";
 import type { IDataSource, IQueryContextCommon } from "@comunica/types/lib";
 import type * as RDF from "@rdfjs/types";
 import N3 from "n3";
-import { ICliOptions } from "../config";
-import { IPipeline } from "../config/types";
+import type { ICliOptions } from "../config/configuration";
+import type { IPipeline } from "../config/types";
 
 /** A PipelinePart is a Source, Endpoint, Destination or Step.
  *
@@ -66,11 +66,14 @@ export interface RuntimeCtx {
 }
 
 // Base
-export type PipelinePartGetter = (context: Readonly<RuntimeCtx>) => Promise<PipelinePartInfo>;
+export type PipelinePartGetter = (
+  context: Readonly<RuntimeCtx>,
+  i?: number
+) => Promise<PipelinePartInfo>;
 
 export interface PipelinePart<T> {
   /** Return true if the PipelinePart can handle this data. */
-  match(data: any): boolean;
+  qualifies(data: any): boolean;
 
   /** A reference name for the PipelinePart */
   name(): string;

@@ -13,7 +13,7 @@ export function basename(url: string) {
 export async function download(url: string, path: string, auth?: IAuthentication) {
   const auhorizationHeader = auth ? Auth.asHeader(auth) : null;
   // I checked that: { ...null } => { }
-  const response = await fetch(url, { headers: { ...auhorizationHeader } });
+  const response = await fetch(url, { method: "GET", headers: { ...auhorizationHeader } });
   const stream = fs.createWriteStream(path);
 
   await new Promise((resolve, reject) => {

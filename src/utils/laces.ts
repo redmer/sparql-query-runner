@@ -51,7 +51,7 @@ export namespace Laces {
     metadataPayload: LacesPublicationPatch,
     auth: IAuthentication
   ): Promise<Response> {
-    const endpoint = `http://hub.laces.tech/api/v3/publications/{publicationId}`;
+    const endpoint = `http://hub.laces.tech/api/v3/publications/${publicationId}`;
     const metadata = {};
 
     const form = new FormData();

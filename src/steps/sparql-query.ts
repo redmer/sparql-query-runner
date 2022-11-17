@@ -9,10 +9,10 @@ import { Report } from "../utils/report.js";
 export default class SparqlQuadQuery implements PipelinePart<IStep> {
   name = () => "sparql-quads-query-step";
 
-  match(data: IStep): boolean {
+  qualifies(data: IStep): boolean {
     if (data.type !== "sparql-query") return false;
-    if (data.url.find((url) => url.endsWith(".ru"))) return false;
-    return false;
+    if (data.url.some((url) => url.endsWith(".ru"))) return false;
+    return true;
   }
 
   async info(data: IStep): Promise<PipelinePartGetter> {

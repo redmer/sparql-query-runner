@@ -2,8 +2,11 @@
 
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import compileConfigData from "../config/index.js";
+import compileConfigData from "../config/configuration.js";
 import { PipelineSupervisor } from "../runner/pipeline-supervisor.js";
+import * as dotenv from "dotenv";
+
+dotenv.config();
 
 /** Runs CLI, provides options. */
 async function main() {

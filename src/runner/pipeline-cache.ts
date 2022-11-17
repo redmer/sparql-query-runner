@@ -3,7 +3,7 @@
  */
 import { createHash } from "crypto";
 import fs from "fs/promises";
-import { ICliOptions } from "../config";
+import { ICliOptions } from "../config/configuration";
 import { IConfiguration } from "../config/types";
 
 interface Options {

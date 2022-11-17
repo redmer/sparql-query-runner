@@ -1,4 +1,4 @@
-import fs from "fs-extra";
+import fs from "fs/promises";
 import MDBReader from "mdb-reader";
 import type { Value } from "mdb-reader/lib/types";
 import N3, { DataFactory } from "n3";
@@ -10,7 +10,7 @@ import { CSVNS, XSD } from "../utils/namespaces.js";
 export class MsAccessSource implements PipelinePart<ISource> {
   name = () => "msaccess-store-source";
 
-  match(data: ISource): boolean {
+  qualifies(data: ISource): boolean {
     if (data.type === "msaccess") return true;
     return false;
   }
@@ -22,6 +22,7 @@ export class MsAccessSource implements PipelinePart<ISource> {
 
       return {
         prepare: async () => {
+          console.log("Prepared");
           // if file is remote, download it
           if (data.url.match(/https?:/)) {
             // Determine locally downloaded filename
