@@ -17,36 +17,21 @@ export interface IConfiguration {
   pipelines: IPipeline[];
 }
 
-export interface IConfigurationIN {
-  version?: string;
-  pipelines: IPipelineIN[] | IPipelineIN;
-}
-
 /** Represents a single sequence of data-operations, on a single endpoint. */
 export interface IPipeline {
   name: string;
-  endpoint?: IEndpoint[];
+  independent?: boolean;
+  prefixes?: Record<string, string>;
   sources?: ISource[];
-  destinations?: IDestination[];
-  prefixes?: Record<string, string>;
-  steps: IStep[];
-  independent?: boolean;
-}
-
-export interface IPipelineIN {
-  name?: string;
-  endpoint?: (IEndpoint | string)[];
-  sources?: (ISource | string)[];
-  destinations?: (IDestination | string)[];
-  prefixes?: Record<string, string>;
-  steps?: (IStep | string)[];
-  independent?: boolean;
-}
-
-export interface IEndpoint {
-  authentication?: IAuthentication;
-  get?: string;
-  post?: string;
+  destinations?: IDest[];
+  queries?: IQueryStep[];
+  updates?: IUpdateStep[];
+  rules?: IRuleStep[];
+  engine?: {
+    [subsystem: string]: {
+      [key: string]: any;
+    };
+  };
 }
 
 export interface ISourceOrDestination {
@@ -54,15 +39,14 @@ export interface ISourceOrDestination {
   graphs?: string[];
   authentication?: IAuthentication;
   type: string;
-  mediatype?: string;
 }
 
 export interface ISource extends ISourceOrDestination {
-  type: "rdf" | "msaccess";
+  type: "file" | "sparql" | "auto" | "msaccess";
 }
 
-export interface IDestination extends ISourceOrDestination {
-  type: "rdf" | "sparql-graph-store" | "sparql-quad-store" | "laces";
+export interface IDest extends ISourceOrDestination {
+  type: "file" | "sparql" | "auto" | "sparql-graph-store" | "sparql-quad-store" | "laces";
 }
 
 export type IAuthentication = IAuthenticationBasic | IAuthenticationBearer;
@@ -78,9 +62,21 @@ export interface IAuthenticationBearer {
   token_env: string;
 }
 
-/** Represents a step in the {@link IPipeline}. */
-export interface IStep {
-  type: "shacl-validate" | "sparql-update" | "sparql-query";
+export interface IBaseStep {
+  type: string;
   url: string[];
-  graphs?: string[];
+}
+
+export interface IQueryStep extends IBaseStep {
+  type: "sparql-query" | "shacl-validate";
+  graph?: string[];
+}
+
+export interface IUpdateStep extends IBaseStep {
+  type: "sparql-update" | "shacl-validate";
+}
+
+export interface IRuleStep extends IBaseStep {
+  type: "sparql-query";
+  targetClass: string[];
 }

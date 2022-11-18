@@ -1,7 +1,10 @@
-/** Returns an array with {@link items} in it. */
-export function oneOrMore<T>(items: T | T[]): T[];
-export function oneOrMore(items: undefined): undefined;
-export function oneOrMore<T>(items: T | T[] | undefined): T[] | undefined {
+/** Returns an array with {@link items} in it.
+ *
+ * Name: Greather than or Equal to 1
+ */
+export function ge1<T>(items: T | T[]): T[];
+export function ge1(items: undefined): undefined;
+export function ge1<T>(items: T | T[] | undefined): T[] | undefined {
   if (items == undefined) return undefined;
   return ([] as T[]).concat(items).filter((item) => item);
 }

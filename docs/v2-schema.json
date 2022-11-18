@@ -10,7 +10,7 @@
       "pattern": "^v4(\\.\\d)?$",
       "description": "Version of the sparql-query-runner configuration"
     },
-    "pipelines": { "$ref": "#/$defs/Pipeline1N" },
+    "pipelines": { "$ref": "#/$defs/IPipeline1N" },
     "$schema": {
       "anyOf": [
         {
@@ -24,159 +24,107 @@
     }
   },
   "$defs": {
-    "Pipeline": {
+    "IPipeline": {
       "type": "object",
-      "title": "A pipeline, performing a sequence of steps that MAY mutate an endpoint",
+      "title": "A pipeline, performing a sequence of SPARQL steps",
       "additionalProperties": false,
       "properties": {
         "name": { "title": "Reference name of the pipeline", "type": "string" },
-        "endpoint": { "$ref": "#/$defs/Endpoint1N" },
-        "sources": { "$ref": "#/$defs/Source1N" },
-        "destinations": { "$ref": "#/$defs/Dest1N" },
-        "prefixes": { "$ref": "#/$defs/Prefixes" },
-        "steps": { "$ref": "#/$defs/Step1N" },
+        "engine": { "title": "Custom configuration options", "type": "object" },
         "independent": {
           "title": "Pipeline does not depend on preceding pipeline",
           "type": "boolean"
-        }
+        },
+        "prefixes": { "$ref": "#/$defs/Prefixes" },
+        "sources": { "$ref": "#/$defs/ISource1N" },
+        "destinations": { "$ref": "#/$defs/IDest1N" },
+        "queries": { "$ref": "#/$defs/IQueryStep1N" },
+        "updates": { "$ref": "#/$defs/IUpdateStep1N" },
+        "rules": { "$ref": "#/$defs/IRuleStep1N" }
       }
     },
-    "Pipeline1N": {
+    "IPipeline1N": {
       "anyOf": [
-        { "$ref": "#/$defs/Pipeline" },
+        { "$ref": "#/$defs/IPipeline" },
         {
           "type": "array",
-          "items": { "$ref": "#/$defs/Pipeline" }
+          "items": { "$ref": "#/$defs/IPipeline" }
         }
       ]
     },
-
-    "Endpoint": {
+    "ISourceOrDest": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "get": {
-          "type": "string",
-          "format": "iri-reference",
-          "title": "SPARQL endpoint (GET)"
-        },
-        "post": {
-          "type": "string",
-          "format": "iri-reference",
-          "title": "SPARQL endpoint (POST)"
-        },
-        "authentication": { "$ref": "#/$defs/Authentication" }
-      },
-      "anyOf": [{ "required": ["get"] }, { "required": ["post"] }]
-    },
-    "EndpointDirect": {
-      "$ref": "#/$defs/Endpoint/properties/get"
-    },
-    "Endpoint1N": {
-      "anyOf": [
-        { "$ref": "#/$defs/Endpoint" },
-        { "$ref": "#/$defs/EndpointDirect" },
-        {
-          "type": "array",
-          "items": {
-            "oneof": [{ "$ref": "#/$defs/Endpoint" }, { "$ref": "#/$defs/EndpointDirect" }]
-          }
-        }
-      ]
-    },
-
-    "SourceOrDestination": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "url": { "$ref": "#/$defs/GraphOrPath" },
-        "graphs": { "$ref": "#/$defs/GraphOrPath1N" },
-        "authentication": { "$ref": "#/$defs/Authentication" },
+        "url": { "$ref": "#/$defs/URL" },
+        "graphs": { "$ref": "#/$defs/URL1N" },
+        "authentication": { "$ref": "#/$defs/IAuthentication" },
         "type": {
           "type": "string",
-          "default": "rdf"
-        },
-        "mediatype": {
-          "title": "Override default or implicit mediatype",
-          "description": "File mediatype is inferred from file extension.",
-          "oneOf": [
-            {
-              "type": "string",
-              "enum": [
-                "application/ld+json",
-                "application/n-quads",
-                "application/n-triples",
-                "application/rdf+xml",
-                "application/trig",
-                "application/trix",
-                "text/n3",
-                "text/turtle"
-              ]
-            },
-            { "type": "string", "pattern": "\\w+/[-+.\\w]+" }
-          ]
+          "default": "auto"
         }
       }
     },
-
-    "Source": {
+    "ISource": {
       "title": "RDF data source",
       "properties": {
-        "type": { "enum": ["rdf", "msaccess"] }
+        "type": { "enum": ["file", "msaccess", "sparql", "auto"] }
       },
-      "allOf": [{ "$ref": "#/$defs/SourceOrDestination" }]
+      "allOf": [{ "$ref": "#/$defs/ISourceOrDest" }]
     },
-    "SourceDirect": {
-      "$ref": "#/$defs/SourceOrDestination/properties/url"
+    "ISourceDirect": {
+      "$ref": "#/$defs/ISourceOrDest/properties/url"
     },
-    "Source1N": {
+    "ISource1N": {
       "anyOf": [
-        { "$ref": "#/$defs/Source" },
-        { "$ref": "#/$defs/SourceDirect" },
+        { "$ref": "#/$defs/ISource" },
+        { "$ref": "#/$defs/ISourceDirect" },
         {
           "type": "array",
-          "items": { "anyOf": [{ "$ref": "#/$defs/Source" }, { "$ref": "#/$defs/SourceDirect" }] }
+          "items": { "anyOf": [{ "$ref": "#/$defs/ISource" }, { "$ref": "#/$defs/ISourceDirect" }] }
         }
       ]
     },
 
-    "Dest": {
+    "IDest": {
       "title": "RDF data destination",
       "properties": {
-        "type": { "enum": ["rdf", "sparql-graph-store", "sparql-quad-store", "laces"] }
+        "type": {
+          "enum": ["file", "sparql", "auto", "sparql-graph-store", "sparql-quad-store", "laces"]
+        }
       },
-      "allOf": [{ "$ref": "#/$defs/SourceOrDestination" }]
+      "allOf": [{ "$ref": "#/$defs/ISourceOrDest" }]
     },
-    "DestDirect": {
-      "$ref": "#/$defs/SourceOrDestination/properties/url"
+    "IDestDirect": {
+      "$ref": "#/$defs/ISourceOrDest/properties/url"
     },
-    "Dest1N": {
+    "IDest1N": {
       "anyOf": [
-        { "$ref": "#/$defs/Dest" },
-        { "$ref": "#/$defs/DestDirect" },
+        { "$ref": "#/$defs/IDest" },
+        { "$ref": "#/$defs/IDestDirect" },
         {
           "type": "array",
-          "items": { "anyOf": [{ "$ref": "#/$defs/Dest" }, { "$ref": "#/$defs/DestDirect" }] }
+          "items": { "anyOf": [{ "$ref": "#/$defs/IDest" }, { "$ref": "#/$defs/IDestDirect" }] }
         }
       ]
     },
 
-    "GraphOrPath": {
+    "URL": {
       "type": "string",
       "format": "iri-reference",
       "description": "A http(s):// remote URL or file: local path"
     },
-    "GraphOrPath1N": {
+    "URL1N": {
       "anyOf": [
-        { "$ref": "#/$defs/GraphOrPath" },
+        { "$ref": "#/$defs/URL" },
         {
           "type": "array",
-          "items": { "$ref": "#/$defs/GraphOrPath" }
+          "items": { "$ref": "#/$defs/URL" }
         }
       ]
     },
 
-    "Authentication": {
+    "IAuthentication": {
       "title": "Method of authentication",
       "type": "object",
       "properties": {
@@ -223,28 +171,71 @@
       }
     },
 
-    "Step": {
+    "IBaseStep": {
       "type": "object",
       "title": "Transformation step in the pipeline",
       "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["shacl-validate", "sparql-update", "sparql-query"]
-        },
+        "type": { "type": "string" },
         "url": {
-          "$ref": "#/$defs/GraphOrPath1N",
-          "title": "URL argument of the step"
+          "$ref": "#/$defs/URL1N",
+          "title": "URL argument of the step",
+          "description": "The `url` value may be an array, e.g. to combine with `graph` in CONSTRUCT queries."
         }
+      }
+    },
+    "IStepDirect": {
+      "$ref": "#/$defs/IBaseStep/properties/url"
+    },
+
+    "IUpdateStep": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["sparql-update", "shacl-validate"] }
       },
-      "required": ["type"]
+      "allOf": [{ "$ref": "#/$defs/IBaseStep" }]
     },
-    "StepDirect": {
-      "$ref": "#/$defs/Step/properties/url"
-    },
-    "Step1N": {
+    "IUpdateStep1N": {
       "type": "array",
       "items": {
-        "anyOf": [{ "$ref": "#/$defs/Step" }, { "$ref": "#/$defs/StepDirect" }]
+        "anyOf": [{ "$ref": "#/$defs/IUpdateStep" }, { "$ref": "#/$defs/IStepDirect" }]
+      }
+    },
+
+    "IQueryStep": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["sparql-query", "shacl-validate"] },
+        "graph": {
+          "title": "Adds a graph to constructed triples.",
+          "description": "Empty: defaul graph. SPARQL 1.1 does not allow `GRAPH ?g { ... }` in CONSTRUCT queries.",
+          "$ref": "#/$defs/URL"
+        }
+      },
+      "allOf": [{ "$ref": "#/$defs/IBaseStep" }]
+    },
+    "IQueryStep1N": {
+      "type": "array",
+      "items": {
+        "anyOf": [{ "$ref": "#/$defs/IQueryStep" }, { "$ref": "#/$defs/IStepDirect" }]
+      }
+    },
+
+    "IRuleStep": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["sparql-query"] },
+        "targetClass": {
+          "title": "Target class of a SHACL SPARQL Rule",
+          "description": "When generating SHACL SPARQL Rules, this CURIE/URL value is used to make a targeted SHACL NodeShape.",
+          "$ref": "#/$defs/URL1N"
+        }
+      },
+      "allOf": [{ "$ref": "#/$defs/IBaseStep" }]
+    },
+    "IRuleStep1N": {
+      "type": "array",
+      "items": {
+        "anyOf": [{ "$ref": "#/$defs/IRuleStep" }, { "$ref": "#/$defs/IStepDirect" }]
       }
     }
   }

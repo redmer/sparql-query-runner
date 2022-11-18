@@ -1,18 +1,18 @@
 import fs from "fs/promises";
+import type { Exact } from "ts-essentials";
 import yaml from "yaml";
-import { oneOrMore } from "../utils/array.js";
+import { ge1 } from "../utils/array.js";
 import { Report } from "../utils/report.js";
 import { context } from "./rdfa11-context.js";
 import type {
   IAuthentication,
   IConfiguration,
-  IDestination,
-  IEndpoint,
+  IDest,
   IPipeline,
-  IPipelineIN,
+  IQueryStep,
+  IRuleStep,
   ISource,
-  ISourceOrDestination,
-  IStep,
+  IUpdateStep,
 } from "./types";
 
 export const CONFIG_FILENAME = "sparql-query-runner.json";
@@ -75,88 +75,91 @@ export namespace Configuration {
 
     return {
       version: version,
-      pipelines: oneOrMore<IPipelineIN>(data["pipelines"]).map((p) => validatePipeline(p)),
+      pipelines: ge1(data["pipelines"]).map((p) => validatePipeline(p)),
     };
   }
 
   /** Validate and hydrate pipeline data. */
-  function validatePipeline(data: any): IPipeline {
+  function validatePipeline(data: any): Exact<Required<IPipeline>, Required<IPipeline>> {
     return {
       name: data["name"] ?? new Date().toISOString(),
       independent: data["independent"] ?? false,
       prefixes: Object.assign({}, context, data["prefixes"]),
-      destinations: oneOrMore<IDestination | string>(data["destinations"]).map(
-        (data) => validateSourceOrDestination(data) as IDestination
-      ),
-      endpoint: oneOrMore<IEndpoint | string>(data["endpoint"]).map((data) =>
-        validateEndpoint(data)
-      ),
-      sources: oneOrMore<ISource | string>(data["sources"]).map(
-        (data) => validateSourceOrDestination(data) as ISource
-      ),
-      steps: oneOrMore<IStep | string>(data["steps"]).map((data) => validateStep(data)),
+      destinations: ge1(data["destinations"]).map((data) => validateDest(data) as IDest),
+      sources: ge1(data["sources"]).map((data) => validateSource(data) as ISource),
+      queries: ge1(data["queries"]).map((data) => validateQueryStep(data)),
+      updates: ge1(data["updates"]).map((data) => validateUpdateStep(data)),
+      rules: ge1(data["rules"]).map((data) => validateRuleStep(data)),
+      engine: data["engine"] ?? undefined,
     };
   }
 
-  /** Heuristic (on file extension) to determine step type. */
-  function determineStepType(urls: string[]): IStep["type"] | never {
-    const extensions = urls.map((u) => u.split(".").pop());
-    if (extensions.length > 1)
-      Report.print(
-        "error",
-        `Multiple query types found in step (${extensions.join(", ")}).` +
-          `Cannot determine a single step type. Ensure only .rq or .ru files are present.`
-      );
-
-    if (extensions[0] == "rq") return "sparql-query";
-    if (extensions[0] == "ru") return "sparql-update";
-    Report.print(
-      "error",
-      `Provide /type with value ${urls.join(", ")}, as it can't be determined automatically.`
-    );
-  }
-
-  /** Validate and hydrate step data. */
-  function validateStep(data: any): IStep {
-    if (typeof data === "string") return { url: [data], type: determineStepType([data]) };
-    if (typeof data["url"] === "undefined")
-      Report.print("error", `A /url value for a step is missing.`);
-
-    return {
-      type: data["type"] ?? determineStepType(data["url"]),
-      url: [data["url"]],
-      graphs: data["graphs"] ? [data["graphs"]] : undefined,
-    };
-  }
-
-  /** Validate and hydrate source data or destination data. */
-  function validateSourceOrDestination(data: any): ISourceOrDestination {
-    if (typeof data === "string") return validateSourceOrDestination({ type: "rdf", url: data });
-
-    return {
-      type: data["type"] ?? "rdf",
-      url:
-        data["url"] ??
-        Report.print("error", `Source or destination requires /url with a path or URL value`),
-      graphs: data["graphs"] ?? oneOrMore(data["graphs"]),
-      authentication: validateAuthentication(data["authentication"]),
-      mediatype: data["mediatype"],
-    };
-  }
-
-  /** Validate endpoint */
-  function validateEndpoint(data: any): IEndpoint {
+  function validateUpdateStep(data: any): IUpdateStep {
     if (typeof data === "string")
-      return {
-        get: data,
-      };
+      return validateUpdateStep({ type: "sparql-update", url: [data] } as IUpdateStep);
+    if (typeof data["url"] === "undefined")
+      Report.print("error", `A url value for an update step is missing.`);
+
     return {
-      get: data["get"],
-      post: data["post"],
+      type: data["type"] ?? "sparql-update",
+      url: ge1(data["url"]),
+    };
+  }
+
+  function validateQueryStep(data: any): IQueryStep {
+    if (typeof data === "string")
+      return validateQueryStep({ type: "sparql-query", url: [data] } as IQueryStep);
+    if (typeof data["url"] === "undefined")
+      Report.print("error", `A url value for an update step is missing.`);
+
+    return {
+      type: data["type"] ?? "sparql-query",
+      url: ge1(data["url"]),
+      graph: ge1(data["graphs"]),
+    };
+  }
+
+  function validateRuleStep(data: any): IRuleStep {
+    if (typeof data === "string" || !data["targetClass"])
+      Report.print("error", `A rule step requires an explicit targetClass`);
+    if (typeof data["url"] === "undefined")
+      Report.print("error", `A url value for a rule step is missing`);
+
+    return {
+      type: data["type"] ?? "sparql-query",
+      url: ge1(data["url"]),
+      targetClass: ge1(data["targetClass"]),
+    };
+  }
+
+  function validateSource(data: any): ISource {
+    if (typeof data === "string") return validateSource({ type: "auto", url: data } as ISource);
+    if (typeof data["url"] === "undefined")
+      Report.print("error", `Source requires a URL to find data`);
+
+    return {
+      type: data["type"] ?? "auto",
+      url: data["url"],
+      graphs: ge1(data["graphs"]),
       authentication: validateAuthentication(data["authentication"]),
     };
   }
 
+  function validateDest(data: any): IDest {
+    if (typeof data === "string") return validateDest({ type: "auto", url: data } as IDest);
+    if (typeof data["url"] === "undefined")
+      Report.print("error", `Source requires a target URL to export to`);
+
+    return {
+      type: data["type"] ?? "auto",
+      url: data["url"],
+      graphs: ge1(data["graphs"]),
+      authentication: validateAuthentication(data["authentication"]),
+    };
+  }
+
+  function validateAuthentication(data: any): IAuthentication;
+  function validateAuthentication(data: undefined): undefined;
   function validateAuthentication(data: any): IAuthentication | undefined {
     if (data === undefined) return undefined;
 

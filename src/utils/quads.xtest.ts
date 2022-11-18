@@ -23,7 +23,7 @@ describe("quads export", () => {
     originalQuads = trigParser.parse(DATA);
     baseStore.addQuads(originalQuads);
     dir = await mkdtemp(`${tmpdir()}/sparql-query-runner-test-`);
-    console.log(dir);
+    Report.log(dir);
   });
 
   test("export all graphs (default) as TriG (default)", async () => {
