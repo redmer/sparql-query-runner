@@ -10,7 +10,7 @@ export default class ShaclValidateLocal implements PipelinePart<IQueryStep | IUp
   name = () => "step/shacl-validate";
 
   qualifies(data: IQueryStep | IUpdateStep): boolean {
-    if (data.type !== "shacl-validate") return false;
+    if (data.type === "shacl-validate") return true;
     if (data.url == undefined) return false;
     return true;
   }
@@ -18,6 +18,9 @@ export default class ShaclValidateLocal implements PipelinePart<IQueryStep | IUp
   async info(data: IQueryStep | IUpdateStep): Promise<PipelinePartGetter> {
     return async (context: Readonly<RuntimeCtx>, i?: number): Promise<StepPartInfo> => {
       const shapesStore = new N3.Store();
+      if (Object.hasOwn(data, "graphs"))
+        Report.info(`${this.name()} (${i}) only processes shapes in the default graph.`);
+
       return {
         prepare: async () => {
           for (const [j, url] of data.url.entries()) {
@@ -31,22 +34,16 @@ export default class ShaclValidateLocal implements PipelinePart<IQueryStep | IUp
               emitter.on("end", resolve);
               emitter.on("error", reject);
             });
-
-            // Filter on specified graphs
-            for (const graph of shapesStore.getGraphs(null, null, null)) {
-              if (!data.graphs?.includes(graph.value)) shapesStore.deleteGraph(graph);
-            }
           }
         },
         start: async () => {
           const validator = new SHACLValidator(shapesStore);
           try {
-            const report = await validator.validate(context.quadStore);
-            if (report.conforms) Report.print("info", `Conforms to shapes`);
+            const report = validator.validate(context.quadStore);
+            if (report.conforms) Report.info(`Conforms to shapes`);
             else {
               for (const r of report.results) {
-                Report.print(
-                  "warning",
+                Report.warning(
                   `
  SHACL: ${r.severity}: ${r.message}
     at: ${r.focusNode} ${r.path} ${r.term}
@@ -55,7 +52,7 @@ source: ${r.sourceShape} / ${r.sourceConstraintComponent}`
               }
             }
           } catch (err) {
-            Report.print("error", `Could not validate using the shapes provided`);
+            Report.error(`Could not validate using the shapes provided`);
           }
         },
       };

@@ -17,14 +17,14 @@ import * as Report from "../utils/report.js";
  * The publication needs to exist before it can be used as a destination.
  * Custom versioning mode is unsupported.
  */
-export default class LacesDestination implements PipelinePart<IDest> {
+export class LacesDestination implements PipelinePart<IDest> {
   // Export a(ll) graph(s) to Laces
   name = () => "destination/laces";
 
   qualifies(data: IDest): boolean {
-    if (data.type != "laces") return false;
-    if (!data.url.match("^https?://hub.laces.tech/")) return false;
-    return true;
+    if (data.type === "laces") return true;
+    if (data.url.match("^https?://hub.laces.tech/")) return true;
+    return false;
   }
 
   async info(data: IDest): Promise<PipelinePartGetter> {

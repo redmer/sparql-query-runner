@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
+import * as dotenv from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import compileConfigData from "../config/configuration.js";
-import { PipelineSupervisor } from "../runner/pipeline-supervisor.js";
-import * as dotenv from "dotenv";
+import * as PipelineSupervisor from "../runner/pipeline-supervisor.js";
 
 dotenv.config();
 

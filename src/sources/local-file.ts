@@ -12,7 +12,7 @@ import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
  * Due to security concerns, `@comunica/query-sparql` does not support local file systems
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
-export default class LocalFileSource implements PipelinePart<ISource> {
+export class LocalFileSource implements PipelinePart<ISource> {
   name = () => "source/local-file";
 
   qualifies(data: ISource): boolean {

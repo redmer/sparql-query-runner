@@ -130,8 +130,7 @@ function validateRuleStep(data: unknown): IRuleStep {
 
 function validateSource(data: unknown): ISource {
   if (typeof data === "string") return validateSource({ type: "auto", url: data } as ISource);
-  if (typeof data["url"] === "undefined")
-    Report.print("error", `Source requires a URL to find data`);
+  if (typeof data["url"] === "undefined") Report.error(`Source requires a URL to find data`);
 
   return {
     type: data["type"] ?? "auto",

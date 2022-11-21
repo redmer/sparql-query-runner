@@ -1,20 +1,21 @@
 import { QueryEngine } from "@comunica/query-sparql";
+import type { IDataSource } from "@comunica/types";
 import fs from "fs/promises";
-import type { IBaseStep } from "../config/types";
+import type { IUpdateStep } from "../config/types";
 import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
 import * as Report from "../utils/report.js";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
-export default class SparqlUpdate implements PipelinePart<IBaseStep> {
+export default class SparqlUpdate implements PipelinePart<IUpdateStep> {
   name = () => "step/sparql-update";
 
-  qualifies(data: IBaseStep): boolean {
-    if (data.type !== "sparql-update") return false;
+  qualifies(data: IUpdateStep): boolean {
+    if (data.type === "sparql-update") return true;
     if (data.url.find((url) => url.endsWith(".rq"))) return false;
     return false;
   }
 
-  async info(data: IBaseStep): Promise<PipelinePartGetter> {
+  async info(data: IUpdateStep): Promise<PipelinePartGetter> {
     return async (context: Readonly<RuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
       let engine: QueryEngine;
@@ -34,7 +35,7 @@ export default class SparqlUpdate implements PipelinePart<IBaseStep> {
             Report.start(msg);
             // There are no results from a QueryVoid (Update Query)
             await engine.queryVoid(q, {
-              sources: context.querySources as any,
+              sources: context.querySources as [IDataSource, ...IDataSource[]],
               destination: context.queryContext.destination,
             });
             Report.success(msg);

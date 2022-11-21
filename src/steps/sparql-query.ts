@@ -1,21 +1,22 @@
 import { QueryEngine } from "@comunica/query-sparql";
+import type { IDataSource } from "@comunica/types";
 import fs from "fs/promises";
 import { Quad } from "n3";
-import type { IBaseStep } from "../config/types";
+import type { IQueryStep } from "../config/types";
 import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
 import * as Report from "../utils/report.js";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) */
-export default class SparqlQuadQuery implements PipelinePart<IBaseStep> {
+export default class SparqlQuadQuery implements PipelinePart<IQueryStep> {
   name = () => "step/sparql-query";
 
-  qualifies(data: IBaseStep): boolean {
-    if (data.type !== "sparql-query") return false;
+  qualifies(data: IQueryStep): boolean {
+    if (data.type === "sparql-query") return true;
     if (data.url.some((url) => url.endsWith(".ru"))) return false;
     return true;
   }
 
-  async info(data: IBaseStep): Promise<PipelinePartGetter> {
+  async info(data: IQueryStep): Promise<PipelinePartGetter> {
     return async (context: Readonly<RuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
       let engine: QueryEngine;
@@ -31,7 +32,7 @@ export default class SparqlQuadQuery implements PipelinePart<IBaseStep> {
         start: async () => {
           for (const q of queries) {
             const quadStream = await engine.queryQuads(q, {
-              sources: context.querySources as any,
+              sources: context.querySources as [IDataSource, ...IDataSource[]],
             });
 
             let i = 0;
@@ -42,7 +43,7 @@ export default class SparqlQuadQuery implements PipelinePart<IBaseStep> {
             });
 
             await new Promise((resolve, reject) => {
-              Report.print("info", `Processed ${i} quads`);
+              Report.info(`Processed ${i} quads`);
               quadStream.on("end", resolve);
               quadStream.on("error", reject);
             });

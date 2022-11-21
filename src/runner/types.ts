@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-interface */
 import type { QueryEngine } from "@comunica/query-sparql";
 import type { IDataSource, IQueryContextCommon } from "@comunica/types/lib";
 import type * as RDF from "@rdfjs/types";
@@ -73,7 +74,7 @@ export type PipelinePartGetter = (
 
 export interface PipelinePart<T> {
   /** Return true if the PipelinePart can handle this data. */
-  qualifies(data: any): boolean;
+  qualifies(data: T): boolean;
 
   /** A reference name for the PipelinePart */
   name(): string;

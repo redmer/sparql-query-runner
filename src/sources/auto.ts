@@ -13,7 +13,7 @@ import * as Auth from "../utils/authentication.js";
  *
  * Source: <https://comunica.dev/docs/query/advanced/source_types/#supported-source-types>
  * */
-export default class AutoSource implements PipelinePart<ISource> {
+export class AutoSource implements PipelinePart<ISource> {
   name = () => "source/comunica-auto";
 
   qualifies(data: ISource): boolean {

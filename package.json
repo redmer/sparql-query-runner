@@ -97,6 +97,7 @@
     "node-fetch": "^3.2.10",
     "rdf-ext": "^2.1.0",
     "rdf-validate-shacl": "^0.4.5",
+    "sparqljs": "^3.6.1",
     "yaml": "^2.1.3",
     "yargs": "^17.6.0"
   }

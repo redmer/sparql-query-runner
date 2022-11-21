@@ -1,42 +1,55 @@
 import { PickProperties } from "ts-essentials";
-import type { IPipeline } from "../config/types";
-import LacesDestination from "../destinations/laces.js";
-import { LocalFileDestination, SPARQLQuadStore } from "../destinations/local-file.js";
+import type { IDest, IPipeline, IQueryStep, ISource, IUpdateStep } from "../config/types";
+
+import { LacesDestination } from "../destinations/laces.js";
+import { LocalFileDestination } from "../destinations/local-file.js";
+import { SPARQLGraphStore } from "../destinations/sparql-graph-store.js";
+import { SPARQLQuadStore } from "../destinations/sparql-quad-store.js";
 import { SPARQLDestination } from "../destinations/sparql.js";
-import { PipelinePart, PipelinePartGetter } from "../runner/types.js";
+
+import type { PipelinePart, PipelinePartGetter } from "../runner/types.js";
+
+import { AutoSource } from "../sources/auto.js";
+import { LocalFileSource } from "../sources/local-file.js";
 import { MsAccessSource } from "../sources/msaccess.js";
-import { CustomFileSource, RemoteBasicFileSource } from "../sources/local-file.js";
+
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";
 import SparqlConstructQuery from "../steps/sparql-query.js";
 import SparqlUpdate from "../steps/sparql-update.js";
+
 import * as Report from "../utils/report.js";
 
+/** A matched module. Pipeline key, module name, module info getter. */
 export type MatchResult = [keyof IPipeline, string, PipelinePartGetter];
 
 type IPipelineKeys = keyof IPipeline;
-type IPipelineArrayValues = PickProperties<Required<IPipeline>, Array<any>>;
-type IPipelineArrayValueKeys = keyof IPipelineArrayValues;
+type IPipelineArrayValues = PickProperties<Required<IPipeline>, Array<unknown>>;
 
 export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<MatchResult> {
-  const modules: Record<IPipelineKeys, PipelinePart<any>[]> = {
-    destinations: [
-      new LocalFileDestination(),
-      new LacesDestination(),
-      new SPARQLDestination(),
-      new SPARQLQuadStore(),
-    ],
-    sources: [new MsAccessSource(), new RemoteBasicFileSource(), new CustomFileSource()],
-    steps: [new ShaclValidateLocal(), new SparqlConstructQuery(), new SparqlUpdate()],
-    // No processing module required...
-    independent: [],
-    name: [],
-    prefixes: [],
-  };
+  const modules: Record<IPipelineKeys, PipelinePart<IDest | ISource | IUpdateStep | IQueryStep>[]> =
+    {
+      destinations: [
+        new LacesDestination(),
+        new LocalFileDestination(),
+        new SPARQLGraphStore(),
+        new SPARQLQuadStore(),
+        new SPARQLDestination(),
+      ],
+      sources: [new AutoSource(), new LocalFileSource(), new MsAccessSource()],
+      updates: [new ShaclValidateLocal(), new SparqlUpdate()],
+      queries: [new ShaclValidateLocal(), new SparqlConstructQuery()],
+      // No processing module required...
+      independent: [],
+      name: [],
+      prefixes: [],
+      engine: [],
+      rules: [], // not executed for now ...
+    };
 
   const orderedKeys: (keyof IPipelineArrayValues)[] = [
-    "endpoint",
     "sources",
-    "steps",
+    "updates",
+    "queries",
     "destinations",
   ];
 
@@ -51,30 +64,9 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
     for (const [i, stepData] of Object.entries(moduleData)) {
       const step = possiblePartModulesForType.find((module) => module.qualifies(stepData));
       if (!step) {
-        Report.print(
-          "error",
-          `No appropriate module for /${key}[${i}]: (${JSON.stringify(stepData)})`
-        );
+        Report.error(`No appropriate module for /${key}[${i}]: (${JSON.stringify(stepData)})`);
       }
       yield [key, step.name(), await step.info(stepData)];
     }
   }
-
-  // // @ts-ignore
-  // for (const [partType, value] of Object.entries<IPipeline[keyof IPipeline]>(data)) {
-  //   const possiblePartModulesForType = modules[partType];
-  //   if (!possiblePartModulesForType) continue;
-  //   if (!Array.isArray(value)) continue;
-
-  //   for (const [i, stepData] of Object.entries(value)) {
-  //     const step = possiblePartModulesForType.find((module) => module.match(stepData));
-  //     if (!step) {
-  //       Report.print(
-  //         "error",
-  //         `No appropriate module for /${partType}[${i}]: (${JSON.stringify(stepData)})`
-  //       );
-  //     }
-  //     yield [partType as keyof IPipeline, step.name(), await step.info(stepData)];
-  //   }
-  // }
 }

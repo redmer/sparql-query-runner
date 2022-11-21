@@ -6,9 +6,9 @@ import type { ISource } from "../config/types";
 import type { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types";
 import { basename, download } from "../utils/download-remote.js";
 import { CSVNS, XSD } from "../utils/namespaces.js";
-import * as Report from "../utils/report";
+import * as Report from "../utils/report.js";
 
-export default class MsAccessSource implements PipelinePart<ISource> {
+export class MsAccessSource implements PipelinePart<ISource> {
   name = () => "source/msaccess";
 
   qualifies(data: ISource): boolean {
@@ -49,7 +49,7 @@ export default class MsAccessSource implements PipelinePart<ISource> {
             let i_row = 1;
             for (const record of mdb.getTable(tableName).getData()) {
               for (const [column, value] of Object.entries(record)) {
-                if (!value) continue;
+                if (!value) continue; // falsy values not imported
 
                 const subject = CSVNS(`table/${encodeURI(tableName)}/row/${i_row}`);
                 const predicate = CSVNS(encodeURI(column));
@@ -68,89 +68,6 @@ export default class MsAccessSource implements PipelinePart<ISource> {
     };
   }
 }
-
-// export default class ImportMsAccess implements Step {
-//   identifier = () => "import-msaccess";
-
-//   async info(config: IStep): Promise<StepGetter> {
-//     return async (app: PipelineWorker) => {
-//       const tempFiles: string[] = [];
-//       let tableStore = new Store();
-//       const files = [];
-
-//       return {
-//         preProcess: async () => {
-//           for (const url of config.url) {
-//             const exists = await fs.pathExists(url);
-//             if (!exists) {
-//               SQRWarning(1010, `File ${url} not found`);
-//               continue;
-//             }
-//             files.push(url);
-//           }
-//         },
-//         start: async () => {
-//           const quads: number[] = [];
-
-//           for (const url of config.url) {
-//             const db = await fs.readFile(url);
-//             const mdb = new MDBReader(db);
-//             let j = 0;
-
-//             for (const tableName of mdb.getTableNames()) {
-//               const context = csvns(`table/${encodeURI(tableName)}`);
-//               let i = 1;
-//               for (const record of mdb.getTable(tableName).getData()) {
-//                 for (const [column, value] of Object.entries(record)) {
-//                   if (!value && !config["keep-nulls"]) continue;
-
-//                   const subject = csvns(`table/${encodeURI(tableName)}/row/${i}`);
-//                   const predicate = csvns(encodeURI(column));
-//                   const object = valueToObject(value);
-
-//                   j++;
-//                   tableStore.addQuad(subject, predicate, object, context);
-//                 }
-//                 i++;
-//               }
-//             }
-
-//             quads.push(j);
-
-//             // export to tempfile, ready to be uploaded...
-//             const exportFile = path.join(app.tempdir, `${randomUUID()}.nq`);
-//             tempFiles.push(exportFile);
-
-//             await graphsToFile(tableStore, exportFile, undefined, {
-//               format: "application/n-quads",
-//             });
-
-//             tableStore = new Store(); // delete all triples
-//           }
-
-//           for (const [index, tempFile] of tempFiles.entries()) {
-//             const result = await fetch(app.endpoint, {
-//               method: "PUT",
-//               headers: { "Content-Type": "text/x-nquads" },
-//               body: await fs.readFile(tempFile, { encoding: "utf-8" }),
-//             });
-//             if (result.ok) {
-//               Report.info(
-//                 "\t\t" +
-//                   chalk.green("OK") +
-//                   `\tUploaded ${quads[index].toLocaleString()} quads from ${config.url[index]}`
-//               );
-//             } else {
-//               error(
-//                 `\t\t${chalk.red(result.status)}\t${config.url[index]}\n${await result.text()}`
-//               );
-//             }
-//           }
-//         },
-//       };
-//     };
-//   }
-// }
 
 function valueToObject(value: Value) {
   if (value instanceof Date) {
