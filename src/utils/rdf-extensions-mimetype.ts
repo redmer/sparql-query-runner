@@ -19,7 +19,7 @@ const key = (ext: string): string | undefined =>
  * @param {string} path A path.
  * @return {string} A media type or the empty string.
  */
-export function getMediaTypeFromExtension(path: string): string {
+export function getMediaTypeFromFilename(path: string): string {
   const dotIndex = path.lastIndexOf(".");
   // Get extension after last dot and map to media
   return (dotIndex >= 0 && key(path.slice(dotIndex + 1))) || "";

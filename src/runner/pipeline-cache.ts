@@ -3,8 +3,9 @@
  */
 import { createHash } from "crypto";
 import fs from "fs/promises";
-import { ICliOptions } from "../config/configuration";
-import { IConfiguration } from "../config/types";
+import type { ICliOptions } from "../config/configuration";
+import type { IConfiguration } from "../config/types";
+import * as Report from "../utils/report.js";
 
 interface Options {
   configurationDir: string;
@@ -40,7 +41,7 @@ export namespace PipelineCache {
   export async function foo(data: IConfiguration, data2: ICliOptions, options?: Options) {
     if (!enabled(data2)) return;
 
-    console.error("PipelineCache not implemented");
+    Report.error("PipelineCache not implemented");
   }
 }
 

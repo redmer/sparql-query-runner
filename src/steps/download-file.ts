@@ -61,7 +61,7 @@
 //               target.on("end", resolve);
 //               target.on("error", reject);
 //             });
-//             console.info(`\t\tCreated:\t${url}`);
+//             Report.info(`\t\tCreated:\t${url}`);
 //           }
 //         },
 //         postProcess: async () => {
@@ -73,10 +73,10 @@
 //               await exec(
 //                 `riot --nocheck --quiet --syntax=${prefFormat[4]} --formatted=${prefFormat[4]} ${temp} > ${url}`
 //               );
-//               console.info(`\t\tPretty-formatted with riot`);
+//               Report.info(`\t\tPretty-formatted with riot`);
 //             }
 //           } catch {
-//             console.info(`\t\tSkipped pretty-format`);
+//             Report.info(`\t\tSkipped pretty-format`);
 //           }
 //         },
 //       };

@@ -6,9 +6,10 @@ import type { ISource } from "../config/types";
 import type { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types";
 import { basename, download } from "../utils/download-remote.js";
 import { CSVNS, XSD } from "../utils/namespaces.js";
+import * as Report from "../utils/report";
 
-export class MsAccessSource implements PipelinePart<ISource> {
-  name = () => "msaccess-store-source";
+export default class MsAccessSource implements PipelinePart<ISource> {
+  name = () => "source/msaccess";
 
   qualifies(data: ISource): boolean {
     if (data.type === "msaccess") return true;
@@ -20,9 +21,10 @@ export class MsAccessSource implements PipelinePart<ISource> {
       const store = new N3.Store();
       let inputFilePath: string;
 
+      if (data.graphs) Report.info(`${this.name()} does not support data.graphs`);
+
       return {
         prepare: async () => {
-          console.log("Prepared");
           // if file is remote, download it
           if (data.url.match(/https?:/)) {
             // Determine locally downloaded filename
@@ -37,9 +39,11 @@ export class MsAccessSource implements PipelinePart<ISource> {
         },
         // The start promise either returns quads or void
         start: async () => {
+          const msg = `Reading ${data.url}...`;
           const db = await fs.readFile(inputFilePath);
           const mdb = new MDBReader(db);
 
+          Report.start(msg);
           for (const tableName of mdb.getTableNames()) {
             const context = CSVNS(`table/${encodeURI(tableName)}`);
             let i_row = 1;
@@ -56,6 +60,8 @@ export class MsAccessSource implements PipelinePart<ISource> {
               i_row++;
             }
           }
+          Report.success(msg);
+          Report.info(`${data.url}: ${store.countQuads(null, null, null, null)} quads`);
         },
         getQuerySource: store,
       };
@@ -129,7 +135,7 @@ export class MsAccessSource implements PipelinePart<ISource> {
 //               body: await fs.readFile(tempFile, { encoding: "utf-8" }),
 //             });
 //             if (result.ok) {
-//               console.info(
+//               Report.info(
 //                 "\t\t" +
 //                   chalk.green("OK") +
 //                   `\tUploaded ${quads[index].toLocaleString()} quads from ${config.url[index]}`

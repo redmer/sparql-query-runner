@@ -7,7 +7,7 @@ import type { ICliOptions } from "../config/configuration";
 import type { IPipeline } from "../config/types";
 import { matchPipelineParts, MatchResult } from "../modules/module.js";
 import { arrayFromGenerator, notEmpty } from "../utils/array.js";
-import { Report } from "../utils/report.js";
+import * as Report from "../utils/report.js";
 import type { PipelinePartInfo, RuntimeCtx } from "./types";
 
 export namespace Workflow {
@@ -38,11 +38,11 @@ export namespace Workflow {
     };
 
     // Prepare and gather all pipeline parts
-    console.group("Matching modules...");
+    Report.group("Matching modules...");
     let matchedParts = orderPipelineParts(await arrayFromGenerator(matchPipelineParts(data)));
-    console.groupEnd();
+    Report.groupEnd();
 
-    console.group("Initializing modules...");
+    Report.group("Initializing modules...");
     const initializedParts: WorkflowCache[] = [];
 
     let i = 0;
@@ -53,8 +53,8 @@ export namespace Workflow {
       initializedParts.push({ name, info });
     }
 
-    console.log(`All modules: ${JSON.stringify(initializedParts.map((i) => i.name))}`);
-    console.groupEnd();
+    Report.log(`All modules: ${JSON.stringify(initializedParts.map((i) => i.name))}`);
+    Report.groupEnd();
 
     // Gather all Query Sources and Query Contexts
     context.querySources = initializedParts
@@ -68,30 +68,30 @@ export namespace Workflow {
     Object.freeze(context);
 
     // Start -preProcess
-    console.group("preparing...");
+    Report.group("preparing...");
     await Promise.allSettled(
       initializedParts
         .map((i) => i.info?.prepare)
         .filter(notEmpty)
         .map((i) => i())
     );
-    console.groupEnd();
+    Report.groupEnd();
 
-    console.group("starting...");
+    Report.group("starting...");
     for (const [i, part] of initializedParts.entries()) {
-      console.group(`${i}: ${part.name}`);
+      Report.group(`${i}: ${part.name}`);
       try {
         await part?.info.start();
       } catch (err) {
         Report.print("error", `${err}`);
       }
-      console.groupEnd();
+      Report.groupEnd();
     }
-    console.groupEnd();
+    Report.groupEnd();
 
-    console.group("cleanup...");
+    Report.group("cleanup...");
     await Promise.allSettled(initializedParts.map((i) => i?.info.cleanup));
-    console.groupEnd();
+    Report.groupEnd();
 
     Report.print("info", `pipeline ${data.name} DONE`);
 
@@ -101,13 +101,18 @@ export namespace Workflow {
 
   function orderPipelineParts(data: MatchResult[]) {
     const order: Record<keyof IPipeline, number> = {
-      name: -1,
-      independent: -1,
-      prefixes: -1,
-      endpoint: 1,
+      // Inconsequential to execution order
+      name: 1,
+      engine: 1,
+      independent: 1,
+      prefixes: 1,
+      // order meaningful
       sources: 2,
-      destinations: 8,
-      steps: 4,
+      queries: 3,
+      updates: 4,
+      rules: 5, // not executed, unless?
+      // comes last
+      destinations: 6,
     };
     return data.sort(([keyA, _, __], [keyB, ___, ____]) => order[keyA] - order[keyB]);
   }

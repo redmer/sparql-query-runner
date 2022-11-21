@@ -40,7 +40,7 @@
         "destinations": { "$ref": "#/$defs/IDest1N" },
         "queries": { "$ref": "#/$defs/IQueryStep1N" },
         "updates": { "$ref": "#/$defs/IUpdateStep1N" },
-        "rules": { "$ref": "#/$defs/IRuleStep1N" }
+        "constructRules": { "$ref": "#/$defs/IRuleStep1N" }
       }
     },
     "IPipeline1N": {
@@ -68,7 +68,7 @@
     "ISource": {
       "title": "RDF data source",
       "properties": {
-        "type": { "enum": ["file", "msaccess", "sparql", "auto"] }
+        "type": { "enum": ["local-file", "msaccess", "sparql", "auto"] }
       },
       "allOf": [{ "$ref": "#/$defs/ISourceOrDest" }]
     },

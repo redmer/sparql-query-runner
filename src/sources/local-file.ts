@@ -2,43 +2,25 @@ import fs from "fs";
 import N3 from "n3";
 import { ISource } from "../config/types.js";
 import { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types.js";
-import { Auth } from "../utils/authentication.js";
 import { basename, download } from "../utils/download-remote.js";
-import { getMediaTypeFromExtension } from "../utils/rdf-extensions-mimetype.js";
+import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
-export class RemoteBasicFileSource implements PipelinePart<ISource> {
-  // Remote files are a valid Source for @comunica/query-sparql
-  name = () => "remote-file-store-source";
-
-  qualifies(data: ISource): boolean {
-    if (data.type !== "rdf") return false;
-    if (!data.url.match(/^https?:/)) return false;
-    if (data.authentication && data.authentication.type !== "Basic") return false;
-    if (data.graphs) return false;
-
-    return true;
-  }
-
-  async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: Readonly<RuntimeCtx>): Promise<SourcePartInfo> => {
-      // We need to insert Basic authentication between URL schema and rest...
-      // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-      return {
-        start: async () => {},
-        getQuerySource: { type: "file", value: Auth.addToUrl(data.url, data.authentication) },
-      };
-    };
-  }
-}
-
-export class CustomFileSource implements PipelinePart<ISource> {
-  // Local files are not valid Source for @comunica/query-sparql, but a N3.Store is
-  name = () => "local-file-store-source";
+/**
+ * Use a local file as a query source, a non-local file with filtered graphs.
+ * This source only supports plain RDF serializations (i.e., not `hdtFile`/`ostrichFile`).
+ *
+ * Due to security concerns, `@comunica/query-sparql` does not support local file systems
+ * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
+ */
+export default class LocalFileSource implements PipelinePart<ISource> {
+  name = () => "source/local-file";
 
   qualifies(data: ISource): boolean {
-    if (data.type !== "rdf") return false;
-
-    return true;
+    // please try to keep in sync with <./auto.ts>
+    if (data.type === "local-file") return true; // explicitely
+    if (data.type === "auto" && !!data.url.match(/^https?:/)) return true; // or auto w/ a local file
+    if (data.type === "auto" && data.graphs) return true; // or remote, w/ filtered graphs
+    return false;
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
@@ -49,7 +31,7 @@ export class CustomFileSource implements PipelinePart<ISource> {
       return {
         prepare: async () => {
           // if file is remote, download it
-          if (data.url.match(/https?:/)) {
+          if (data.url.match(/^https?:/)) {
             // Determine locally downloaded filename
             inputFilePath = `${context.tempdir}/${basename(data.url)}`;
 
@@ -61,7 +43,7 @@ export class CustomFileSource implements PipelinePart<ISource> {
           }
         },
         start: async () => {
-          const mimetype = data.mediatype ?? getMediaTypeFromExtension(inputFilePath);
+          const mimetype = getMediaTypeFromFilename(inputFilePath);
           const stream = fs.createReadStream(inputFilePath);
           const parser = new N3.StreamParser({ format: mimetype });
           const emitter = store.import(parser.import(stream));
@@ -74,7 +56,7 @@ export class CustomFileSource implements PipelinePart<ISource> {
 
           // Filter on specified graphs
           for (const graph of store.getGraphs(null, null, null)) {
-            if (!data.graphs?.includes(graph.value)) store.deleteGraph(graph);
+            if (!data.graphs?.includes(graph.id)) store.deleteGraph(graph);
           }
         },
         getQuerySource: store,

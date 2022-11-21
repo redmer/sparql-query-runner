@@ -1,43 +1,17 @@
-import type { IDestination, IEndpoint, IPipeline, ISource, IStep } from "../config/types";
-import LocalFileDestination from "../destinations/file.js";
+import { PickProperties } from "ts-essentials";
+import type { IPipeline } from "../config/types";
 import LacesDestination from "../destinations/laces.js";
-import { SPARQLEndpoint } from "../endpoints/sparql.js";
+import { LocalFileDestination, SPARQLQuadStore } from "../destinations/local-file.js";
+import { SPARQLDestination } from "../destinations/sparql.js";
 import { PipelinePart, PipelinePartGetter } from "../runner/types.js";
 import { MsAccessSource } from "../sources/msaccess.js";
-import { CustomFileSource, RemoteBasicFileSource } from "../sources/rdf.js";
+import { CustomFileSource, RemoteBasicFileSource } from "../sources/local-file.js";
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";
 import SparqlConstructQuery from "../steps/sparql-query.js";
 import SparqlUpdate from "../steps/sparql-update.js";
-import { Report } from "../utils/report.js";
-import { PickProperties } from "ts-essentials";
+import * as Report from "../utils/report.js";
 
 export type MatchResult = [keyof IPipeline, string, PipelinePartGetter];
-
-// export async function getPipelinePart<T extends IStep | ISource | IDestination | IEndpoint>(
-//   data: T
-// ): Promise<MatchResult>;
-// export async function getPipelinePart<T extends IStep>(data: T): Promise<MatchResult>;
-// export async function getPipelinePart<T extends ISource>(data: T): Promise<MatchResult>;
-// export async function getPipelinePart<T extends IDestination>(data: T): Promise<MatchResult>;
-// export async function getPipelinePart<T extends IEndpoint>(data: T): Promise<MatchResult>;
-export async function getPipelinePart(data: any): Promise<MatchResult> {
-  const modules: PipelinePart<any>[] = [
-    new SPARQLEndpoint(),
-    new LocalFileDestination(),
-    new LacesDestination(),
-    new MsAccessSource(),
-    new RemoteBasicFileSource(),
-    new CustomFileSource(),
-    new ShaclValidateLocal(),
-    new SparqlUpdate(),
-    new SparqlConstructQuery(),
-  ];
-  const step = modules.find((module) => module.qualifies(data));
-  if (!step) {
-    throw new Error(`No appropriate module found for: ${JSON.stringify(data)}`);
-  }
-  return [step.name(), await step?.info(data)];
-}
 
 type IPipelineKeys = keyof IPipeline;
 type IPipelineArrayValues = PickProperties<Required<IPipeline>, Array<any>>;
@@ -45,8 +19,12 @@ type IPipelineArrayValueKeys = keyof IPipelineArrayValues;
 
 export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<MatchResult> {
   const modules: Record<IPipelineKeys, PipelinePart<any>[]> = {
-    endpoint: [new SPARQLEndpoint()],
-    destinations: [new LocalFileDestination(), new LacesDestination()],
+    destinations: [
+      new LocalFileDestination(),
+      new LacesDestination(),
+      new SPARQLDestination(),
+      new SPARQLQuadStore(),
+    ],
     sources: [new MsAccessSource(), new RemoteBasicFileSource(), new CustomFileSource()],
     steps: [new ShaclValidateLocal(), new SparqlConstructQuery(), new SparqlUpdate()],
     // No processing module required...

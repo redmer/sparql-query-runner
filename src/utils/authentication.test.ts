@@ -1,5 +1,5 @@
 import type { IAuthentication } from "../config/types";
-import { Auth } from "./authentication";
+import * as Auth from "./authentication";
 
 describe("Auth helpers", () => {
   const user_env = "AUTH_USERNAME";

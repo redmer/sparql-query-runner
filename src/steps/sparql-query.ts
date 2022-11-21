@@ -1,21 +1,21 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import fs from "fs/promises";
 import { Quad } from "n3";
-import type { IStep } from "../config/types";
+import type { IBaseStep } from "../config/types";
 import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
-import { Report } from "../utils/report.js";
+import * as Report from "../utils/report.js";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) */
-export default class SparqlQuadQuery implements PipelinePart<IStep> {
-  name = () => "sparql-quads-query-step";
+export default class SparqlQuadQuery implements PipelinePart<IBaseStep> {
+  name = () => "step/sparql-query";
 
-  qualifies(data: IStep): boolean {
+  qualifies(data: IBaseStep): boolean {
     if (data.type !== "sparql-query") return false;
     if (data.url.some((url) => url.endsWith(".ru"))) return false;
     return true;
   }
 
-  async info(data: IStep): Promise<PipelinePartGetter> {
+  async info(data: IBaseStep): Promise<PipelinePartGetter> {
     return async (context: Readonly<RuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
       let engine: QueryEngine;

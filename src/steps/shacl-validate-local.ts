@@ -1,27 +1,27 @@
 import fs from "fs";
 import N3 from "n3";
 import SHACLValidator from "rdf-validate-shacl";
-import type { IStep } from "../config/types";
+import type { IBaseStep, IQueryStep, IUpdateStep } from "../config/types";
 import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
-import { getMediaTypeFromExtension } from "../utils/rdf-extensions-mimetype.js";
-import { Report } from "../utils/report.js";
+import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
+import * as Report from "../utils/report.js";
 
-export default class ShaclValidateLocal implements PipelinePart<IStep> {
-  name = () => "shacl-validate-local-step";
+export default class ShaclValidateLocal implements PipelinePart<IQueryStep | IUpdateStep> {
+  name = () => "step/shacl-validate";
 
-  qualifies(data: IStep): boolean {
+  qualifies(data: IQueryStep | IUpdateStep): boolean {
     if (data.type !== "shacl-validate") return false;
     if (data.url == undefined) return false;
     return true;
   }
 
-  async info(data: IStep): Promise<PipelinePartGetter> {
+  async info(data: IQueryStep | IUpdateStep): Promise<PipelinePartGetter> {
     return async (context: Readonly<RuntimeCtx>, i?: number): Promise<StepPartInfo> => {
       const shapesStore = new N3.Store();
       return {
         prepare: async () => {
           for (const [j, url] of data.url.entries()) {
-            const mimetype = getMediaTypeFromExtension(url);
+            const mimetype = getMediaTypeFromFilename(url);
             const stream = fs.createReadStream(url);
             const parser = new N3.StreamParser({ format: mimetype });
             const emitter = shapesStore.import(parser.import(stream));

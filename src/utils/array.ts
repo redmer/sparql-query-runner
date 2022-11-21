@@ -11,10 +11,7 @@ export function ge1<T>(items: T | T[] | undefined): T[] | undefined {
 
 /** Strict check not empty */
 export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
-  if (value === null || value === undefined) return false;
-  //@ts-ignore
-  const testDummy: TValue = value;
-  return true;
+  return value !== null && value !== undefined;
 }
 
 /** Exhaust a generator */

@@ -42,7 +42,7 @@ export interface ISourceOrDestination {
 }
 
 export interface ISource extends ISourceOrDestination {
-  type: "file" | "sparql" | "auto" | "msaccess";
+  type: "local-file" | "sparql" | "auto" | "msaccess";
 }
 
 export interface IDest extends ISourceOrDestination {
