@@ -1,0 +1,3 @@
+version: 4
+pipelines:
+  name: Test fails 1

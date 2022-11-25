@@ -82,3 +82,7 @@ export interface PipelinePart<T> {
   /** Return runtime info for the PipelinePart */
   info(data: T): Promise<PipelinePartGetter>;
 }
+
+export interface Worker {
+  start: (data: IPipeline, options?: Partial<ICliOptions>) => Promise<void>;
+}
