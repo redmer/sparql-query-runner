@@ -24,10 +24,10 @@ async function main() {
       default: false,
       desc: "Cache each step's results locally",
     })
-    .option("as-shacl-rule", {
+    .option("shacl-rules-out", {
       alias: "r",
-      type: "boolean",
-      default: false,
+      type: "string",
+      requiresArg: true,
       desc: "Generate SHACL Rules from CONSTRUCT steps",
     })
     .option("warnings-as-errors", {
@@ -44,7 +44,7 @@ async function main() {
   PipelineSupervisor.runAll(config, {
     abortOnError: args["abort-on-error"],
     cacheIntermediateResults: args["cache-intermediate-results"],
-    outputShaclRulesToFilePath: args["as-shacl-rule"],
+    outputShaclRulesToFilePath: args["shacl-rules-out"],
     shaclWarningsAsErrors: args["warnings-as-errors"],
   });
 }

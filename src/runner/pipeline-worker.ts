@@ -1,18 +1,23 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import fs from "fs/promises";
 import N3 from "n3";
-import os from "os";
-import path from "path";
 import type { ICliOptions } from "../config/configuration";
 import type { IPipeline } from "../config/types";
 import { matchPipelineParts, MatchResult } from "../modules/module.js";
 import { arrayFromGenerator, notEmpty } from "../utils/array.js";
 import * as Report from "../utils/report.js";
-import type { PipelinePartInfo, RuntimeCtx } from "./types";
+import { KeysOfUnion } from "../utils/types";
+import type { ConstructRuntimeCtx, PipelinePartInfo } from "./types";
 
 interface WorkflowCache {
-  info: PipelinePartInfo;
   name: string;
+  info: PipelinePartInfo;
+}
+
+async function provideTempDir(): Promise<string> {
+  const tempdir = `.cache/sparql-query-runner`;
+  await fs.mkdir(tempdir, { recursive: true });
+  return tempdir;
 }
 
 /** Initialize and start a workflow runner */
@@ -21,15 +26,13 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   // `prefixes` and `name` is configuration. `independent` is no longer relevant.
 
   // Prepare running context
-  // const tempdir = fs.mkdtempSync(path.join(os.tmpdir(), "sqr-"), { encoding: "utf-8" });
-  const tempdir = `.cache/sparql-query-runner`;
-  await fs.mkdir(tempdir, { recursive: true });
+  const tempdir = provideTempDir();
 
   const store = new N3.Store(undefined, { factory: N3.DataFactory });
-  const context: RuntimeCtx = {
+  const context: ConstructRuntimeCtx = {
     pipeline: data,
     options: options ?? {},
-    tempdir: tempdir,
+    tempdir: await tempdir,
     quadStore: store,
     engine: new QueryEngine(),
     querySources: [],
@@ -47,7 +50,6 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   let i = 0;
   for await (const [key, name, part] of matchedParts) {
     i++;
-    if ((!name || !part) && !process.env["TREAT_WARNINGS_AS_ERRORS"]) continue;
     const info = await part(context, i);
     initializedParts.push({ name, info });
   }
@@ -97,19 +99,18 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
 }
 
 function orderPipelineParts(data: MatchResult[]) {
-  const order: Record<keyof IPipeline, number> = {
+  const order: Record<KeysOfUnion<IPipeline>, number> = {
     // Inconsequential to execution order
-    name: 1,
-    engine: 1,
-    independent: 1,
-    prefixes: 1,
+    type: 1,
+    name: 2,
+    independent: 4,
+    prefixes: 8,
     // order meaningful
-    sources: 2,
-    queries: 3,
-    updates: 4,
-    rules: 5, // not executed, unless?
+    endpoint: 16,
+    sources: 32,
+    steps: 64,
     // comes last
-    destinations: 6,
+    destinations: 128,
   };
   return data.sort((A, B) => order[A[0]] - order[B[0]]);
 }

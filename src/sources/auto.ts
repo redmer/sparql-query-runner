@@ -1,5 +1,10 @@
 import { ISource } from "../config/types.js";
-import { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types.js";
+import {
+  PipelinePart,
+  PipelinePartGetter,
+  ConstructRuntimeCtx,
+  SourcePartInfo,
+} from "../runner/types.js";
 import * as Auth from "../utils/authentication.js";
 
 /**
@@ -14,24 +19,24 @@ import * as Auth from "../utils/authentication.js";
  * Source: <https://comunica.dev/docs/query/advanced/source_types/#supported-source-types>
  * */
 export class AutoSource implements PipelinePart<ISource> {
-  name = () => "source/comunica-auto";
+  name = () => "sources/comunica-auto";
 
   qualifies(data: ISource): boolean {
     if (data.type !== "auto") return false;
-    if (data.graphs) return false;
+    if (data.onlyGraphs) return false;
     if (!data.url.match(/^https:/)) return false;
     return true;
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return async (context: Readonly<RuntimeCtx>): Promise<SourcePartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
       return {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         start: async () => {},
         // We only need to insert Basic authentication between URL schema and rest...
         // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-        getQuerySource: { type: "auto", value: Auth.addToUrl(data.url, data.authentication) },
+        getQuerySource: { type: "auto", value: Auth.addToUrl(data.url, data.auth) },
       };
     };
   }

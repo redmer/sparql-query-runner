@@ -2,12 +2,17 @@ import { QueryEngine } from "@comunica/query-sparql";
 import type { IDataSource } from "@comunica/types";
 import fs from "fs/promises";
 import type { IUpdateStep } from "../config/types";
-import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
+import type {
+  PipelinePart,
+  PipelinePartGetter,
+  ConstructRuntimeCtx,
+  StepPartInfo,
+} from "../runner/types";
 import * as Report from "../utils/report.js";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
 export default class SparqlUpdate implements PipelinePart<IUpdateStep> {
-  name = () => "step/sparql-update";
+  name = () => "steps/sparql-update";
 
   qualifies(data: IUpdateStep): boolean {
     if (data.type === "sparql-update") return true;
@@ -16,7 +21,7 @@ export default class SparqlUpdate implements PipelinePart<IUpdateStep> {
   }
 
   async info(data: IUpdateStep): Promise<PipelinePartGetter> {
-    return async (context: Readonly<RuntimeCtx>): Promise<StepPartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
       let engine: QueryEngine;
 

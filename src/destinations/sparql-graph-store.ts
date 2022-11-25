@@ -6,7 +6,7 @@ import {
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
-  RuntimeCtx,
+  ConstructRuntimeCtx,
 } from "../runner/types.js";
 import * as Auth from "../utils/authentication.js";
 import { serialize } from "../utils/graphs-to-file.js";
@@ -15,7 +15,7 @@ import * as Report from "../utils/report.js";
 
 export class SPARQLGraphStore implements PipelinePart<IDest> {
   // Export a(ll) graph(s) to a file
-  name = () => "destination/sparql-graph-store";
+  name = () => "destinations/sparql-graph-store";
 
   qualifies(data: IDest): boolean {
     if (data.type !== "sparql-graph-store") return false;
@@ -24,7 +24,7 @@ export class SPARQLGraphStore implements PipelinePart<IDest> {
 
   /** Exported graphs are specified or implicit */
   graphCount(data: IDest, store: N3.Store): string[] {
-    if (data.graphs) return data.graphs;
+    if (data.onlyGraphs) return data.onlyGraphs;
     const implicit = [];
     for (const g of store.getGraphs(null, null, null)) implicit.push(g.id);
     return implicit;
@@ -34,7 +34,7 @@ export class SPARQLGraphStore implements PipelinePart<IDest> {
     // Export to n-triples
     const mimetype = getMediaTypeFromFilename(".nt");
 
-    return async (context: Readonly<RuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
       // The issue here is that SPARQL 1.1 GRaph Store HTTP Protocol only supports
       // triples and not quads. Therefore, a loop over graphs in data.store is
       // necessary.
@@ -66,16 +66,13 @@ export class SPARQLGraphStore implements PipelinePart<IDest> {
             const msg = `Uploading graph '${graphName}' to '${destination}'`;
             Report.start(msg);
             const response = await fetch(destination.href, {
-              headers: { ...Auth.asHeader(data.authentication), "Content-Type": mimetype },
+              headers: { ...Auth.asHeader(data.auth), "Content-Type": mimetype },
               method: "POST",
               body: contents,
             });
 
-            if (response.ok) {
-              Report.success(msg);
-            } else {
-              Report.fail(msg);
-            }
+            if (!response.ok && context.options.abortOnError) Report.fail(msg);
+            Report.success(msg);
           }
         },
       };

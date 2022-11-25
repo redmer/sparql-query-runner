@@ -1,11 +1,22 @@
 import { PickProperties } from "ts-essentials";
-import type { IDest, IPipeline, IConstructStep, ISource, IUpdateStep } from "../config/types";
+import type {
+  IDest,
+  IConstructPipeline,
+  IUpdatePipeline,
+  IConstructStep,
+  ISource,
+  IUpdateStep,
+  IPipeline,
+  IEndpoint,
+  IValidateStep,
+} from "../config/types";
 
 import { LacesDestination } from "../destinations/laces.js";
 import { LocalFileDestination } from "../destinations/local-file.js";
 import { SPARQLGraphStore } from "../destinations/sparql-graph-store.js";
 import { SPARQLQuadStore } from "../destinations/sparql-quad-store.js";
 import { SPARQLDestination } from "../destinations/sparql.js";
+import { SparqlEndpoint } from "../endpoints/sparql";
 
 import type { PipelinePart, PipelinePartGetter } from "../runner/types.js";
 
@@ -18,18 +29,22 @@ import SparqlConstructQuery from "../steps/sparql-query.js";
 import SparqlUpdate from "../steps/sparql-update.js";
 
 import * as Report from "../utils/report.js";
+import { KeysOfUnion } from "../utils/types";
 
 /** A matched module. Pipeline key, module name, module info getter. */
-export type MatchResult = [keyof IPipeline, string, PipelinePartGetter];
+export type MatchResult = [KeysOfUnion<IPipeline>, string, PipelinePartGetter];
 
-type IPipelineKeys = keyof IPipeline;
-type IPipelineArrayValues = PickProperties<Required<IPipeline>, Array<unknown>>;
+type IPipelineKeys = KeysOfUnion<IPipeline>;
 
 export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<MatchResult> {
   const modules: Record<
     IPipelineKeys,
-    PipelinePart<IDest | ISource | IUpdateStep | IConstructStep>[]
+    | PipelinePart<IEndpoint>[]
+    | PipelinePart<IDest>[]
+    | PipelinePart<ISource>[]
+    | PipelinePart<IValidateStep | IUpdateStep | IConstructStep>[]
   > = {
+    endpoint: [new SparqlEndpoint()],
     destinations: [
       new LacesDestination(),
       new LocalFileDestination(),
@@ -38,22 +53,15 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
       new SPARQLDestination(),
     ],
     sources: [new AutoSource(), new LocalFileSource(), new MsAccessSource()],
-    updates: [new ShaclValidateLocal(), new SparqlUpdate()],
-    queries: [new ShaclValidateLocal(), new SparqlConstructQuery()],
+    steps: [new ShaclValidateLocal(), new SparqlUpdate(), new SparqlConstructQuery()],
     // No processing module required...
     independent: [],
     name: [],
     prefixes: [],
-    engine: [],
-    rules: [], // not executed for now ...
+    type: [],
   };
 
-  const orderedKeys: (keyof IPipelineArrayValues)[] = [
-    "sources",
-    "updates",
-    "queries",
-    "destinations",
-  ];
+  const orderedKeys: IPipelineKeys[] = ["sources", "endpoint", "steps", "destinations"];
 
   for (const key of orderedKeys) {
     const possiblePartModulesForType = modules[key];

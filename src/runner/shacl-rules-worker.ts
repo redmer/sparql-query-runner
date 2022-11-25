@@ -2,8 +2,9 @@ import fs from "fs/promises";
 import type { Quad } from "n3";
 import N3, { DataFactory } from "n3";
 import { Generator, Parser } from "sparqljs";
+import { assert } from "ts-essentials";
 import { ICliOptions } from "../config/configuration.js";
-import { IBaseStep, IPipeline } from "../config/types.js";
+import { IBaseStep, IConstructStep, IPipeline, IValidateStep } from "../config/types.js";
 import { RDF, SH, XSD } from "../utils/namespaces.js";
 
 declare type Triple = [Quad["subject"], Quad["predicate"], Quad["object"]];
@@ -49,9 +50,9 @@ export function* quadsForQuery(
   // ?subject sh:construct """CONSTRUCT {} WHERE {}""" ;
 }
 
-export async function* quadsForStep(step: IBaseStep, i: number): AsyncGenerator<Triple> {
-  const targetClass = step["targetClass"];
-  if (!targetClass || Array.isArray(targetClass)) return;
+export async function* quadsForStep(step: IConstructStep, i: number): AsyncGenerator<Triple> {
+  const targetClass = step.targetClass;
+  if (!targetClass) return;
 
   for (const url of step.url) {
     const subject = DataFactory.namedNode(
@@ -73,11 +74,18 @@ export async function* quadsForStep(step: IBaseStep, i: number): AsyncGenerator<
 }
 
 export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
-  const writer = new N3.Writer(process.stdout, {
+  if (data.type !== "construct-quads") return;
+
+  const writer = new N3.Writer(options.outputShaclRulesToFilePath, {
     format: "text/turtle",
     prefixes: data.prefixes,
   });
-  for (const [i, step] of Array.from([data.rules].flat(1)).entries())
+
+  const stepWithTargetClass = data.steps.filter((s) =>
+    Object.hasOwn(s, "targetClass")
+  ) as IConstructStep[];
+
+  for (const [i, step] of stepWithTargetClass.entries())
     for await (const [subject, predicate, object] of quadsForStep(step, i))
       writer.addQuad(subject, predicate, object);
 

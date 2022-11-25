@@ -5,7 +5,7 @@ import {
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
-  RuntimeCtx,
+  ConstructRuntimeCtx,
 } from "../runner/types.js";
 import * as Auth from "../utils/authentication.js";
 import { serialize } from "../utils/graphs-to-file.js";
@@ -14,7 +14,7 @@ import * as Report from "../utils/report.js";
 
 export class SPARQLQuadStore implements PipelinePart<IDest> {
   // Export a(ll) graph(s) to a file
-  name = () => "destination/sparql-quad-store";
+  name = () => "destinations/sparql-quad-store";
 
   qualifies(data: IDest): boolean {
     if (data.type !== "sparql-quad-store") return false;
@@ -23,14 +23,14 @@ export class SPARQLQuadStore implements PipelinePart<IDest> {
 
   async info(data: IDest): Promise<PipelinePartGetter> {
     const mimetype = getMediaTypeFromFilename(".nq");
-    return async (context: Readonly<RuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
       const tempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;
 
       return {
         prepare: async () => {
           await serialize(context.quadStore, tempFile, {
             format: mimetype,
-            graphs: data.graphs,
+            graphs: data.onlyGraphs,
             prefixes: context.pipeline.prefixes,
           });
         },
@@ -40,16 +40,13 @@ export class SPARQLQuadStore implements PipelinePart<IDest> {
           const msg = `Uploading to '${data.url}'`;
           Report.start(msg);
           const response = await fetch(data.url, {
-            headers: { ...Auth.asHeader(data.authentication), "Content-Type": mimetype },
+            headers: { ...Auth.asHeader(data.auth), "Content-Type": mimetype },
             method: "POST",
             body: contents,
           });
 
-          if (response.ok) {
-            Report.success(msg);
-          } else {
-            Report.fail(msg);
-          }
+          if (!response.ok && context.options.abortOnError) Report.fail(msg);
+          Report.success(msg);
         },
       };
     };

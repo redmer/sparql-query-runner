@@ -18,7 +18,7 @@ export interface PipelinePartInfo {
   prepare?: () => Promise<void>;
 
   /** Runs the pipeline part, in defined order. */
-  start: () => Promise<Iterable<RDF.Quad> | void>;
+  start?: () => Promise<Iterable<RDF.Quad> | void>;
 
   /** Called after running the pipeline, to clean up artifacts. */
   cleanup?: () => Promise<void>;
@@ -52,7 +52,12 @@ export interface RuntimeCtx {
 
   /** The path to a temporary directory. */
   readonly tempdir: string;
+}
 
+export interface UpdateRuntimeCtx extends RuntimeCtx {
+  readonly endpoint: string;
+}
+export interface ConstructRuntimeCtx extends RuntimeCtx {
   /** The quad store for CONSTRUCTed quads */
   readonly quadStore: N3.Store;
 
@@ -68,7 +73,7 @@ export interface RuntimeCtx {
 
 // Base
 export type PipelinePartGetter = (
-  context: Readonly<RuntimeCtx>,
+  context: Readonly<ConstructRuntimeCtx>,
   i?: number
 ) => Promise<PipelinePartInfo>;
 

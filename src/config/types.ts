@@ -18,7 +18,7 @@ export interface IConfiguration {
 }
 
 /** Represents a single sequence of data-operations, on a single endpoint. */
-type IPipeline = IConstructPipeline | IUpdatePipeline;
+export type IPipeline = IConstructPipeline | IUpdatePipeline;
 
 interface IBasePipeline {
   type: string;
@@ -36,19 +36,19 @@ export interface IConstructPipeline extends IBasePipeline {
 
 export interface IUpdatePipeline extends IBasePipeline {
   type: "direct-update";
-  endpoint: IEndpoint[];
-  updates: IUpdateStep[];
+  endpoint: IEndpoint;
+  steps: IUpdateStep[];
 }
 
 export interface IEndpoint {
   post: string;
-  authentication: IAuth;
+  auth: IAuth;
 }
 
 export interface ISourceOrDest {
   url: string;
   onlyGraphs?: string[];
-  authentication?: IAuth;
+  auth?: IAuth;
   type: string;
 }
 
@@ -81,7 +81,7 @@ export interface IBaseStep {
 export interface IConstructStep extends IBaseStep {
   type: "sparql-construct";
   intoGraph?: string[];
-  targetClass: string[];
+  targetClass: string;
 }
 
 export interface IUpdateStep extends IBaseStep {

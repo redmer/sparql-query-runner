@@ -3,21 +3,26 @@ import type { IDataSource } from "@comunica/types";
 import fs from "fs/promises";
 import { Quad } from "n3";
 import type { IConstructStep } from "../config/types";
-import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
+import type {
+  PipelinePart,
+  PipelinePartGetter,
+  ConstructRuntimeCtx,
+  StepPartInfo,
+} from "../runner/types";
 import * as Report from "../utils/report.js";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) */
 export default class SparqlQuadQuery implements PipelinePart<IConstructStep> {
-  name = () => "step/sparql-query";
+  name = () => "steps/sparql-query";
 
   qualifies(data: IConstructStep): boolean {
-    if (data.type === "sparql-query") return true;
+    if (data.type === "sparql-construct") return true;
     if (data.url.some((url) => url.endsWith(".ru"))) return false;
     return true;
   }
 
   async info(data: IConstructStep): Promise<PipelinePartGetter> {
-    return async (context: Readonly<RuntimeCtx>): Promise<StepPartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
       let engine: QueryEngine;
 

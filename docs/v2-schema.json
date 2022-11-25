@@ -29,7 +29,9 @@
       "title": "A pipeline, performing a sequence of SPARQL update steps",
       "properties": {
         "type": { "const": "direct-update" },
-        "endpoint": { "$ref": "#/$defs/IEndpoint1N" },
+        "endpoint": {
+          "oneOf": [{ "$ref": "#/$defs/IEndpoint" }, { "$ref": "#/$defs/IEndpointDirect" }]
+        },
         "steps": { "$ref": "#/$defs/IUpdateStep1N" }
       },
       "allOf": [{ "$ref": "#/$defs/IBasePipeline" }]
@@ -82,24 +84,12 @@
           "format": "iri-reference",
           "title": "SPARQL endpoint (POST)"
         },
-        "authentication": { "$ref": "#/$defs/IAuth" }
+        "auth": { "$ref": "#/$defs/IAuth" }
       },
       "required": ["post"]
     },
     "IEndpointDirect": {
       "$ref": "#/$defs/IEndpoint/properties/post"
-    },
-    "IEndpoint1N": {
-      "oneOf": [
-        { "$ref": "#/$defs/IEndpoint" },
-        { "$ref": "#/$defs/IEndpointDirect" },
-        {
-          "type": "array",
-          "items": {
-            "oneof": [{ "$ref": "#/$defs/IEndpoint" }, { "$ref": "#/$defs/IEndpointDirect" }]
-          }
-        }
-      ]
     },
 
     "ISourceOrDest": {
@@ -107,7 +97,7 @@
       "properties": {
         "url": { "$ref": "#/$defs/URL" },
         "onlyGraphs": { "$ref": "#/$defs/URL1N" },
-        "authentication": { "$ref": "#/$defs/IAuth" },
+        "auth": { "$ref": "#/$defs/IAuth" },
         "type": {
           "type": "string",
           "default": "auto"

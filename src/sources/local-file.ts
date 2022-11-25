@@ -1,7 +1,12 @@
 import fs from "fs";
 import N3 from "n3";
 import { ISource } from "../config/types.js";
-import { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types.js";
+import {
+  PipelinePart,
+  PipelinePartGetter,
+  ConstructRuntimeCtx,
+  SourcePartInfo,
+} from "../runner/types.js";
 import { basename, download } from "../utils/download-remote.js";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
@@ -13,18 +18,18 @@ import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
 export class LocalFileSource implements PipelinePart<ISource> {
-  name = () => "source/local-file";
+  name = () => "sources/local-file";
 
   qualifies(data: ISource): boolean {
     // please try to keep in sync with <./auto.ts>
     if (data.type === "local-file") return true; // explicitely
     if (data.type === "auto" && !!data.url.match(/^https?:/)) return true; // or auto w/ a local file
-    if (data.type === "auto" && data.graphs) return true; // or remote, w/ filtered graphs
+    if (data.type === "auto" && data.onlyGraphs) return true; // or remote, w/ filtered graphs
     return false;
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: Readonly<RuntimeCtx>): Promise<SourcePartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
       const store = new N3.Store();
       let inputFilePath: string;
 
@@ -36,7 +41,7 @@ export class LocalFileSource implements PipelinePart<ISource> {
             inputFilePath = `${context.tempdir}/${basename(data.url)}`;
 
             // Download and save that file at that location
-            await download(data.url, inputFilePath, data.authentication);
+            await download(data.url, inputFilePath, data.auth);
           } else {
             // The file is presumed local
             inputFilePath = data.url;
@@ -56,7 +61,7 @@ export class LocalFileSource implements PipelinePart<ISource> {
 
           // Filter on specified graphs
           for (const graph of store.getGraphs(null, null, null)) {
-            if (!data.graphs?.includes(graph.id)) store.deleteGraph(graph);
+            if (!data.onlyGraphs?.includes(graph.id)) store.deleteGraph(graph);
           }
         },
         getQuerySource: store,

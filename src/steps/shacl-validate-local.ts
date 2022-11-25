@@ -1,24 +1,29 @@
 import fs from "fs";
 import N3 from "n3";
 import SHACLValidator from "rdf-validate-shacl";
-import type { IBaseStep, IConstructStep, IUpdateStep } from "../config/types";
-import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
+import type { IValidateStep } from "../config/types";
+import type {
+  PipelinePart,
+  PipelinePartGetter,
+  ConstructRuntimeCtx,
+  StepPartInfo,
+} from "../runner/types";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import * as Report from "../utils/report.js";
 
-export default class ShaclValidateLocal implements PipelinePart<IConstructStep | IUpdateStep> {
-  name = () => "step/shacl-validate";
+export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
+  name = () => "steps/shacl-validate";
 
-  qualifies(data: IConstructStep | IUpdateStep): boolean {
-    if (data.type === "shacl-validate") return true;
-    if (data.url == undefined) return false;
+  qualifies(data: IValidateStep): boolean {
+    if (data.type !== "shacl-validate") return false;
+    if (data.url === undefined) return false;
     return true;
   }
 
-  async info(data: IConstructStep | IUpdateStep): Promise<PipelinePartGetter> {
-    return async (context: Readonly<RuntimeCtx>, i?: number): Promise<StepPartInfo> => {
+  async info(data: IValidateStep): Promise<PipelinePartGetter> {
+    return async (context: Readonly<ConstructRuntimeCtx>, i?: number): Promise<StepPartInfo> => {
       const shapesStore = new N3.Store();
-      if (Object.hasOwn(data, "graphs"))
+      if (Object.hasOwn(data, "onlyGraphs"))
         Report.info(`${this.name()} (${i}) only processes shapes in the default graph.`);
 
       return {

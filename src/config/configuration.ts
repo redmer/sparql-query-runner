@@ -1,5 +1,4 @@
 import fs from "fs/promises";
-import type { Exact } from "ts-essentials";
 import yaml from "yaml";
 import { ge1 } from "../utils/array.js";
 import * as Report from "../utils/report.js";
@@ -7,12 +6,14 @@ import { context } from "./rdfa11-context.js";
 import type {
   IAuth,
   IConfiguration,
-  IDest,
-  IPipeline,
+  IConstructPipeline,
   IConstructStep,
-  IValidateStep,
+  IDest,
+  IEndpoint,
   ISource,
+  IUpdatePipeline,
   IUpdateStep,
+  IValidateStep,
 } from "./types";
 
 export const CONFIG_FILENAME = "sparql-query-runner.json";
@@ -26,7 +27,7 @@ export interface ICliOptions {
   cacheIntermediateResults: boolean;
 
   /** Output CONSTRUCT steps as SHACL rules on stdout */
-  outputShaclRulesToFilePath: boolean;
+  outputShaclRulesToFilePath: string;
 
   /** Treat SHACL warnings as errors. */
   shaclWarningsAsErrors: boolean;
@@ -40,8 +41,7 @@ export async function prefConfigurationPathInDir(dir: string): Promise<string> {
   if (dirContents.includes(CONFIG_FILENAME_YAML)) {
     // Prefer YAML over JSON
     if (dirContents.includes(CONFIG_FILENAME))
-      Report.print(
-        "warning",
+      Report.warning(
         `Found both ${CONFIG_FILENAME_YAML} and ${CONFIG_FILENAME}. Continuing with YAML.`
       );
 
@@ -50,7 +50,7 @@ export async function prefConfigurationPathInDir(dir: string): Promise<string> {
     return `${dir}/${CONFIG_FILENAME}`;
   }
 
-  Report.print("error", `Found neither ${CONFIG_FILENAME_YAML} nor ${CONFIG_FILENAME} in ${dir}`);
+  Report.error(`Found neither ${CONFIG_FILENAME_YAML} nor ${CONFIG_FILENAME} in ${dir}`);
 }
 
 /** Parse the configuration file. */
@@ -67,7 +67,7 @@ export async function configurationFileContents2(path: string): Promise<unknown>
 export function validateConfigurationFile(data: unknown): IConfiguration {
   const version: string | undefined = data["version"];
   if (!version || !version.startsWith("v4"))
-    Report.print("error", `Version of sparql-query-runner requires a configuration file of v4+`);
+    Report.error(`This sparql-query-runner requires a configuration file version v4`);
 
   return {
     version: version,
@@ -76,25 +76,63 @@ export function validateConfigurationFile(data: unknown): IConfiguration {
 }
 
 /** Validate and hydrate pipeline data. */
-function validatePipeline(data: unknown): Exact<Required<IPipeline>, Required<IPipeline>> {
+function validatePipeline(data: unknown): IUpdatePipeline | IConstructPipeline {
+  const asUpdate = validateUpdatePipeline(data);
+  const asConstruct = validateConstructPipeline(data);
+
+  if (asUpdate && asConstruct)
+    Report.error(
+      `Confusion. Pipeline is both valid as an update-pipeline and a construct-pipeline.` +
+        `Please split these pipelines into two.`
+    );
+
   return {
     name: data["name"] ?? new Date().toISOString(),
     independent: data["independent"] ?? false,
     prefixes: Object.assign({}, context, data["prefixes"]),
-    destinations: ge1(data["destinations"]).map((data) => validateDest(data) as IDest),
-    sources: ge1(data["sources"]).map((data) => validateSource(data) as ISource),
-    queries: ge1(data["queries"]).map((data) => validateQueryStep(data)),
-    updates: ge1(data["updates"]).map((data) => validateUpdateStep(data)),
-    rules: ge1(data["rules"]).map((data) => validateRuleStep(data)),
-    engine: data["engine"] ?? undefined,
+    ...(asUpdate ?? asConstruct),
+  };
+}
+
+function validateUpdatePipeline(
+  data: unknown
+): Omit<IUpdatePipeline, "name" | "independent" | "prefixes"> | undefined {
+  if (!data["endpoint"] || !data["steps"]) return undefined;
+
+  const type = "direct-update";
+  const endpoint = validateEndpoint(data["endpoint"]);
+  const steps = ge1(data["steps"]).map((data) => validateUpdateStep(data));
+
+  return { type, endpoint, steps };
+}
+
+function validateConstructPipeline(
+  data: unknown
+): Omit<IConstructPipeline, "name" | "independent" | "prefixes"> | undefined {
+  if (!data["sources"] || !data["destinations"]) return undefined;
+
+  const type = "construct-quads";
+  const sources = ge1(data["sources"]).map((data) => validateSource(data));
+  const destinations = ge1(data["destinations"]).map((data) => validateDest(data));
+  const steps = ge1(data["steps"]).map((data) => validateConstructStep(data));
+
+  return { type, sources, destinations, steps };
+}
+
+function validateEndpoint(data: unknown): IEndpoint {
+  if (typeof data === "string") return validateEndpoint({ post: data } as IEndpoint);
+  if (data["post"] === undefined) Report.error(`An endpoint's target url ('post') is missing.`);
+
+  return {
+    post: data["post"],
+    auth: validateAuthentication(data["auth"]),
   };
 }
 
 function validateUpdateStep(data: unknown): IUpdateStep {
   if (typeof data === "string")
     return validateUpdateStep({ type: "sparql-update", url: [data] } as IUpdateStep);
-  if (typeof data["url"] === "undefined")
-    Report.print("error", `A url value for an update step is missing.`);
+  if (data["url"] === undefined) Report.error(`A url value for an update step is missing.`);
 
   return {
     type: data["type"] ?? "sparql-update",
@@ -102,54 +140,40 @@ function validateUpdateStep(data: unknown): IUpdateStep {
   };
 }
 
-function validateQueryStep(data: unknown): IConstructStep {
+function validateConstructStep(data: unknown): IConstructStep | IValidateStep {
   if (typeof data === "string")
-    return validateQueryStep({ type: "sparql-query", url: [data] } as IConstructStep);
-  if (typeof data["url"] === "undefined")
-    Report.print("error", `A url value for an update step is missing.`);
+    return validateConstructStep({ type: "sparql-construct", url: [data] } as IConstructStep);
+  if (data["url"] === undefined) Report.error(`A url value for an update step is missing.`);
 
   return {
     type: data["type"] ?? "sparql-query",
     url: ge1(data["url"]),
-    graph: ge1(data["graphs"]),
-  };
-}
-
-function validateRuleStep(data: unknown): IValidateStep {
-  if (typeof data === "string" || !data["targetClass"])
-    Report.print("error", `A rule step requires an explicit targetClass`);
-  if (typeof data["url"] === "undefined")
-    Report.print("error", `A url value for a rule step is missing`);
-
-  return {
-    type: data["type"] ?? "sparql-query",
-    url: ge1(data["url"]),
-    targetClass: ge1(data["targetClass"]),
+    intoGraph: ge1(data["intoGraphs"]),
+    targetClass: data["targetClass"],
   };
 }
 
 function validateSource(data: unknown): ISource {
   if (typeof data === "string") return validateSource({ type: "auto", url: data } as ISource);
-  if (typeof data["url"] === "undefined") Report.error(`Source requires a URL to find data`);
+  if (data["url"] === undefined) Report.error(`Source requires a URL to find data`);
 
   return {
     type: data["type"] ?? "auto",
     url: data["url"],
-    graphs: ge1(data["graphs"]),
-    authentication: validateAuthentication(data["authentication"]),
+    onlyGraphs: ge1(data["onlyGraphs"]),
+    auth: validateAuthentication(data["auth"]),
   };
 }
 
 function validateDest(data: unknown): IDest {
   if (typeof data === "string") return validateDest({ type: "auto", url: data } as IDest);
-  if (typeof data["url"] === "undefined")
-    Report.print("error", `Source requires a target URL to export to`);
+  if (data["url"] === undefined) Report.error(`Source requires a target URL to export to`);
 
   return {
     type: data["type"] ?? "auto",
     url: data["url"],
-    graphs: ge1(data["graphs"]),
-    authentication: validateAuthentication(data["authentication"]),
+    onlyGraphs: ge1(data["onlyGraphs"]),
+    auth: validateAuthentication(data["authentication"]),
   };
 }
 

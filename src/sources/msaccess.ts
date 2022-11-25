@@ -3,13 +3,18 @@ import MDBReader from "mdb-reader";
 import type { Value } from "mdb-reader/lib/types";
 import N3, { DataFactory } from "n3";
 import type { ISource } from "../config/types";
-import type { PipelinePart, PipelinePartGetter, RuntimeCtx, SourcePartInfo } from "../runner/types";
+import type {
+  PipelinePart,
+  PipelinePartGetter,
+  ConstructRuntimeCtx,
+  SourcePartInfo,
+} from "../runner/types";
 import { basename, download } from "../utils/download-remote.js";
 import { CSVNS, XSD } from "../utils/namespaces.js";
 import * as Report from "../utils/report.js";
 
 export class MsAccessSource implements PipelinePart<ISource> {
-  name = () => "source/msaccess";
+  name = () => "sources/msaccess";
 
   qualifies(data: ISource): boolean {
     if (data.type === "msaccess") return true;
@@ -17,11 +22,11 @@ export class MsAccessSource implements PipelinePart<ISource> {
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: Readonly<RuntimeCtx>): Promise<SourcePartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
       const store = new N3.Store();
       let inputFilePath: string;
 
-      if (data.graphs) Report.info(`${this.name()} does not support data.graphs`);
+      if (data.onlyGraphs) Report.info(`${this.name()} does not support data.graphs`);
 
       return {
         prepare: async () => {
@@ -31,7 +36,7 @@ export class MsAccessSource implements PipelinePart<ISource> {
             inputFilePath = `${context.tempdir}/${basename(data.url)}`;
 
             // Download and save that file at that location
-            await download(data.url, inputFilePath, data.authentication);
+            await download(data.url, inputFilePath, data.auth);
           } else {
             // The file is presumed local
             inputFilePath = data.url;

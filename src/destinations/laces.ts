@@ -3,7 +3,7 @@ import type {
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
-  RuntimeCtx,
+  ConstructRuntimeCtx,
 } from "../runner/types.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import type { LacesPublicationDesc } from "../utils/laces.js";
@@ -19,7 +19,7 @@ import * as Report from "../utils/report.js";
  */
 export class LacesDestination implements PipelinePart<IDest> {
   // Export a(ll) graph(s) to Laces
-  name = () => "destination/laces";
+  name = () => "destinations/laces";
 
   qualifies(data: IDest): boolean {
     if (data.type === "laces") return true;
@@ -30,11 +30,11 @@ export class LacesDestination implements PipelinePart<IDest> {
   async info(data: IDest): Promise<PipelinePartGetter> {
     const [repoName, publName] = data.url.split("/").slice(-2);
 
-    return async (context: Readonly<RuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
       const tempFile = `${context.tempdir}/laces-export-${new Date().getTime()}.ttl`;
       let metadata: LacesPublicationDesc;
 
-      const auth = data.authentication;
+      const auth = data.auth;
       if (auth === undefined) Report.error(`Laces repositories require auth details`);
 
       return {
@@ -55,7 +55,7 @@ export class LacesDestination implements PipelinePart<IDest> {
           // Save graphs to temp file, as we need to serialize to text/turtle
           await serialize(context.quadStore, tempFile, {
             format: "text/turtle",
-            graphs: data.graphs,
+            graphs: data.onlyGraphs,
             prefixes: context.pipeline.prefixes,
           });
         },
