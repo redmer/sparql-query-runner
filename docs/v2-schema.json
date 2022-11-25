@@ -82,7 +82,7 @@
           "format": "iri-reference",
           "title": "SPARQL endpoint (POST)"
         },
-        "authentication": { "$ref": "#/$defs/IAuthentication" }
+        "authentication": { "$ref": "#/$defs/IAuth" }
       },
       "required": ["post"]
     },
@@ -107,7 +107,7 @@
       "properties": {
         "url": { "$ref": "#/$defs/URL" },
         "onlyGraphs": { "$ref": "#/$defs/URL1N" },
-        "authentication": { "$ref": "#/$defs/IAuthentication" },
+        "authentication": { "$ref": "#/$defs/IAuth" },
         "type": {
           "type": "string",
           "default": "auto"
@@ -174,7 +174,7 @@
       ]
     },
 
-    "IAuthenticationBasic": {
+    "IAuthBasic": {
       "type": "object",
       "properties": {
         "type": { "const": "Basic", "description": "HTTP basic authentication" },
@@ -187,9 +187,9 @@
           "description": "Environment variable name for the password"
         }
       },
-      "allOf": [{ "$ref": "#/$defs/IBaseAuthentication" }]
+      "allOf": [{ "$ref": "#/$defs/IBaseAuth" }]
     },
-    "IAuthenticationBearer": {
+    "IAuthBearer": {
       "type": "object",
       "properties": {
         "type": { "const": "Bearer", "description": "Bearer token authentication" },
@@ -199,9 +199,9 @@
         }
       },
 
-      "allOf": [{ "$ref": "#/$defs/IBaseAuthentication" }]
+      "allOf": [{ "$ref": "#/$defs/IBaseAuth" }]
     },
-    "IBaseAuthentication": {
+    "IBaseAuth": {
       "description": "Method of authentication",
       "type": "object",
       "properties": {
@@ -211,11 +211,8 @@
         }
       }
     },
-    "IAuthentication": {
-      "oneOf": [
-        { "$ref": "#/$defs/IAuthenticationBasic" },
-        { "$ref": "#/$defs/IAuthenticationBearer" }
-      ]
+    "IAuth": {
+      "oneOf": [{ "$ref": "#/$defs/IAuthBasic" }, { "$ref": "#/$defs/IAuthBearer" }]
     },
 
     "Prefixes": {

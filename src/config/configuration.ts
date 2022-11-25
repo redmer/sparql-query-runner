@@ -5,12 +5,12 @@ import { ge1 } from "../utils/array.js";
 import * as Report from "../utils/report.js";
 import { context } from "./rdfa11-context.js";
 import type {
-  IAuthentication,
+  IAuth,
   IConfiguration,
   IDest,
   IPipeline,
-  IQueryStep,
-  IRuleStep,
+  IConstructStep,
+  IValidateStep,
   ISource,
   IUpdateStep,
 } from "./types";
@@ -102,9 +102,9 @@ function validateUpdateStep(data: unknown): IUpdateStep {
   };
 }
 
-function validateQueryStep(data: unknown): IQueryStep {
+function validateQueryStep(data: unknown): IConstructStep {
   if (typeof data === "string")
-    return validateQueryStep({ type: "sparql-query", url: [data] } as IQueryStep);
+    return validateQueryStep({ type: "sparql-query", url: [data] } as IConstructStep);
   if (typeof data["url"] === "undefined")
     Report.print("error", `A url value for an update step is missing.`);
 
@@ -115,7 +115,7 @@ function validateQueryStep(data: unknown): IQueryStep {
   };
 }
 
-function validateRuleStep(data: unknown): IRuleStep {
+function validateRuleStep(data: unknown): IValidateStep {
   if (typeof data === "string" || !data["targetClass"])
     Report.print("error", `A rule step requires an explicit targetClass`);
   if (typeof data["url"] === "undefined")
@@ -153,9 +153,9 @@ function validateDest(data: unknown): IDest {
   };
 }
 
-function validateAuthentication(data: unknown): IAuthentication;
+function validateAuthentication(data: unknown): IAuth;
 function validateAuthentication(data: undefined): undefined;
-function validateAuthentication(data: unknown): IAuthentication | undefined {
+function validateAuthentication(data: unknown): IAuth | undefined {
   if (data === undefined) return undefined;
 
   // If password_env and user_env, this is a Basic auth type

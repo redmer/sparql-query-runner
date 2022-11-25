@@ -1,11 +1,11 @@
-import type { IAuthentication } from "../config/types";
+import type { IAuth } from "../config/types";
 import * as process from "node:process";
 
 export class AuthTypeError extends Error {}
 export class AuthValueError extends Error {}
 
 /** { username, password } as an object */
-export function usernamePasswordDict(data: IAuthentication): {
+export function usernamePasswordDict(data: IAuth): {
   username: string;
   password: string;
 } {
@@ -26,7 +26,7 @@ export function usernamePasswordDict(data: IAuthentication): {
 }
 
 /** Add Basic authentication to a URL */
-export function addToUrl(url: string, data?: IAuthentication): string {
+export function addToUrl(url: string, data?: IAuth): string {
   // We need to insert Basic authentication between URL schema and rest...
   // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
   if (!data) return url;
@@ -37,13 +37,13 @@ export function addToUrl(url: string, data?: IAuthentication): string {
 }
 
 /** Concatenate username and password with a colon. */
-export function httpSyntax(data: IAuthentication): string {
+export function httpSyntax(data: IAuth): string {
   const { username, password } = usernamePasswordDict(data);
   return `${username}:${password}`;
 }
 
 /** Returns auth details ready for usage as an HTTP header */
-export function asHeader(data: IAuthentication): { Authorization: string } {
+export function asHeader(data: IAuth): { Authorization: string } {
   if (data.type === "Basic") {
     return {
       Authorization: `Basic ${encode(httpSyntax(data))}`,

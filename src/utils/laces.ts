@@ -1,6 +1,6 @@
 import fs from "fs";
 import fetch, { FormData, Response } from "node-fetch";
-import type { IAuthentication } from "../config/types";
+import type { IAuth } from "../config/types";
 import * as Auth from "./authentication.js";
 
 export interface LacesRepositoryDesc {
@@ -30,7 +30,7 @@ export interface LacesPublicationPatch {
 }
 
 /** All accessible Laces repositories */
-export async function repositories(auth: IAuthentication): Promise<LacesRepositoryDesc[]> {
+export async function repositories(auth: IAuth): Promise<LacesRepositoryDesc[]> {
   const endpoint = `https://hub.laces.tech/api/v3/repositories`;
   const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
   return (await resp.json()) as LacesRepositoryDesc[];
@@ -39,7 +39,7 @@ export async function repositories(auth: IAuthentication): Promise<LacesReposito
 /** All accessible publications in a Laces repository. */
 export async function publications(
   repositoryId: string,
-  auth: IAuthentication
+  auth: IAuth
 ): Promise<LacesPublicationDesc[]> {
   const endpoint = `https://hub.laces.tech/api/v3/repositories/${repositoryId}/publications`;
   const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
@@ -51,7 +51,7 @@ export async function updatePublication(
   publicationId: string,
   contentPayloadPath: string,
   metadataPayload: LacesPublicationPatch,
-  auth: IAuthentication
+  auth: IAuth
 ): Promise<Response> {
   const endpoint = `http://hub.laces.tech/api/v3/publications/${publicationId}`;
   const metadata = { ...metadataPayload };

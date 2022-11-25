@@ -1,21 +1,21 @@
 import fs from "fs";
 import N3 from "n3";
 import SHACLValidator from "rdf-validate-shacl";
-import type { IBaseStep, IQueryStep, IUpdateStep } from "../config/types";
+import type { IBaseStep, IConstructStep, IUpdateStep } from "../config/types";
 import type { PipelinePart, PipelinePartGetter, RuntimeCtx, StepPartInfo } from "../runner/types";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import * as Report from "../utils/report.js";
 
-export default class ShaclValidateLocal implements PipelinePart<IQueryStep | IUpdateStep> {
+export default class ShaclValidateLocal implements PipelinePart<IConstructStep | IUpdateStep> {
   name = () => "step/shacl-validate";
 
-  qualifies(data: IQueryStep | IUpdateStep): boolean {
+  qualifies(data: IConstructStep | IUpdateStep): boolean {
     if (data.type === "shacl-validate") return true;
     if (data.url == undefined) return false;
     return true;
   }
 
-  async info(data: IQueryStep | IUpdateStep): Promise<PipelinePartGetter> {
+  async info(data: IConstructStep | IUpdateStep): Promise<PipelinePartGetter> {
     return async (context: Readonly<RuntimeCtx>, i?: number): Promise<StepPartInfo> => {
       const shapesStore = new N3.Store();
       if (Object.hasOwn(data, "graphs"))

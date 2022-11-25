@@ -1,4 +1,4 @@
-import type { IAuthentication } from "../config/types";
+import type { IAuth } from "../config/types";
 import * as Auth from "./authentication";
 
 describe("Auth helpers", () => {
@@ -10,12 +10,12 @@ describe("Auth helpers", () => {
   const password_value = "sekret";
   const token_value = "my-secret-token";
 
-  const basicData: IAuthentication = {
+  const basicData: IAuth = {
     type: "Basic",
     user_env: user_env,
     password_env: password_env,
   };
-  const tokenData: IAuthentication = {
+  const tokenData: IAuth = {
     type: "Bearer",
     token_env: token_env,
   };
