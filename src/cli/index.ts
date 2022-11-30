@@ -18,6 +18,11 @@ async function main() {
       type: "boolean",
       desc: "Abort on HTTP error.",
     })
+    .option("config-file", {
+      alias: "p",
+      type: "string",
+      desc: "Path to alternative configuration file",
+    })
     .option("cache-intermediate-results", {
       alias: "i",
       type: "boolean",
@@ -39,7 +44,7 @@ async function main() {
     .usage("Run a sparql-query-runner.json pipeline")
     .parse();
 
-  const config = await compileConfigData();
+  const config = await compileConfigData(args["config-file"]);
 
   PipelineSupervisor.runAll(config, {
     abortOnError: args["abort-on-error"],

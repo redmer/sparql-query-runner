@@ -209,8 +209,8 @@ function validateAuthentication(data: unknown): IAuth | undefined {
  * Instead, it loads the pipelines, their sources/destinations/transformations/validations
  * configuration and passes their config values on.
  */
-export default async function compileConfigData(): Promise<IConfiguration> {
-  const configFilePath = prefConfigurationPathInDir(".");
-  const data = configurationFileContents2(await configFilePath);
+export default async function compileConfigData(path?: string): Promise<IConfiguration> {
+  const configFilePath = path ?? (await prefConfigurationPathInDir("."));
+  const data = configurationFileContents2(configFilePath);
   return validateConfigurationFile(await data);
 }
