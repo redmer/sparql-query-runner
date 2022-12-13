@@ -1,5 +1,4 @@
 import type {
-  IBaseStep,
   IConstructStep,
   IDest,
   IEndpoint,
@@ -61,7 +60,6 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
   };
 
   const orderedKeys: IPipelineKeys[] = ["sources", "endpoint", "steps", "destinations"];
-  type PayloadType = ISource | IEndpoint | IBaseStep | IDest;
 
   for (const workflowPart of orderedKeys) {
     // First sources, then endpoint, then steps, etc.

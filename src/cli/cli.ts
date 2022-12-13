@@ -3,7 +3,7 @@
 import * as dotenv from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import compileConfigData, { CONFIG_FILENAME_YAML } from "../config/configuration.js";
+import compileConfigData, { CONFIG_FILENAME_YAML } from "../config/validate.js";
 import * as PipelineSupervisor from "../runner/pipeline-supervisor.js";
 import * as RulesWorker from "../runner/shacl-rules-worker.js";
 import * as Report from "../utils/report.js";

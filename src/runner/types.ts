@@ -1,15 +1,12 @@
 /* eslint-disable @typescript-eslint/no-empty-interface */
 import type { QueryEngine } from "@comunica/query-sparql";
 import type {
-  IDataSource,
-  IQueryContextCommon,
-  QueryStringContext,
-  SourceType,
+  QueryStringContext
 } from "@comunica/types/lib";
 import type * as RDF from "@rdfjs/types";
 import N3 from "n3";
-import type { ICliOptions } from "../config/configuration";
 import type { IPipeline } from "../config/types";
+import type { ICliOptions } from "../config/validate";
 
 /** A PipelinePart is a Source, Endpoint, Destination or Step.
  *

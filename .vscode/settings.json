@@ -2,11 +2,11 @@
   "json.schemas": [
     {
       "fileMatch": ["*/sparql-query-runner.json"],
-      "url": "https://rdmr.eu/ns/sparql-query-runner/schema.json"
+      "url": "https://rdmr.eu/sparql-query-runner/schema.json"
     }
   ],
   "yaml.schemas": {
-    "docs/v2-schema.json": "*sparql-query-runner.yaml"
+    "docs/schema.json": "*sparql-query-runner.yaml"
   },
   "typescript.tsdk": "node_modules/typescript/lib"
 }

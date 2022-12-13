@@ -23,7 +23,7 @@ Both JSON and YAML files are supported. In JSON files, comments are not supporte
 >   - name: My RDF Pipeline
 >     endpoint: http://example.org/sparql
 >     steps:
->       - src/add-schema.ru
+>       - src/example.rq
 > ```
 
 ## Schema
@@ -167,6 +167,7 @@ The SHACL validator (`type: shacl-validate`) can only check the state of the loc
 ### Endpoint
 
 The endpoint is a SPARQL Update endpoint, that can process `.ru` queries.
+Supply [auth details](#authorization) with `auth: {}` if required.
 
 [sparql-update]: http://www.w3.org/TR/2013/REC-sparql11-update-20130321
 [sparql-http-update]: https://www.w3.org/TR/2013/REC-sparql11-http-rdf-update-20130321

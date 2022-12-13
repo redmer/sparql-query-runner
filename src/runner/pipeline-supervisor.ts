@@ -1,4 +1,4 @@
-import type { ICliOptions } from "../config/configuration";
+import type { ICliOptions } from "../config/validate";
 import type { IConfiguration, IPipeline } from "../config/types";
 import * as PipelineWorker from "./pipeline-worker.js";
 

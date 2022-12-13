@@ -2,13 +2,13 @@
   "name": "@rdmr-eu/sparql-query-runner",
   "version": "3.2.0",
   "description": "Run SPARQL queries serially on a SPARQL endpoint.",
-  "main": "dist/cli/index.js",
+  "main": "dist/cli/cli.js",
   "repository": "https://github.com/redmer/sparql-query-runner.git",
   "author": "Redmer Kronemeijer <12477216+redmer@users.noreply.github.com> (https://rdmr.eu/)",
   "license": "MPL-2.0",
   "private": false,
   "bin": {
-    "sparql-query-runner": "dist/cli/index.js"
+    "sparql-query-runner": "dist/cli/cli.js"
   },
   "scripts": {
     "test": "jest",

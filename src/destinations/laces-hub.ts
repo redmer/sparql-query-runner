@@ -1,4 +1,4 @@
-import { ConfigurationError } from "../config/configuration.js";
+import { ConfigurationError } from "../config/validate.js";
 import type { IDest } from "../config/types.js";
 import type {
   ConstructRuntimeCtx,

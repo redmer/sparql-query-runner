@@ -60,10 +60,12 @@ function validatePipeline(data: unknown): IUpdatePipeline | IConstructPipeline {
       `Pipeline couldn't be parsed as update-pipeline nor as construct-pipeline.`
     );
 
+  const prefixes = Object.assign({}, context, data["prefixes"]); // combine default RDFa context with supplied prefixes
+
   return {
     name: data["name"] ?? "Pipeline", // static default
     independent: data["independent"] ?? false, // safe default
-    prefixes: Object.assign({}, context, data["prefixes"]), // combine default RDFa context with supplied prefixes
+    prefixes,
     ...(asUpdate ?? asConstruct),
   };
 }

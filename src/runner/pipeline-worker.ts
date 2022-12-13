@@ -1,7 +1,7 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import fs from "fs/promises";
 import N3 from "n3";
-import type { ICliOptions } from "../config/configuration";
+import type { ICliOptions } from "../config/validate";
 import type { IPipeline } from "../config/types";
 import { matchPipelineParts, MatchResult } from "../modules/module.js";
 import { arrayFromGenerator } from "../utils/array.js";
@@ -44,6 +44,7 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   const initializedParts: WorkflowCache[] = [];
 
   let i = 0;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for await (const [key, name, part] of matchedParts) {
     i++;
     const info = await part(context, i);

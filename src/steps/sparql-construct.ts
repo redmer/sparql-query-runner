@@ -1,4 +1,3 @@
-import { QueryEngine } from "@comunica/query-sparql";
 import type { Quad } from "@rdfjs/types";
 import fs from "fs/promises";
 import { NamedNode } from "n3";
@@ -7,7 +6,7 @@ import type {
   ConstructRuntimeCtx,
   PipelinePart,
   PipelinePartGetter,
-  StepPartInfo,
+  StepPartInfo
 } from "../runner/types";
 import * as Report from "../utils/report.js";
 
