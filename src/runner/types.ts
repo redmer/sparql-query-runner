@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-empty-interface */
 import type { QueryEngine } from "@comunica/query-sparql";
-import type {
-  QueryStringContext
-} from "@comunica/types/lib";
+import type { QueryStringContext } from "@comunica/types/lib";
 import type * as RDF from "@rdfjs/types";
 import N3 from "n3";
 import type { IPipeline } from "../config/types";
@@ -52,6 +50,43 @@ export interface RuntimeCtx {
 
   /** The path to a temporary directory. */
   readonly tempdir: string;
+
+  /** Invalidate the cache of subsequent steps (or also preceding steps) */
+  invalidateCache?(preceding: boolean): void;
+}
+
+export interface StepCache {
+  readonly stepName: string;
+
+  readonly payloadHash: string;
+  readonly urlETag: string;
+  readonly urlLastUpdated: string;
+
+  readonly state: unknown;
+
+  /** A deterministic hash of the step */
+  readonly stepHash: string;
+}
+
+export interface WorkflowLevelCache {
+  readonly sources: unknown;
+  readonly prefixes: unknown;
+  readonly endpoint: unknown;
+  readonly destinations: unknown;
+  readonly steps: StepCache[];
+
+  /** A deterministic hash of the workflow */
+  readonly workflowHash: string;
+}
+
+export interface ConfigLevelCache {
+  readonly workflows: WorkflowLevelCache[];
+
+  /** A deterministic hash of the configuration */
+  readonly configHash: string;
+
+  readonly configETag: string;
+  readonly configLastUpdated: string;
 }
 
 export interface UpdateRuntimeCtx extends RuntimeCtx {

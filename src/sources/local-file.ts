@@ -24,7 +24,7 @@ export class LocalFileSource implements PipelinePart<ISource> {
 
   qualifies(data: ISource): boolean {
     // please try to keep in sync with <./auto.ts>
-    if (data.type === "local-file") return true; // explicitely
+    if (data.type === "local-file") return true; // explicitly
     if (data.type === "auto" && !!data.url.match(/^https?:/)) return true; // or auto w/ a local file
     if (data.type === "auto" && data.onlyGraphs) return true; // or remote, w/ filtered graphs
     return false;

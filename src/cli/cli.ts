@@ -7,6 +7,8 @@ import compileConfigData, { CONFIG_FILENAME_YAML } from "../config/validate.js";
 import * as PipelineSupervisor from "../runner/pipeline-supervisor.js";
 import * as RulesWorker from "../runner/shacl-rules-worker.js";
 import * as Report from "../utils/report.js";
+import fs from "fs/promises";
+import { TEMPDIR } from "../runner/pipeline-worker.js";
 
 dotenv.config();
 
@@ -36,6 +38,14 @@ async function main() {
         default: CONFIG_FILENAME_YAML,
       },
     })
+    .command("clear-cache", "Clear all workflow caches", {
+      force: {
+        alias: "f",
+        type: "boolean",
+        desc: "Force deletion of the cache",
+        default: false,
+      },
+    })
     .demandCommand()
     .help()
     .usage("Run a workflow of SPARQL Construct or Update queries.")
@@ -50,6 +60,10 @@ async function main() {
         // TODO: Alternative destinations for `sh:SPARQLRule`s
         await RulesWorker.start(p, process.stdout);
       });
+    }
+
+    if (args["_"].includes("clear-cache")) {
+      await fs.rm(TEMPDIR, { recursive: true, force: args["force"] as boolean });
     }
 
     PipelineSupervisor.runAll(config, {

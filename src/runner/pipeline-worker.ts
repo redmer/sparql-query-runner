@@ -14,10 +14,11 @@ interface WorkflowCache {
   info: PipelinePartInfo;
 }
 
+export const TEMPDIR = `.cache/sparql-query-runner`;
+
 async function provideTempDir(): Promise<string> {
-  const tempdir = `.cache/sparql-query-runner`;
-  await fs.mkdir(tempdir, { recursive: true });
-  return tempdir;
+  await fs.mkdir(TEMPDIR, { recursive: true });
+  return TEMPDIR;
 }
 
 /** Initialize and start a workflow runner */

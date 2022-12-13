@@ -24,9 +24,9 @@ export class AutoSource implements PipelinePart<ISource> {
   name = () => name;
 
   qualifies(data: ISource): boolean {
-    if (data.type !== "auto") return false;
     if (data.onlyGraphs) return false;
-    if (!data.url.match(/^https?:/)) return false;
+    if (data.type == "auto" && !data.url.match(/^https?:/)) return false;
+    if (["auto", "sparql", "file"].includes(data.type)) return true;
     return true;
   }
 
