@@ -1,18 +1,18 @@
-import { QueryEngine } from "@comunica/query-sparql";
-import type { IDataSource } from "@comunica/types";
 import fs from "fs/promises";
 import type { IUpdateStep } from "../config/types";
 import type {
+  ConstructRuntimeCtx,
   PipelinePart,
   PipelinePartGetter,
-  ConstructRuntimeCtx,
   StepPartInfo,
 } from "../runner/types";
 import * as Report from "../utils/report.js";
 
+const name = "steps/sparql-update";
+
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
 export default class SparqlUpdate implements PipelinePart<IUpdateStep> {
-  name = () => "steps/sparql-update";
+  name = () => name;
 
   qualifies(data: IUpdateStep): boolean {
     if (data.type === "sparql-update") return true;
@@ -23,7 +23,7 @@ export default class SparqlUpdate implements PipelinePart<IUpdateStep> {
   async info(data: IUpdateStep): Promise<PipelinePartGetter> {
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
-      let engine: QueryEngine;
+      // let engine: QueryEngine;
 
       return {
         prepare: async () => {
@@ -31,19 +31,14 @@ export default class SparqlUpdate implements PipelinePart<IUpdateStep> {
             const body = await fs.readFile(url, { encoding: "utf-8" });
             queries.push(body);
           }
-          engine = new QueryEngine();
+          // engine = new QueryEngine();
         },
         start: async () => {
           for (const [i, q] of queries.entries()) {
-            const msg = `Performing query ${data.url[i]}...`;
-
-            Report.start(msg);
+            console.info(`${name}: Executing query '${data.url[i]}'...`);
             // There are no results from a QueryVoid (Update Query)
-            await engine.queryVoid(q, {
-              sources: context.querySources as [IDataSource, ...IDataSource[]],
-              destination: context.queryContext.destination,
-            });
-            Report.success(msg);
+            await context.engine.queryVoid(q, context.queryContext);
+            console.info(`${name}: Query '${data.url[i]}' ` + Report.DONE);
           }
         },
       };

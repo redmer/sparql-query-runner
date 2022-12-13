@@ -34,7 +34,8 @@
         },
         "steps": { "$ref": "#/$defs/IUpdateStep1N" }
       },
-      "allOf": [{ "$ref": "#/$defs/IBasePipeline" }]
+      "allOf": [{ "$ref": "#/$defs/IBasePipeline" }],
+      "not": { "required": ["sources", "destinations"] }
     },
     "IConstructPipeline": {
       "type": "object",
@@ -45,7 +46,8 @@
         "destinations": { "$ref": "#/$defs/IDest1N" },
         "steps": { "$ref": "#/$defs/IConstructStep1N" }
       },
-      "allOf": [{ "$ref": "#/$defs/IBasePipeline" }]
+      "allOf": [{ "$ref": "#/$defs/IBasePipeline" }],
+      "not": { "required": ["endpoint"] }
     },
     "IBasePipeline": {
       "type": "object",
@@ -108,7 +110,7 @@
     "ISource": {
       "title": "Source of RDF data",
       "properties": {
-        "type": { "enum": ["local-file", "msaccess", "sparql", "auto"] }
+        "type": { "enum": ["local-file", "msaccess", "msaccess-xyz", "sparql", "auto"] }
       },
       "allOf": [{ "$ref": "#/$defs/ISourceOrDest" }]
     },

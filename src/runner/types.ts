@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/no-empty-interface */
 import type { QueryEngine } from "@comunica/query-sparql";
-import type { IDataSource, IQueryContextCommon } from "@comunica/types/lib";
+import type {
+  IDataSource,
+  IQueryContextCommon,
+  QueryStringContext,
+  SourceType,
+} from "@comunica/types/lib";
 import type * as RDF from "@rdfjs/types";
 import N3 from "n3";
 import type { ICliOptions } from "../config/configuration";
@@ -24,16 +29,14 @@ export interface PipelinePartInfo {
   cleanup?: () => Promise<void>;
 
   /** Query context for Comunica query */
-  getQueryContext?: QueryContext;
-
-  /** An added source for a Comunica query */
-  getQuerySource?: IDataSource;
+  getQueryContext?: Partial<QueryContext>;
 
   /** Local file paths that are used by this PipelinePart */
   filepaths?: () => Promise<string[]>;
 }
 
-export type QueryContext = { sources?: IDataSource[] } & IQueryContextCommon;
+export type QueryContext = QueryStringContext; // & { source?: IDataSource | SourceType };
+// export type QueryContext = { sources?: IDataSource[] } & IQueryContextCommon & QueryStringContext;
 
 export interface QueryContextInfo {}
 
@@ -63,9 +66,6 @@ export interface ConstructRuntimeCtx extends RuntimeCtx {
 
   /** Query engine */
   readonly engine: QueryEngine;
-
-  /** All Comunica data sources */
-  querySources: IDataSource[];
 
   /** Query context for Comunica query */
   queryContext: QueryContext;

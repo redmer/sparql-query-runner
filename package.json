@@ -7,10 +7,12 @@
   "author": "Redmer Kronemeijer <12477216+redmer@users.noreply.github.com> (https://rdmr.eu/)",
   "license": "MPL-2.0",
   "private": false,
-  "bin": "dist/cli/index.js",
+  "bin": {
+    "sparql-query-runner": "dist/cli/index.js"
+  },
   "scripts": {
     "test": "jest",
-    "build": "tsc -p ./tsconfig-build.json",
+    "build": "tsc -p ./tsconfig.json",
     "watch": "tsc --watch -p ./tsconfig.json",
     "lint": "cross-env ESLINT_STRICT=true ESLINT_EXPENSIVE=true eslint . --ext .ts",
     "prepare": "yarn build",
@@ -30,6 +32,7 @@
     "@types/n3": "^1.10.4",
     "@types/node": "^18.11.3",
     "@types/node-fetch": "^2.5.11",
+    "@types/npmlog": "^4.1.4",
     "@types/rdf-ext": "^1.3.11",
     "@types/rdf-validate-shacl": "^0.4.0",
     "@types/rdfjs__parser-n3": "^1.1.5",

@@ -8,14 +8,16 @@ import {
   PipelinePartGetter,
   ConstructRuntimeCtx,
 } from "../runner/types.js";
-import * as Auth from "../utils/authentication.js";
+import * as Auth from "../utils/auth.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import * as Report from "../utils/report.js";
 
+const name = "destinations/sparql-graph-store";
+
 export class SPARQLGraphStore implements PipelinePart<IDest> {
   // Export a(ll) graph(s) to a file
-  name = () => "destinations/sparql-graph-store";
+  name = () => name;
 
   qualifies(data: IDest): boolean {
     if (data.type !== "sparql-graph-store") return false;
@@ -40,39 +42,40 @@ export class SPARQLGraphStore implements PipelinePart<IDest> {
       // necessary.
       // <https://www.w3.org/TR/sparql11-http-rdf-update/#http-post>
 
-      const graphs = this.graphCount(data, context.quadStore).entries();
-      const tempDir = `${context.tempdir}/sparql-graph-destination-${new Date().getTime()}`;
+      const graphs = this.graphCount(data, context.quadStore);
+      const stepTempDir = `${context.tempdir}/sparql-graph-destination-${new Date().getTime()}`;
 
       return {
-        prepare: async () => {
-          for (const [i, graph] of graphs) {
-            const tempFile = `${tempDir}/${i}.nq`;
+        start: async () => {
+          console.info(`${name}: Gathering ${graphs.length} graphs for export...`);
+
+          for (const [i, graph] of graphs.entries()) {
+            const tempFile = `${stepTempDir}/${i}.nq`;
             await serialize(context.quadStore, tempFile, {
               format: mimetype,
               graphs: [graph],
               prefixes: context.pipeline.prefixes,
             });
           }
-        },
-        start: async () => {
-          for (const [i, graph] of graphs) {
-            const tempFile = `${tempDir}/${i}.nq`;
+
+          console.info(`${name}: Uploading to <${data.url}>...`);
+          for (const [i, graph] of graphs.entries()) {
+            const tempFile = `${stepTempDir}/${i}.nq`;
             const contents = await fs.readFile(tempFile, { encoding: "utf-8" });
 
             const destination = new URL(data.url);
             const graphName = graph == "" ? "default" : graph;
-            destination.search = `graph=${graphName}`;
+            destination.search = `graph=${encodeURIComponent(graphName)}`;
 
-            const msg = `Uploading graph '${graphName}' to '${destination}'`;
-            Report.start(msg);
             const response = await fetch(destination.href, {
               headers: { ...Auth.asHeader(data.auth), "Content-Type": mimetype },
               method: "POST",
               body: contents,
             });
 
-            if (!response.ok && context.options.abortOnError) Report.fail(msg);
-            Report.success(msg);
+            if (!response.ok)
+              throw new Error(`${name}: Upload failed: ${response.status} ${response.statusText}`);
+            console.info(`${name}: Uploaded triples to <${data.url}> ` + Report.DONE);
           }
         },
       };

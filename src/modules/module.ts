@@ -1,22 +1,20 @@
-import { PickProperties } from "ts-essentials";
 import type {
-  IDest,
-  IConstructPipeline,
-  IUpdatePipeline,
+  IBaseStep,
   IConstructStep,
+  IDest,
+  IEndpoint,
+  IPipeline,
   ISource,
   IUpdateStep,
-  IPipeline,
-  IEndpoint,
   IValidateStep,
 } from "../config/types";
 
-import { LacesDestination } from "../destinations/laces.js";
+import { LacesHubDestination } from "../destinations/laces-hub.js";
 import { LocalFileDestination } from "../destinations/local-file.js";
 import { SPARQLGraphStore } from "../destinations/sparql-graph-store.js";
 import { SPARQLQuadStore } from "../destinations/sparql-quad-store.js";
 import { SPARQLDestination } from "../destinations/sparql.js";
-import { SparqlEndpoint } from "../endpoints/sparql";
+import { SparqlEndpoint } from "../endpoints/sparql.js";
 
 import type { PipelinePart, PipelinePartGetter } from "../runner/types.js";
 
@@ -25,10 +23,9 @@ import { LocalFileSource } from "../sources/local-file.js";
 import { MsAccessSource } from "../sources/msaccess.js";
 
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";
-import SparqlConstructQuery from "../steps/sparql-query.js";
+import SparqlConstructQuery from "../steps/sparql-construct.js";
 import SparqlUpdate from "../steps/sparql-update.js";
 
-import * as Report from "../utils/report.js";
 import { KeysOfUnion } from "../utils/types";
 
 /** A matched module. Pipeline key, module name, module info getter. */
@@ -36,8 +33,10 @@ export type MatchResult = [KeysOfUnion<IPipeline>, string, PipelinePartGetter];
 
 type IPipelineKeys = KeysOfUnion<IPipeline>;
 
+export class ModuleMatcherError extends Error {}
+
 export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<MatchResult> {
-  const modules: Record<
+  const ALL_MODULES: Record<
     IPipelineKeys,
     | PipelinePart<IEndpoint>[]
     | PipelinePart<IDest>[]
@@ -46,7 +45,7 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
   > = {
     endpoint: [new SparqlEndpoint()],
     destinations: [
-      new LacesDestination(),
+      new LacesHubDestination(),
       new LocalFileDestination(),
       new SPARQLGraphStore(),
       new SPARQLQuadStore(),
@@ -55,28 +54,34 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
     sources: [new AutoSource(), new LocalFileSource(), new MsAccessSource()],
     steps: [new ShaclValidateLocal(), new SparqlUpdate(), new SparqlConstructQuery()],
     // No processing module required...
-    independent: [],
-    name: [],
-    prefixes: [],
-    type: [],
+    independent: undefined,
+    name: undefined,
+    prefixes: undefined,
+    type: undefined,
   };
 
   const orderedKeys: IPipelineKeys[] = ["sources", "endpoint", "steps", "destinations"];
+  type PayloadType = ISource | IEndpoint | IBaseStep | IDest;
 
-  for (const key of orderedKeys) {
-    const possiblePartModulesForType = modules[key];
-    if (!possiblePartModulesForType) continue;
+  for (const workflowPart of orderedKeys) {
+    // First sources, then endpoint, then steps, etc.
+    const modulesForKey: PipelinePart<unknown>[] = ALL_MODULES[workflowPart];
+    if (!Array.isArray(modulesForKey)) continue;
 
-    const moduleData = data[key];
-    if (!moduleData) continue;
-    if (!Array.isArray(moduleData)) continue;
+    const pipelineDataForKey = data[workflowPart];
+    if (!pipelineDataForKey) continue;
 
-    for (const [i, stepData] of Object.entries(moduleData)) {
-      const step = possiblePartModulesForType.find((module) => module.qualifies(stepData));
-      if (!step) {
-        Report.error(`No appropriate module for /${key}[${i}]: (${JSON.stringify(stepData)})`);
-      }
-      yield [key, step.name(), await step.info(stepData)];
+    for (const [i, stepData] of Object.entries(pipelineDataForKey)) {
+      const qualifyingModule = modulesForKey.find((module: PipelinePart<unknown>) =>
+        module.qualifies(stepData)
+      );
+
+      if (!qualifyingModule)
+        throw new ModuleMatcherError(
+          `No appropriate module for /${workflowPart}[${i}]: (${JSON.stringify(stepData)})`
+        );
+
+      yield [workflowPart, qualifyingModule.name(), await qualifyingModule.info(stepData)];
     }
   }
 }

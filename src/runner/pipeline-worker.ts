@@ -4,8 +4,8 @@ import N3 from "n3";
 import type { ICliOptions } from "../config/configuration";
 import type { IPipeline } from "../config/types";
 import { matchPipelineParts, MatchResult } from "../modules/module.js";
-import { arrayFromGenerator, notEmpty } from "../utils/array.js";
-import * as Report from "../utils/report.js";
+import { arrayFromGenerator } from "../utils/array.js";
+import { authfetch } from "../utils/authfetch.js";
 import { KeysOfUnion } from "../utils/types";
 import type { ConstructRuntimeCtx, PipelinePartInfo } from "./types";
 
@@ -35,16 +35,12 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
     tempdir: await tempdir,
     quadStore: store,
     engine: new QueryEngine(),
-    querySources: [],
-    queryContext: {},
+    queryContext: {} as never,
   };
 
   // Prepare and gather all pipeline parts
-  Report.group("Matching modules...");
+  console.info(`Preparing modules...`);
   const matchedParts = orderPipelineParts(await arrayFromGenerator(matchPipelineParts(data)));
-  Report.groupEnd();
-
-  Report.group("Initializing modules...");
   const initializedParts: WorkflowCache[] = [];
 
   let i = 0;
@@ -54,48 +50,37 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
     initializedParts.push({ name, info });
   }
 
-  Report.log(`All modules: ${JSON.stringify(initializedParts.map((i) => i.name))}`);
-  Report.groupEnd();
+  // Gather and combine all query context for the QueryEngine
+  context.queryContext = { fetch: authfetch, sources: [] as never };
+  initializedParts
+    .filter((i) => i.info.getQueryContext != undefined)
+    .forEach((part) => {
+      if (part.info.getQueryContext.sources) {
+        context.queryContext.sources.push(...part.info.getQueryContext.sources);
+        delete part.info.getQueryContext.sources;
+      }
 
-  // Gather all Query Sources and Query Contexts
-  context.querySources = initializedParts.map((desc) => desc.info.getQuerySource).filter(notEmpty);
-  context.queryContext = initializedParts.reduce(
-    (all, i) => Object.assign(all, i.info?.getQueryContext),
-    {}
-  );
+      Object.assign(context.queryContext, part.info.getQueryContext);
+    });
   // Finalize context, make it readonly
   Object.freeze(context);
 
   // Start -preProcess
-  Report.group("preparing...");
+
   await Promise.allSettled(
-    initializedParts
-      .map((i) => i.info?.prepare)
-      .filter(notEmpty)
-      .map((i) => i())
+    initializedParts.filter((i) => i.info.prepare != undefined).map((i) => i.info.prepare())
   );
-  Report.groupEnd();
 
-  Report.group("starting...");
-  for (const [i, part] of initializedParts.entries()) {
-    Report.group(`${i}: ${part.name}`);
-    try {
-      await part?.info.start();
-    } catch (err) {
-      Report.error(`${err}`);
-    }
-    Report.groupEnd();
+  for (const [i, part] of initializedParts.filter((i) => i.info.start != undefined).entries()) {
+    console.group(`${i + 1}: ${part.name}`);
+    await part?.info?.start();
+    console.groupEnd();
   }
-  Report.groupEnd();
 
-  Report.group("cleanup...");
-  await Promise.allSettled(initializedParts.map((i) => i?.info.cleanup));
-  Report.groupEnd();
-
-  Report.info(`pipeline ${data.name} DONE`);
-
-  // name
-  // prefixes
+  console.info(`Post-workflow cleanup...`);
+  await Promise.allSettled(
+    initializedParts.filter((i) => i.info.cleanup != undefined).map((i) => i.info.cleanup())
+  );
 }
 
 function orderPipelineParts(data: MatchResult[]) {

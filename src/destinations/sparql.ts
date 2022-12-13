@@ -5,7 +5,9 @@ import type {
   PipelinePartGetter,
   ConstructRuntimeCtx,
 } from "../runner/types.js";
-import * as Auth from "../utils/authentication.js";
+import * as Auth from "../utils/auth.js";
+
+const name = "destinations/comunica-sparql";
 
 /**
  * This destination supports SPARQL Update queries.
@@ -13,7 +15,7 @@ import * as Auth from "../utils/authentication.js";
  * Does not support limitation of exported `graphs`.
  */
 export class SPARQLDestination implements PipelinePart<IDest> {
-  name = () => "destinations/comunica-sparql";
+  name = () => name;
 
   qualifies(data: IDest): boolean {
     if (data.type === "sparql") return true;
@@ -25,10 +27,11 @@ export class SPARQLDestination implements PipelinePart<IDest> {
   async info(data: IDest): Promise<PipelinePartGetter> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<EndpointPartInfo> => {
-      const destination = { type: "sparql", value: Auth.addToUrl(data.url, data.auth) };
       return {
-        getQuerySource: destination, // both source and destination for Update queries
-        getQueryContext: { destination },
+        getQueryContext: {
+          destination: { type: "sparql", value: data.url },
+          httpAuth: Auth.httpSyntax(data.auth),
+        },
       };
     };
   }

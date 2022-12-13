@@ -3,8 +3,10 @@
 import * as dotenv from "dotenv";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import compileConfigData from "../config/configuration.js";
+import compileConfigData, { CONFIG_FILENAME_YAML } from "../config/configuration.js";
 import * as PipelineSupervisor from "../runner/pipeline-supervisor.js";
+import * as RulesWorker from "../runner/shacl-rules-worker.js";
+import * as Report from "../utils/report.js";
 
 dotenv.config();
 
@@ -12,46 +14,52 @@ dotenv.config();
 async function main() {
   // Provide command line arguments
   const args = await yargs(hideBin(process.argv))
-    .option("abort-on-error", {
-      alias: "ci",
-      default: false,
-      type: "boolean",
-      desc: "Abort on HTTP error.",
+    // command name '*' is the default
+    .command("run", "Run a workflow", {
+      cache: {
+        type: "boolean",
+        default: false,
+        desc: "Cache each step's results locally",
+      },
+      config: {
+        alias: "i",
+        type: "string",
+        desc: "Path to pipeline file",
+        default: CONFIG_FILENAME_YAML,
+      },
     })
-    .option("config-file", {
-      alias: "p",
-      type: "string",
-      desc: "Path to alternative configuration file",
+    .command("rules", "Generate `sh:SPARQLRule`s from Construct steps", {
+      config: {
+        alias: "i",
+        type: "string",
+        desc: "Path to pipeline file",
+        default: CONFIG_FILENAME_YAML,
+      },
     })
-    .option("cache-intermediate-results", {
-      alias: "i",
-      type: "boolean",
-      default: false,
-      desc: "Cache each step's results locally",
-    })
-    .option("shacl-rules-out", {
-      alias: "r",
-      type: "string",
-      requiresArg: true,
-      desc: "Generate SHACL Rules from CONSTRUCT steps",
-    })
-    .option("warnings-as-errors", {
-      alias: "e",
-      type: "boolean",
-      default: false,
-      desc: "SHACL warnings are treated as fatal errors",
-    })
-    .usage("Run a sparql-query-runner.json pipeline")
+    .demandCommand()
+    .help()
+    .usage("Run a workflow of SPARQL Construct or Update queries.")
     .parse();
 
-  const config = await compileConfigData(args["config-file"]);
+  try {
+    // Initialize configuration
+    const config = await compileConfigData(args["config"] as string | string[]);
 
-  PipelineSupervisor.runAll(config, {
-    abortOnError: args["abort-on-error"],
-    cacheIntermediateResults: args["cache-intermediate-results"],
-    outputShaclRulesToFilePath: args["shacl-rules-out"],
-    shaclWarningsAsErrors: args["warnings-as-errors"],
-  });
+    if (args["_"].includes("rules")) {
+      config.pipelines.forEach(async (p) => {
+        // TODO: Alternative destinations for `sh:SPARQLRule`s
+        await RulesWorker.start(p, process.stdout);
+      });
+    }
+
+    PipelineSupervisor.runAll(config, {
+      cacheIntermediateResults: args["cache"] as boolean,
+    });
+  } catch (error) {
+    if (error instanceof Error) console.error(Report.ERROR + error.message);
+    else console.error(Report.ERROR + error);
+    process.exit(1);
+  }
 }
 
 void main();

@@ -9,10 +9,11 @@ import type {
   StepPartInfo,
 } from "../runner/types";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
-import * as Report from "../utils/report.js";
+
+const name = "steps/shacl-validate-local";
 
 export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
-  name = () => "steps/shacl-validate";
+  name = () => name;
 
   qualifies(data: IValidateStep): boolean {
     if (data.type !== "shacl-validate") return false;
@@ -21,14 +22,14 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
   }
 
   async info(data: IValidateStep): Promise<PipelinePartGetter> {
-    return async (context: Readonly<ConstructRuntimeCtx>, i?: number): Promise<StepPartInfo> => {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
       const shapesStore = new N3.Store();
       if (Object.hasOwn(data, "onlyGraphs"))
-        Report.info(`${this.name()} (${i}) only processes shapes in the default graph.`);
+        console.warn(`${name}: Only shapes in the default graph are used`);
 
       return {
         prepare: async () => {
-          for (const [j, url] of data.url.entries()) {
+          for (const url of data.url) {
             const mimetype = getMediaTypeFromFilename(url);
             const stream = fs.createReadStream(url);
             const parser = new N3.StreamParser({ format: mimetype });
@@ -45,10 +46,10 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
           const validator = new SHACLValidator(shapesStore);
           try {
             const report = validator.validate(context.quadStore);
-            if (report.conforms) Report.info(`Conforms to shapes`);
+            if (report.conforms) console.info(`${name}: Data conforms to shapes`);
             else {
               for (const r of report.results) {
-                Report.warning(
+                console.warn(
                   `
  SHACL: ${r.severity}: ${r.message}
     at: ${r.focusNode} ${r.path} ${r.term}
@@ -57,7 +58,7 @@ source: ${r.sourceShape} / ${r.sourceConstraintComponent}`
               }
             }
           } catch (err) {
-            Report.error(`Could not validate using the shapes provided`);
+            console.error(`${name}: Could not validate, due to:` + err);
           }
         },
       };

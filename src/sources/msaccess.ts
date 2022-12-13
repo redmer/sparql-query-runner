@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import MDBReader from "mdb-reader";
 import type { Value } from "mdb-reader/lib/types";
-import N3, { DataFactory } from "n3";
+import N3, { BlankNode, DataFactory, Util } from "n3";
 import type { ISource } from "../config/types";
 import type {
   PipelinePart,
@@ -10,14 +10,16 @@ import type {
   SourcePartInfo,
 } from "../runner/types";
 import { basename, download } from "../utils/download-remote.js";
-import { CSVNS, XSD } from "../utils/namespaces.js";
-import * as Report from "../utils/report.js";
+import { CSVNS, FX, RDF, XSD, XYZ } from "../utils/namespaces.js";
+
+const name = "sources/msaccess";
 
 export class MsAccessSource implements PipelinePart<ISource> {
-  name = () => "sources/msaccess";
+  name = () => name;
 
   qualifies(data: ISource): boolean {
     if (data.type === "msaccess") return true;
+    if (data.type === "msaccess-xyz") return true;
     return false;
   }
 
@@ -25,8 +27,6 @@ export class MsAccessSource implements PipelinePart<ISource> {
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
       const store = new N3.Store();
       let inputFilePath: string;
-
-      if (data.onlyGraphs) Report.info(`${this.name()} does not support data.graphs`);
 
       return {
         prepare: async () => {
@@ -44,31 +44,60 @@ export class MsAccessSource implements PipelinePart<ISource> {
         },
         // The start promise either returns quads or void
         start: async () => {
-          const msg = `Reading ${data.url}...`;
           const db = await fs.readFile(inputFilePath);
           const mdb = new MDBReader(db);
 
-          Report.start(msg);
-          for (const tableName of mdb.getTableNames()) {
-            const context = CSVNS(`table/${encodeURI(tableName)}`);
-            let i_row = 1;
-            for (const record of mdb.getTable(tableName).getData()) {
-              for (const [column, value] of Object.entries(record)) {
-                if (!value) continue; // falsy values not imported
+          console.info(`${name}: Reading <${data.url}>...`);
 
-                const subject = CSVNS(`table/${encodeURI(tableName)}/row/${i_row}`);
-                const predicate = CSVNS(encodeURI(column));
-                const object = valueToObject(value);
+          // There are 2 implementations:
+          // 1. <csv:> namespace, ideosyncratic
+          // 2. xyz: (Facade-X) namespace, graphs similar to SPARQL-Anything
+          if (data.type === "msaccess") {
+            if (data.onlyGraphs) console.warn(`${name}: 'onlyGraphs' is ignored`);
 
-                store.addQuad(subject, predicate, object, context);
+            for (const tableName of mdb.getTableNames()) {
+              const context = CSVNS(`table/${encodeURI(tableName)}`);
+              let i_row = 1;
+              for (const record of mdb.getTable(tableName).getData()) {
+                for (const [column, value] of Object.entries(record)) {
+                  if (!value) continue; // falsy values not imported
+
+                  const subject = CSVNS(`table/${encodeURI(tableName)}/row/${i_row}`);
+                  const predicate = CSVNS(encodeURI(column));
+                  const object = valueToObject(value);
+
+                  store.addQuad(subject, predicate, object, context);
+                }
+                i_row++;
               }
-              i_row++;
+            }
+          } else if (data.type === "msaccess-xyz") {
+            const TABLE = Util.prefix(data.url + "#");
+            for (const tableName of mdb.getTableNames()) {
+              const graph = TABLE(encodeURI(tableName));
+              const table = new BlankNode(encodeURI(tableName));
+              store.addQuad(table, RDF("type"), FX("root"), graph);
+
+              let i_row = 1;
+              for (const record of mdb.getTable(tableName).getData()) {
+                const row = new BlankNode(encodeURI(tableName) + i_row);
+                store.addQuad(table, RDF(`_${i_row}`), row, graph);
+
+                for (const [column, value] of Object.entries(record)) {
+                  if (value == null) continue;
+
+                  const predicate = XYZ(encodeURI(column));
+                  const object = valueToObject(value);
+
+                  store.addQuad(row, predicate, object, graph);
+                }
+                i_row++;
+              }
             }
           }
-          Report.success(msg);
-          Report.info(`${data.url}: ${store.countQuads(null, null, null, null)} quads`);
+          console.info(`${name}: Generated ${store.countQuads(null, null, null, null)} quads`);
         },
-        getQuerySource: store,
+        getQueryContext: { sources: [store] },
       };
     };
   }

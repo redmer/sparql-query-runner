@@ -10,6 +10,8 @@ import {
 import { basename, download } from "../utils/download-remote.js";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
+const name = "sources/local-file";
+
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
  * This source only supports plain RDF serializations (i.e., not `hdtFile`/`ostrichFile`).
@@ -18,7 +20,7 @@ import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
 export class LocalFileSource implements PipelinePart<ISource> {
-  name = () => "sources/local-file";
+  name = () => name;
 
   qualifies(data: ISource): boolean {
     // please try to keep in sync with <./auto.ts>
@@ -63,8 +65,12 @@ export class LocalFileSource implements PipelinePart<ISource> {
           for (const graph of store.getGraphs(null, null, null)) {
             if (!data.onlyGraphs?.includes(graph.id)) store.deleteGraph(graph);
           }
+
+          console.info(
+            `${name}: Loaded ${store.countQuads(null, null, null, null)} quads from <${data.url}>`
+          );
         },
-        getQuerySource: store,
+        getQueryContext: { sources: [store] },
       };
     };
   }

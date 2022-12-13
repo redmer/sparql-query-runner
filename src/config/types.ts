@@ -36,7 +36,7 @@ export interface IConstructPipeline extends IBasePipeline {
 
 export interface IUpdatePipeline extends IBasePipeline {
   type: "direct-update";
-  endpoint: IEndpoint;
+  endpoint: IEndpoint[];
   steps: IUpdateStep[];
 }
 
@@ -53,7 +53,7 @@ export interface ISourceOrDest {
 }
 
 export interface ISource extends ISourceOrDest {
-  type: "local-file" | "sparql" | "auto" | "msaccess";
+  type: "local-file" | "sparql" | "auto" | "msaccess" | "msaccess-xyz";
 }
 
 export interface IDest extends ISourceOrDest {
@@ -80,7 +80,7 @@ export interface IBaseStep {
 
 export interface IConstructStep extends IBaseStep {
   type: "sparql-construct";
-  intoGraph?: string[];
+  intoGraph?: string;
   targetClass: string;
 }
 

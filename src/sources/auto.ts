@@ -5,7 +5,9 @@ import {
   ConstructRuntimeCtx,
   SourcePartInfo,
 } from "../runner/types.js";
-import * as Auth from "../utils/authentication.js";
+import * as Auth from "../utils/auth.js";
+
+const name = "sources/comunica-auto";
 
 /**
  * These sources are automatically supported by Comunica.
@@ -19,7 +21,7 @@ import * as Auth from "../utils/authentication.js";
  * Source: <https://comunica.dev/docs/query/advanced/source_types/#supported-source-types>
  * */
 export class AutoSource implements PipelinePart<ISource> {
-  name = () => "sources/comunica-auto";
+  name = () => name;
 
   qualifies(data: ISource): boolean {
     if (data.type !== "auto") return false;
@@ -36,7 +38,7 @@ export class AutoSource implements PipelinePart<ISource> {
         start: async () => {},
         // We only need to insert Basic authentication between URL schema and rest...
         // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-        getQuerySource: { type: "auto", value: Auth.addToUrl(data.url, data.auth) },
+        getQueryContext: { sources: [{ type: "auto", value: data.url }] },
       };
     };
   }

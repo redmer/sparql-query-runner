@@ -1,6 +1,8 @@
 import type { IAuth } from "../config/types";
 import * as process from "node:process";
 
+const name = "utils/auth";
+
 export class AuthTypeError extends Error {}
 export class AuthValueError extends Error {}
 
@@ -10,14 +12,16 @@ export function usernamePasswordDict(data: IAuth): {
   password: string;
 } {
   if (data.type !== "Basic")
-    throw new AuthTypeError(`authentication type '${data.type}' not supported here`);
+    throw new AuthTypeError(`${name}: Authentication type '${data.type}' not supported here`);
 
   const { user_env, password_env } = data;
   const username = process.env[user_env];
   const password = process.env[password_env];
 
   if (!username || !password)
-    throw new AuthValueError(`could not find environment variables '${user_env}' or '${password}'`);
+    throw new AuthValueError(
+      `${name}: Could not find environment variables '${user_env}' or '${password}'`
+    );
 
   return {
     username,
@@ -53,7 +57,7 @@ export function asHeader(data: IAuth): { Authorization: string } {
   if (data.type === "Bearer") {
     const token = process.env[data.token_env];
     if (!token)
-      throw new AuthValueError(`could not find environment variables '${data.token_env}'`);
+      throw new AuthValueError(`${name}: Could not find environment variables '${data.token_env}'`);
 
     return {
       Authorization: `Bearer ${token}`,
@@ -64,6 +68,6 @@ export function asHeader(data: IAuth): { Authorization: string } {
 }
 
 /** Base64 encode */
-function encode(value: string): string {
+export function encode(value: string): string {
   return Buffer.from(value).toString("base64");
 }

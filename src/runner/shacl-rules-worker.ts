@@ -1,44 +1,39 @@
 import fs from "fs/promises";
 import type { Quad } from "n3";
 import N3, { DataFactory } from "n3";
-import { Generator, Parser } from "sparqljs";
-import { assert } from "ts-essentials";
-import { ICliOptions } from "../config/configuration.js";
-import { IBaseStep, IConstructStep, IPipeline, IValidateStep } from "../config/types.js";
+import sparqljs from "sparqljs";
+import { IConstructStep, IPipeline } from "../config/types.js";
 import { RDF, SH, XSD } from "../utils/namespaces.js";
+const { Generator, Parser } = sparqljs;
 
 declare type Triple = [Quad["subject"], Quad["predicate"], Quad["object"]];
 
 /** Yield quads for SHACL namespace declaration. */
 export function* quadsForNamespaces(data: Record<string, string>): Generator<Triple> {
   for (const [abbr, val] of Object.entries(data)) {
+    //* ?val sh:declare [
+    //*   sh:namespace "..."^^xsd:anyURI ;
+    //*   sh:prefix "?abbr" ;
+    //* ] .
     const bnode = DataFactory.blankNode();
     yield [DataFactory.namedNode(val), SH("declare"), bnode];
     yield [bnode, SH("namespace"), DataFactory.literal(val, XSD("anyURI"))];
     yield [bnode, SH("prefix"), DataFactory.literal(abbr)];
   }
-  // ?val sh:declare [
-  //   sh:namespace "..."^^xsd:anyURI ;
-  //   sh:prefix "?abbr" ;
-  // ] .
 }
 
-export function* quadsForQuery(
-  query: string,
-  subject: Quad["subject"],
-  i: number
-): Generator<Triple> {
+export function* quadsForQuery(query: string, rule: Quad["subject"], i: number): Generator<Triple> {
   const parser = new Parser();
   const results = parser.parse(query);
 
-  yield [subject, RDF("type"), SH("SPARQLRule")];
-  yield [subject, SH("order"), DataFactory.literal(i)];
-  // ?subject a sh:SPARQLRule ;
-  //   sh:order ?i .  # ordinal from .yaml
+  //* ?rule a sh:SPARQLRule ;
+  //*   sh:order ?i .  # ordinal from .yaml
+  yield [rule, RDF("type"), SH("SPARQLRule")];
+  yield [rule, SH("order"), DataFactory.literal(i)];
 
-  // ↓↓ << ?subject sh:prefixes __ . >>
+  // ↓↓ ?rule sh:prefixes __ .
   for (const [, val] of Object.entries(results.prefixes))
-    yield [subject, SH("prefixes"), DataFactory.namedNode(val)];
+    yield [rule, SH("prefixes"), DataFactory.namedNode(val)];
 
   yield* quadsForNamespaces(results.prefixes);
 
@@ -46,8 +41,8 @@ export function* quadsForQuery(
   let body = generator.stringify(results);
   body = body.replace(/PREFIX [^:]+: <[^>]+>\n/gi, "");
 
-  yield [subject, SH("construct"), DataFactory.literal(body)];
-  // ?subject sh:construct """CONSTRUCT {} WHERE {}""" ;
+  // ?rule sh:construct """CONSTRUCT {} WHERE {}""" ;
+  yield [rule, SH("construct"), DataFactory.literal(body)];
 }
 
 export async function* quadsForStep(step: IConstructStep, i: number): AsyncGenerator<Triple> {
@@ -55,28 +50,28 @@ export async function* quadsForStep(step: IConstructStep, i: number): AsyncGener
   if (!targetClass) return;
 
   for (const url of step.url) {
-    const subject = DataFactory.namedNode(
+    const shape = DataFactory.namedNode(
       new URL(url, "https://rdmr.eu/ns/sparql-query-runner/rule/id/").href
     );
-    const object = DataFactory.blankNode();
+    const rule = DataFactory.blankNode();
 
-    yield [subject, RDF("type"), SH("NodeShape")];
-    yield [subject, SH("targetClass"), DataFactory.namedNode(targetClass)];
-    yield [subject, SH("rule"), object];
+    //* ?shape a sh:NodeShape ;
+    //*   sh:targetClass ?targetClass ;
+    //*   sh:rule ?rule .
 
-    // ?subject a sh:NodeShape ;
-    //   sh:targetClass ?targetClass ;
-    //   sh:rule ?object .
+    yield [shape, RDF("type"), SH("NodeShape")];
+    yield [shape, SH("targetClass"), DataFactory.namedNode(targetClass)];
+    yield [shape, SH("rule"), rule];
 
     const query = await fs.readFile(url, { encoding: "utf-8" });
-    yield* quadsForQuery(query, object, i);
+    yield* quadsForQuery(query, rule, i);
   }
 }
 
-export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
+export async function start(data: IPipeline, out: NodeJS.WritableStream) {
   if (data.type !== "construct-quads") return;
 
-  const writer = new N3.Writer(options.outputShaclRulesToFilePath, {
+  const writer = new N3.Writer(out, {
     format: "text/turtle",
     prefixes: data.prefixes,
   });
