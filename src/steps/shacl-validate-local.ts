@@ -3,9 +3,9 @@ import N3 from "n3";
 import SHACLValidator from "rdf-validate-shacl";
 import type { IValidateStep } from "../config/types";
 import type {
+  ConstructRuntimeCtx,
   PipelinePart,
   PipelinePartGetter,
-  ConstructRuntimeCtx,
   StepPartInfo,
 } from "../runner/types";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
@@ -17,7 +17,7 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
 
   qualifies(data: IValidateStep): boolean {
     if (data.type !== "shacl-validate") return false;
-    if (data.url === undefined) return false;
+    if (data.access === undefined) return false;
     return true;
   }
 
@@ -29,7 +29,7 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
 
       return {
         prepare: async () => {
-          for (const url of data.url) {
+          for (const url of data.access) {
             const mimetype = getMediaTypeFromFilename(url);
             const stream = fs.createReadStream(url);
             const parser = new N3.StreamParser({ format: mimetype });

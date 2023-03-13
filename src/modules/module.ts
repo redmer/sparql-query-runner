@@ -1,24 +1,24 @@
 import type {
   IConstructStep,
-  IDest,
   IEndpoint,
   IPipeline,
   ISource,
+  ITarget,
   IUpdateStep,
   IValidateStep,
 } from "../config/types";
 
-import { LacesHubDestination } from "../destinations/laces-hub.js";
-import { LocalFileDestination } from "../destinations/local-file.js";
-import { SPARQLGraphStore } from "../destinations/sparql-graph-store.js";
-import { SPARQLQuadStore } from "../destinations/sparql-quad-store.js";
-import { SPARQLDestination } from "../destinations/sparql.js";
 import { SparqlEndpoint } from "../endpoints/sparql.js";
+import { LacesHubTarget } from "../targets/laces-hub.js";
+import { LocalFileTarget } from "../targets/local-file.js";
+import { SPARQLGraphStoreTarget } from "../targets/sparql-graph-store.js";
+import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";
+import { SPARQLTarget } from "../targets/sparql.js";
 
 import type { PipelinePart, PipelinePartGetter } from "../runner/types.js";
 
 import { AutoSource } from "../sources/auto.js";
-import { LocalFileSource } from "../sources/local-file.js";
+import { LocalFileSource } from "../sources/localfile.js";
 import { MsAccessSource } from "../sources/msaccess.js";
 
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";
@@ -38,17 +38,17 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
   const ALL_MODULES: Record<
     IPipelineKeys,
     | PipelinePart<IEndpoint>[]
-    | PipelinePart<IDest>[]
+    | PipelinePart<ITarget>[]
     | PipelinePart<ISource>[]
     | PipelinePart<IValidateStep | IUpdateStep | IConstructStep>[]
   > = {
     endpoint: [new SparqlEndpoint()],
-    destinations: [
-      new LacesHubDestination(),
-      new LocalFileDestination(),
-      new SPARQLGraphStore(),
-      new SPARQLQuadStore(),
-      new SPARQLDestination(),
+    targets: [
+      new LacesHubTarget(),
+      new LocalFileTarget(),
+      new SPARQLGraphStoreTarget(),
+      new SPARQLQuadStoreTarget(),
+      new SPARQLTarget(),
     ],
     sources: [new AutoSource(), new LocalFileSource(), new MsAccessSource()],
     steps: [new ShaclValidateLocal(), new SparqlUpdate(), new SparqlConstructQuery()],
@@ -59,7 +59,7 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
     type: undefined,
   };
 
-  const orderedKeys: IPipelineKeys[] = ["sources", "endpoint", "steps", "destinations"];
+  const orderedKeys: IPipelineKeys[] = ["sources", "endpoint", "steps", "targets"];
 
   for (const workflowPart of orderedKeys) {
     // First sources, then endpoint, then steps, etc.
@@ -76,7 +76,7 @@ export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<Match
 
       if (!qualifyingModule)
         throw new ModuleMatcherError(
-          `No appropriate module for /${workflowPart}[${i}]: (${JSON.stringify(stepData)})`
+          `No appropriate module for /${workflowPart}[${i + 1}]: (${JSON.stringify(stepData)})`
         );
 
       yield [workflowPart, qualifyingModule.name(), await qualifyingModule.info(stepData)];

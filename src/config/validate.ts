@@ -8,7 +8,6 @@ import type {
   IConstructStep,
   ICredential,
   IEndpoint,
-  IInferStep,
   ISource,
   ITarget,
   IUpdatePipeline,
@@ -26,11 +25,15 @@ export class ConfigurationError extends Error {}
 
 /** Parse the configuration file. */
 export async function getJsonYamlContents(path: string): Promise<unknown> {
-  const contents = fs.readFile(path, { encoding: "utf-8" });
-  if (path.endsWith(".yaml")) {
-    return yaml.parse(await contents, { strict: true, version: "1.2" });
-  } else if (path.endsWith(".json")) {
-    return JSON.parse(await contents);
+  try {
+    const contents = fs.readFile(path, { encoding: "utf-8" });
+    if (path.endsWith(".yaml")) {
+      return yaml.parse(await contents, { strict: true, version: "1.2" });
+    } else if (path.endsWith(".json")) {
+      return JSON.parse(await contents);
+    }
+  } catch (e) {
+    throw new ConfigurationError(`Could not read ${path}`, e);
   }
 }
 
@@ -99,7 +102,9 @@ function validateConstructPipeline(
 function validateEndpoint(data: unknown): IEndpoint {
   if (typeof data === "string") return validateEndpoint({ post: data } as IEndpoint);
   if (data["post"] === undefined)
-    throw new ConfigurationError(`An endpoint's target url ('post') is missing.`);
+    throw new ConfigurationError(
+      `An endpoint's target url ('post') is missing. (Data: ${JSON.stringify(data)})`
+    );
 
   return {
     post: data["post"],
@@ -110,8 +115,15 @@ function validateEndpoint(data: unknown): IEndpoint {
 function validateUpdateStep(data: unknown): IUpdateStep {
   if (typeof data === "string")
     return validateUpdateStep({ type: "sparql-update", access: [data] } as IUpdateStep);
-  if (data["access"] === undefined || data["update"] === undefined)
-    throw new ConfigurationError(`A query value (access,update) for step is missing.`);
+  if (data["access"] === undefined && data["update"] === undefined)
+    throw new ConfigurationError(
+      `A query value (access,update) for step is missing. (Data: ${JSON.stringify(data)})`
+    );
+
+  if (data["access"] && data["update"])
+    throw new ConfigurationError(
+      `Mutually exclusive 'access' and 'update' supplied for step. (Data: ${JSON.stringify(data)})`
+    );
 
   return {
     type: data["type"] ?? "sparql-update",
@@ -120,14 +132,23 @@ function validateUpdateStep(data: unknown): IUpdateStep {
   };
 }
 
-function validateConstructStep(data: unknown): IConstructStep | IValidateStep | IInferStep {
+function validateConstructStep(data: unknown): IConstructStep | IValidateStep {
   if (typeof data === "string")
     return validateConstructStep({ type: "sparql-construct", access: [data] } as IConstructStep);
 
   // `access` or `construct` is required, except for the following types
-  if (data["access"] === undefined || data["construct"] === undefined)
-    if (!["n3-reasoner", "shacl-validate"].includes(data["type"]))
-      throw new ConfigurationError(`A query value (access,construct) for step is missing.`);
+  if (data["access"] === undefined && data["construct"] === undefined)
+    if (!["shacl-validate"].includes(data["type"]))
+      throw new ConfigurationError(
+        `A query value (access,construct) for step is missing. (Data: ${JSON.stringify(data)})`
+      );
+
+  if (data["access"] && data["construct"])
+    throw new ConfigurationError(
+      `Mutually exclusive 'access' and 'construct' supplied for step. (Data: ${JSON.stringify(
+        data
+      )})`
+    );
 
   return {
     type: data["type"] ?? "sparql-construct",
@@ -141,7 +162,9 @@ function validateConstructStep(data: unknown): IConstructStep | IValidateStep | 
 function validateSource(data: unknown): ISource {
   if (typeof data === "string") return validateSource({ type: "auto", access: data } as ISource);
   if (data["access"] === undefined)
-    throw new ConfigurationError(`Source requires a URL to find data`);
+    throw new ConfigurationError(
+      `Source requires a URL to find data. (Data: ${JSON.stringify(data)})`
+    );
 
   return {
     type: data["type"] ?? "auto",
@@ -155,12 +178,14 @@ function validateTarget(data: unknown): ITarget {
   if (typeof data === "string")
     return validateTarget({ type: "localfile", access: data } as ITarget);
   if (data["access"] === undefined)
-    throw new ConfigurationError(`Source requires a target URL to export to`);
+    throw new ConfigurationError(
+      `Source requires a target URL to export to. (Data: ${JSON.stringify(data)})`
+    );
 
   return {
     type: data["type"] ?? "localfile",
     access: data["access"],
-    credentials: validateAuthentication(data["authentication"]),
+    credentials: validateAuthentication(data["credentials"]),
     onlyGraphs: ge1(data["onlyGraphs"]),
   };
 }
@@ -171,7 +196,7 @@ function validateAuthentication(data: unknown): ICredential | undefined {
   if (data === undefined) return undefined;
 
   // If password_env and user_env, this is a Basic auth type
-  if (data["password"] !== undefined && data["username"] !== undefined)
+  if (data["password"] && data["username"])
     return {
       type: "Basic",
       password: data["password"],
@@ -179,7 +204,7 @@ function validateAuthentication(data: unknown): ICredential | undefined {
     };
 
   // If token_env, this is a Bearer type
-  if (data["token"] !== undefined)
+  if (data["token"])
     return {
       type: "Bearer",
       token: data["token"],

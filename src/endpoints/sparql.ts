@@ -31,7 +31,7 @@ export class SparqlEndpoint implements PipelinePart<IEndpoint> {
         // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
         getQueryContext: {
           destination: { type: "sparql", value: data.post },
-          httpAuth: Auth.httpSyntax(data.auth),
+          httpAuth: Auth.httpSyntax(data.credentials),
         },
       };
     };

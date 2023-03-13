@@ -1,5 +1,5 @@
-import { ConfigurationError } from "../config/validate.js";
 import type { ITarget } from "../config/types.js";
+import { ConfigurationError } from "../config/validate.js";
 import type {
   ConstructRuntimeCtx,
   DestinationPartInfo,
@@ -31,7 +31,7 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
   }
 
   async info(data: ITarget): Promise<PipelinePartGetter> {
-    const [repoName, publName] = data.access.split("/").slice(-1);
+    const [repoName, publName] = data.access.split("/").slice(-2);
     const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
 
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
@@ -40,7 +40,9 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
 
       const auth = data.credentials;
       if (auth === undefined)
-        throw new ConfigurationError(`${name}: Laces requires auth details <${data.access}>`);
+        throw new ConfigurationError(
+          `${name}: Laces requires auth details <${JSON.stringify(data)}>`
+        );
 
       return {
         prepare: async () => {
@@ -54,11 +56,11 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
           metadata = publs.find((p) => p.name == publName);
           if (!metadata)
             throw new LacesHubError(
-              `${name}: Laces publication '${publName}' not found in repository '${repoName}'`
+              `${name}: Publication '${publName}' not found in repository '${repoName}'`
             );
           if (metadata.versioningMode === "CUSTOM")
             throw new Error(
-              `${name}: Laces publication '${publName}' versioning mode (CUSTOM) is unsupported (GH-5)`
+              `${name}: Publication '${publName}' versioning mode (CUSTOM) is not supported (GH-5)`
             );
         },
         start: async () => {
@@ -89,7 +91,8 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
 
           if (!response.ok)
             throw new LacesHubError(
-              `Upload ${response.status} (${response.statusText}):\n` + response.body
+              `${name}: Publication '${publName}': upload ${response.status} (${response.statusText}):\n` +
+                response.body
             );
           console.info(`${name}: Uploaded to <${data.access}>` + Report.DONE);
         },

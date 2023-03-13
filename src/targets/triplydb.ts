@@ -8,7 +8,7 @@ import type {
   PipelinePart,
   PipelinePartGetter,
 } from "../runner/types.js";
-import { filter, serialize } from "../utils/graphs-to-file.js";
+import { filter } from "../utils/graphs-to-file.js";
 import * as Report from "../utils/report.js";
 
 const name = "targets/triplydb";
@@ -41,18 +41,24 @@ export class TriplyDBTarget implements PipelinePart<ITarget> {
           ).ensureDataset(datasetName, { prefixes: context.pipeline.prefixes });
         },
         start: async () => {
-          const dataStore = data.onlyGraphs.length
-            ? await filter(context.quadStore, { graphs: data.onlyGraphs })
-            : context.quadStore;
-
           console.info(
             `${name}: Gathering ${
               data.onlyGraphs ? data.onlyGraphs.length : "all"
             } graphs for export...`
           );
 
+          const dataStore = data.onlyGraphs.length
+            ? await filter(context.quadStore, { graphs: data.onlyGraphs })
+            : context.quadStore;
+
           await dataset.importFromStore(dataStore, { overwriteAll: true });
-          console.info(`${name}: Uploaded to <${await dataset.getInfo()}>` + Report.DONE);
+          console.info(`${name}: Uploaded to <${(await dataset.getInfo()).id}>` + Report.DONE);
+
+          console.info(`${name}: Updating services...`);
+          for await (const service of dataset.getServices()) {
+            if (!(await service.isUpToDate())) service.update();
+          }
+          console.info(`${name}: All services are up-to-date` + Report.DONE);
         },
       };
     };

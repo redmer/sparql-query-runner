@@ -1,11 +1,12 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import fs from "fs/promises";
 import N3 from "n3";
-import type { ICliOptions } from "../config/validate";
 import type { IPipeline } from "../config/types";
+import type { ICliOptions } from "../config/validate";
 import { matchPipelineParts, MatchResult } from "../modules/module.js";
 import { arrayFromGenerator } from "../utils/array.js";
 import { authfetch } from "../utils/authfetch.js";
+import * as Report from "../utils/report.js";
 import { KeysOfUnion } from "../utils/types";
 import type { ConstructRuntimeCtx, PipelinePartInfo } from "./types";
 
@@ -47,9 +48,14 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   let i = 0;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for await (const [key, name, part] of matchedParts) {
-    i++;
-    const info = await part(context, i);
-    initializedParts.push({ name, info });
+    try {
+      i++;
+      const info = await part(context, i);
+      initializedParts.push({ name, info });
+    } catch (e) {
+      console.error(Report.ERROR + `Error during info() of ${name} (${key}[${i}])`);
+      throw e;
+    }
   }
 
   // Gather and combine all query context for the QueryEngine
@@ -67,11 +73,14 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   // Finalize context, make it readonly
   Object.freeze(context);
 
-  // Start -preProcess
-
-  await Promise.allSettled(
-    initializedParts.filter((i) => i.info.prepare != undefined).map((i) => i.info.prepare())
-  );
+  try {
+    await Promise.allSettled(
+      initializedParts.filter((i) => i.info.prepare != undefined).map((i) => i.info.prepare())
+    );
+  } catch (e) {
+    console.error(Report.ERROR + `Error during prepare() stage`);
+    throw e;
+  }
 
   for (const [i, part] of initializedParts.filter((i) => i.info.start != undefined).entries()) {
     console.group(`${i + 1}: ${part.name}`);
@@ -79,10 +88,15 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
     console.groupEnd();
   }
 
-  console.info(`Post-workflow cleanup...`);
-  await Promise.allSettled(
-    initializedParts.filter((i) => i.info.cleanup != undefined).map((i) => i.info.cleanup())
-  );
+  try {
+    console.info(`Post-workflow cleanup...`);
+    await Promise.allSettled(
+      initializedParts.filter((i) => i.info.cleanup != undefined).map((i) => i.info.cleanup())
+    );
+  } catch (e) {
+    console.error(Report.ERROR + `Error during cleanup() stage`);
+    throw e;
+  }
 }
 
 function orderPipelineParts(data: MatchResult[]) {
@@ -97,7 +111,7 @@ function orderPipelineParts(data: MatchResult[]) {
     sources: 32,
     steps: 64,
     // comes last
-    destinations: 128,
+    targets: 128,
   };
   return data.sort((A, B) => order[A[0]] - order[B[0]]);
 }

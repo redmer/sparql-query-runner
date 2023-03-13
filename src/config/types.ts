@@ -31,7 +31,7 @@ export interface IConstructPipeline extends IBasePipeline {
   type: "construct-quads";
   sources?: ISource[];
   targets?: ITarget[];
-  steps?: (IConstructStep | IValidateStep | IInferStep)[];
+  steps?: (IConstructStep | IValidateStep)[];
 }
 
 export interface IUpdatePipeline extends IBasePipeline {
@@ -90,9 +90,4 @@ export interface IUpdateStep {
 export interface IValidateStep {
   type: "shacl-validate";
   access?: string[];
-}
-
-export interface IInferStep {
-  type: "n3-reasoner";
-  intoGraph?: string;
 }

@@ -5,6 +5,8 @@
     "module": "ES2022",
     "moduleResolution": "Node",
     "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "checkJs": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -13,6 +15,7 @@
     "removeComments": false,
     "outDir": "./dist",
     "rootDir": "./src",
+    "declaration": true,
     "sourceMap": true,
     "resolveJsonModule": true,
 

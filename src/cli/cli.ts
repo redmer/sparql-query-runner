@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 import * as dotenv from "dotenv";
+import fs from "fs/promises";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import compileConfigData, { CONFIG_FILENAME_YAML } from "../config/validate.js";
 import * as PipelineSupervisor from "../runner/pipeline-supervisor.js";
+import { TEMPDIR } from "../runner/pipeline-worker.js";
 import * as RulesWorker from "../runner/shacl-rules-worker.js";
 import * as Report from "../utils/report.js";
-import fs from "fs/promises";
-import { TEMPDIR } from "../runner/pipeline-worker.js";
 
 dotenv.config();
 
@@ -70,9 +70,8 @@ async function main() {
       cacheIntermediateResults: args["cache"] as boolean,
     });
   } catch (error) {
-    if (error instanceof Error) console.error(Report.ERROR + error.message);
-    else console.error(Report.ERROR + error);
-    process.exit(1);
+    console.error(Report.ERROR + error.message ?? error);
+    throw error;
   }
 }
 

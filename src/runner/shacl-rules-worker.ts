@@ -49,7 +49,7 @@ export async function* quadsForStep(step: IConstructStep, i: number): AsyncGener
   const targetClass = step.targetClass;
   if (!targetClass) return;
 
-  for (const url of step.url) {
+  for (const url of step.access) {
     const shape = DataFactory.namedNode(
       new URL(url, "https://rdmr.eu/ns/sparql-query-runner/rule/id/").href
     );

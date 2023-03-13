@@ -6,11 +6,11 @@ import type {
   ConstructRuntimeCtx,
   PipelinePart,
   PipelinePartGetter,
-  StepPartInfo
+  StepPartInfo,
 } from "../runner/types";
 import * as Report from "../utils/report.js";
 
-const name = "steps/sparql-construct"
+const name = "steps/sparql-construct";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) */
 export default class SparqlQuadQuery implements PipelinePart<IConstructStep> {
@@ -18,8 +18,7 @@ export default class SparqlQuadQuery implements PipelinePart<IConstructStep> {
 
   qualifies(data: IConstructStep): boolean {
     if (data.type === "sparql-construct") return true;
-    if (data.url.some((url) => url.endsWith(".ru"))) return false;
-    return true;
+    return false;
   }
 
   async info(data: IConstructStep): Promise<PipelinePartGetter> {
@@ -29,19 +28,20 @@ export default class SparqlQuadQuery implements PipelinePart<IConstructStep> {
 
       return {
         prepare: async () => {
-          for (const url of data.url) {
-            const body = await fs.readFile(url, { encoding: "utf-8" });
-            queries.push(body);
-          }
-          // engine = new QueryEngine();
+          if (data.access)
+            for (const url of data.access) {
+              const body = await fs.readFile(url, { encoding: "utf-8" });
+              queries.push(body);
+            }
+          if (data.construct) queries.push(data.construct);
         },
         start: async () => {
           const targetGraph = data.intoGraph ? new NamedNode(data.intoGraph) : undefined;
 
           for (const [j, q] of queries.entries()) {
-            console.info(`${name}: Executing query '${data.url[j]}'...`);
+            console.info(`${name}: Executing query '${data.access?.[j] ?? j + 1}'...`);
             const quadStream = await context.engine.queryQuads(q, context.queryContext);
-            console.info(`${name}: Query '${data.url[j]}' ` + Report.DONE);
+            console.info(`${name}: Query '${data.access?.[j] ?? j + 1}' ` + Report.DONE);
 
             let i = 0;
 

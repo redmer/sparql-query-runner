@@ -1,3 +1,11 @@
-version: 4
+version: v4
 pipelines:
-  name: Test fails 1
+  name: Test 1
+  endpoint:
+    post: ENV_($ENDPOINT)
+    credentials:
+      type: Basic
+      username: ENV_($GRAPHDB_USERNAME)
+      password: ENV_($GRAPHDB_PASSWORD)
+  steps:
+    - insert-quad.ru

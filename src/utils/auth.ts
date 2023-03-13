@@ -1,5 +1,6 @@
-import type { IAuth } from "../config/types";
 import * as process from "node:process";
+import type { ICredential } from "../config/types";
+import { substitute } from "./compile-envvars.js";
 
 const name = "utils/auth";
 
@@ -7,30 +8,21 @@ export class AuthTypeError extends Error {}
 export class AuthValueError extends Error {}
 
 /** { username, password } as an object */
-export function usernamePasswordDict(data: IAuth): {
+export function usernamePasswordDict(data: ICredential): {
   username: string;
   password: string;
 } {
   if (data.type !== "Basic")
     throw new AuthTypeError(`${name}: Authentication type '${data.type}' not supported here`);
 
-  const { user_env, password_env } = data;
-  const username = process.env[user_env];
-  const password = process.env[password_env];
-
-  if (!username || !password)
-    throw new AuthValueError(
-      `${name}: Could not find environment variables '${user_env}' or '${password}'`
-    );
-
   return {
-    username,
-    password,
+    username: substitute(data.username, process.env),
+    password: substitute(data.password, process.env),
   };
 }
 
 /** Add Basic authentication to a URL */
-export function addToUrl(url: string, data?: IAuth): string {
+export function addToUrl(url: string, data?: ICredential): string {
   // We need to insert Basic authentication between URL schema and rest...
   // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
   if (!data) return url;
@@ -41,13 +33,14 @@ export function addToUrl(url: string, data?: IAuth): string {
 }
 
 /** Concatenate username and password with a colon. */
-export function httpSyntax(data: IAuth): string {
+export function httpSyntax(data: ICredential): string {
+  if (data === undefined) return undefined;
   const { username, password } = usernamePasswordDict(data);
   return `${username}:${password}`;
 }
 
 /** Returns auth details ready for usage as an HTTP header */
-export function asHeader(data: IAuth): { Authorization: string } {
+export function asHeader(data: ICredential): { Authorization: string } {
   if (data.type === "Basic") {
     return {
       Authorization: `Basic ${encode(httpSyntax(data))}`,
@@ -55,9 +48,7 @@ export function asHeader(data: IAuth): { Authorization: string } {
   }
 
   if (data.type === "Bearer") {
-    const token = process.env[data.token_env];
-    if (!token)
-      throw new AuthValueError(`${name}: Could not find environment variables '${data.token_env}'`);
+    const token = substitute(data.token, process.env);
 
     return {
       Authorization: `Bearer ${token}`,

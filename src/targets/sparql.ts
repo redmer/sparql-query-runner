@@ -1,9 +1,9 @@
 import type { ITarget } from "../config/types.js";
 import type {
+  ConstructRuntimeCtx,
   EndpointPartInfo,
   PipelinePart,
   PipelinePartGetter,
-  ConstructRuntimeCtx,
 } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
 

@@ -2,15 +2,15 @@ import fs from "fs";
 import N3 from "n3";
 import { ISource } from "../config/types.js";
 import {
+  ConstructRuntimeCtx,
   PipelinePart,
   PipelinePartGetter,
-  ConstructRuntimeCtx,
   SourcePartInfo,
 } from "../runner/types.js";
 import { basename, download } from "../utils/download-remote.js";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
-const name = "sources/local-file";
+const name = "sources/localfile";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
@@ -24,9 +24,9 @@ export class LocalFileSource implements PipelinePart<ISource> {
 
   qualifies(data: ISource): boolean {
     // please try to keep in sync with <./auto.ts>
-    if (data.type === "local-file") return true; // explicitly
-    if (data.type === "auto" && !!data.url.match(/^https?:/)) return true; // or auto w/ a local file
-    if (data.type === "auto" && data.onlyGraphs) return true; // or remote, w/ filtered graphs
+    if (data.type === "localfile") return true; // explicitly
+    if (data.type === "auto" && !data.access.startsWith("http")) return true; // or auto w/ a local file
+    if (["remotefile", "auto"].includes(data.type) && data.onlyGraphs) return true; // or remote, w/ filtered graphs
     return false;
   }
 
@@ -38,15 +38,15 @@ export class LocalFileSource implements PipelinePart<ISource> {
       return {
         prepare: async () => {
           // if file is remote, download it
-          if (data.url.match(/^https?:/)) {
+          if (data.access.match(/^https?:/)) {
             // Determine locally downloaded filename
-            inputFilePath = `${context.tempdir}/${basename(data.url)}`;
+            inputFilePath = `${context.tempdir}/${basename(data.access)}`;
 
             // Download and save that file at that location
-            await download(data.url, inputFilePath, data.auth);
+            await download(data.access, inputFilePath, data.credentials);
           } else {
             // The file is presumed local
-            inputFilePath = data.url;
+            inputFilePath = data.access;
           }
         },
         start: async () => {
@@ -66,9 +66,7 @@ export class LocalFileSource implements PipelinePart<ISource> {
             if (!data.onlyGraphs?.includes(graph.id)) store.deleteGraph(graph);
           }
 
-          console.info(
-            `${name}: Loaded ${store.countQuads(null, null, null, null)} quads from <${data.url}>`
-          );
+          console.info(`${name}: Loaded ${store.size} quads from <${data.access}>`);
         },
         getQueryContext: { sources: [store] },
       };

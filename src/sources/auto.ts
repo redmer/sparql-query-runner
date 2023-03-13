@@ -1,8 +1,8 @@
 import { ISource } from "../config/types.js";
 import {
+  ConstructRuntimeCtx,
   PipelinePart,
   PipelinePartGetter,
-  ConstructRuntimeCtx,
   SourcePartInfo,
 } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
@@ -25,20 +25,20 @@ export class AutoSource implements PipelinePart<ISource> {
 
   qualifies(data: ISource): boolean {
     if (data.onlyGraphs) return false;
-    if (data.type == "auto" && !data.url.match(/^https?:/)) return false;
-    if (["auto", "sparql", "file"].includes(data.type)) return true;
-    return true;
+    if (!data.access.startsWith("http")) return false;
+    if (["auto", "sparql", "remotefile"].includes(data.type)) return true;
+    return false;
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
-      const httpAuth = data.auth ? Auth.httpSyntax(data.auth) : undefined;
+      const httpAuth = data.credentials ? Auth.httpSyntax(data.credentials) : undefined;
 
       return {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         start: async () => {},
-        getQueryContext: { sources: [{ type: "auto", value: data.url }], httpAuth },
+        getQueryContext: { sources: [{ type: "auto", value: data.access }], httpAuth },
       };
     };
   }

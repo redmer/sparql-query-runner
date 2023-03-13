@@ -3,10 +3,10 @@ import N3 from "n3";
 import fetch from "node-fetch";
 import { ITarget } from "../config/types.js";
 import {
+  ConstructRuntimeCtx,
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
-  ConstructRuntimeCtx,
 } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
 import { serialize } from "../utils/graphs-to-file.js";

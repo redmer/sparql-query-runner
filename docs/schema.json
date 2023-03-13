@@ -233,18 +233,6 @@
       },
       "required": ["type"]
     },
-    "IInferenceStep": {
-      "type": "object",
-      "properties": {
-        "type": { "enum": ["n3-reasoner"] },
-        "intoGraph": {
-          "title": "Adds a graph to constructed triples.",
-          "description": "Empty: default graph.",
-          "$ref": "#/$defs/URL"
-        }
-      },
-      "required": ["type"]
-    },
     "IUpdateStep": {
       "type": "object",
       "properties": {
@@ -280,8 +268,7 @@
         "oneOf": [
           { "$ref": "#/$defs/IConstructStep" },
           { "$ref": "#/$defs/IStepDirect" },
-          { "$ref": "#/$defs/IValidateStep" },
-          { "$ref": "#/$defs/IInferenceStep" }
+          { "$ref": "#/$defs/IValidateStep" }
         ]
       }
     },
