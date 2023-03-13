@@ -3,11 +3,11 @@ import fs from "fs/promises";
 import N3 from "n3";
 import type { IPipeline } from "../config/types";
 import type { ICliOptions } from "../config/validate";
-import { matchPipelineParts, MatchResult } from "../modules/module.js";
 import { arrayFromGenerator } from "../utils/array.js";
 import { authfetch } from "../utils/authfetch.js";
 import * as Report from "../utils/report.js";
 import { KeysOfUnion } from "../utils/types";
+import { matchPipelineParts, MatchResult } from "./module.js";
 import type { ConstructRuntimeCtx, PipelinePartInfo } from "./types";
 
 interface WorkflowCache {

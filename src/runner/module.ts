@@ -15,7 +15,7 @@ import { SPARQLGraphStoreTarget } from "../targets/sparql-graph-store.js";
 import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";
 import { SPARQLTarget } from "../targets/sparql.js";
 
-import type { PipelinePart, PipelinePartGetter } from "../runner/types.js";
+import type { PipelinePart, PipelinePartGetter } from "./types.js";
 
 import { AutoSource } from "../sources/auto.js";
 import { LocalFileSource } from "../sources/localfile.js";

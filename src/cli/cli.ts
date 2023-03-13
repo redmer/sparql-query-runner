@@ -26,8 +26,14 @@ async function main() {
       config: {
         alias: "i",
         type: "string",
-        desc: "Path to pipeline file",
+        desc: "Path to pipeline file(s)",
         default: CONFIG_FILENAME_YAML,
+      },
+      verbose: {
+        alias: "V",
+        type: "boolean",
+        desc: "Increas output verbosity",
+        default: false,
       },
     })
     .command("rules", "Generate `sh:SPARQLRule`s from Construct steps", {
@@ -52,6 +58,12 @@ async function main() {
     .parse();
 
   try {
+    if (args["_"].includes("clear-cache")) {
+      await fs.rm(TEMPDIR, { recursive: true, force: args["force"] as boolean });
+      console.info(`Cache dir ${TEMPDIR} cleaned` + Report.DONE);
+      return;
+    }
+
     // Initialize configuration
     const config = await compileConfigData(args["config"] as string | string[]);
 
@@ -60,10 +72,6 @@ async function main() {
         // TODO: Alternative destinations for `sh:SPARQLRule`s
         await RulesWorker.start(p, process.stdout);
       });
-    }
-
-    if (args["_"].includes("clear-cache")) {
-      await fs.rm(TEMPDIR, { recursive: true, force: args["force"] as boolean });
     }
 
     PipelineSupervisor.runAll(config, {
