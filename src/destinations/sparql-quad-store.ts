@@ -1,6 +1,6 @@
 import fs from "fs/promises";
 import fetch from "node-fetch";
-import { IDest } from "../config/types.js";
+import { ITarget } from "../config/types.js";
 import {
   DestinationPartInfo,
   PipelinePart,
@@ -12,18 +12,18 @@ import { serialize } from "../utils/graphs-to-file.js";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import * as Report from "../utils/report.js";
 
-const name = "destinations/sparql-quad-store";
+const name = "targets/sparql-quad-store";
 
-export class SPARQLQuadStore implements PipelinePart<IDest> {
+export class SPARQLQuadStoreTarget implements PipelinePart<ITarget> {
   // Export a(ll) graph(s) to a file
   name = () => name;
 
-  qualifies(data: IDest): boolean {
+  qualifies(data: ITarget): boolean {
     if (data.type !== "sparql-quad-store") return false;
     return true;
   }
 
-  async info(data: IDest): Promise<PipelinePartGetter> {
+  async info(data: ITarget): Promise<PipelinePartGetter> {
     const mimetype = getMediaTypeFromFilename(".nq");
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
       const stepTempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;
@@ -43,16 +43,16 @@ export class SPARQLQuadStore implements PipelinePart<IDest> {
 
           const contents = await fs.readFile(stepTempFile, { encoding: "utf-8" });
 
-          console.info(`${name}: Uploading to <${data.url}...>`);
-          const response = await fetch(data.url, {
-            headers: { ...Auth.asHeader(data.auth), "Content-Type": mimetype },
+          console.info(`${name}: Uploading to <${data.access}...>`);
+          const response = await fetch(data.access, {
+            headers: { ...Auth.asHeader(data.credentials), "Content-Type": mimetype },
             method: "POST",
             body: contents,
           });
 
           if (!response.ok)
             throw new Error(`${name}: Upload failed: ${response.status} ${response.statusText}`);
-          console.info(`${name}: Uploaded quads to <${data.url}> ` + Report.DONE);
+          console.info(`${name}: Uploaded quads to <${data.access}> ` + Report.DONE);
         },
       };
     };

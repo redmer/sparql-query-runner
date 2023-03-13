@@ -1,5 +1,5 @@
 {
-  "$id": "https://rdmr.eu/sparql-query-runner/v2-schema.json",
+  "$id": "https://rdmr.eu/sparql-query-runner/schema.json",
   "$schema": "http://json-schema.org/draft-07/schema",
   "title": "sparql-query-runner Configuration Schema v4",
   "type": "object",
@@ -7,7 +7,7 @@
   "properties": {
     "version": {
       "type": "string",
-      "pattern": "^v4(\\.\\d)?$",
+      "pattern": "^v4",
       "description": "Version of the sparql-query-runner configuration"
     },
     "pipelines": { "$ref": "#/$defs/IPipeline1N" },
@@ -15,7 +15,7 @@
       "anyOf": [
         {
           "type": "string",
-          "const": "https://rdmr.eu/sparql-query-runner/v2-schema.json"
+          "const": "https://rdmr.eu/sparql-query-runner/schema.json"
         },
         {
           "type": "object"
@@ -26,7 +26,7 @@
   "$defs": {
     "IUpdatePipeline": {
       "type": "object",
-      "title": "A pipeline, performing a sequence of SPARQL update steps",
+      "title": "A pipeline, performing a sequence of SPARQL Update steps",
       "properties": {
         "type": { "const": "direct-update" },
         "endpoint": {
@@ -34,8 +34,7 @@
         },
         "steps": { "$ref": "#/$defs/IUpdateStep1N" }
       },
-      "allOf": [{ "$ref": "#/$defs/IBasePipeline" }],
-      "not": { "required": ["sources", "destinations"] }
+      "not": { "required": ["sources", "targets"] }
     },
     "IConstructPipeline": {
       "type": "object",
@@ -43,13 +42,12 @@
       "properties": {
         "type": { "const": "construct-quads" },
         "sources": { "$ref": "#/$defs/ISource1N" },
-        "destinations": { "$ref": "#/$defs/IDest1N" },
+        "targets": { "$ref": "#/$defs/ITarget1N" },
         "steps": { "$ref": "#/$defs/IConstructStep1N" }
       },
-      "allOf": [{ "$ref": "#/$defs/IBasePipeline" }],
       "not": { "required": ["endpoint"] }
     },
-    "IBasePipeline": {
+    "IAnyPipeline": {
       "type": "object",
       "properties": {
         "type": { "title": "Pipeline subtype", "type": "string" },
@@ -60,20 +58,15 @@
           "default": false
         },
         "prefixes": { "$ref": "#/$defs/Prefixes" }
-      }
+      },
+      "oneOf": [{ "$ref": "#/$defs/IUpdatePipeline" }, { "$ref": "#/$defs/IConstructPipeline" }]
     },
     "IPipeline1N": {
       "oneOf": [
-        { "$ref": "#/$defs/IConstructPipeline" },
-        { "$ref": "#/$defs/IUpdatePipeline" },
+        { "$ref": "#/$defs/IAnyPipeline" },
         {
           "type": "array",
-          "items": {
-            "oneOf": [
-              { "$ref": "#/$defs/IConstructPipeline" },
-              { "$ref": "#/$defs/IUpdatePipeline" }
-            ]
-          }
+          "items": { "$ref": "#/$defs/IAnyPipeline" }
         }
       ]
     },
@@ -86,7 +79,7 @@
           "format": "iri-reference",
           "title": "SPARQL endpoint (POST)"
         },
-        "auth": { "$ref": "#/$defs/IAuth" }
+        "credentials": { "$ref": "#/$defs/ICredential" }
       },
       "required": ["post"]
     },
@@ -94,12 +87,12 @@
       "$ref": "#/$defs/IEndpoint/properties/post"
     },
 
-    "ISourceOrDest": {
+    "ISourceOrTarget": {
       "type": "object",
       "properties": {
-        "url": { "$ref": "#/$defs/URL" },
+        "access": { "$ref": "#/$defs/URL" },
         "onlyGraphs": { "$ref": "#/$defs/URL1N" },
-        "auth": { "$ref": "#/$defs/IAuth" },
+        "credentials": { "$ref": "#/$defs/ICredential" },
         "type": {
           "type": "string",
           "default": "auto"
@@ -110,43 +103,57 @@
     "ISource": {
       "title": "Source of RDF data",
       "properties": {
-        "type": { "enum": ["local-file", "msaccess", "msaccess-xyz", "sparql", "auto"] }
+        "type": {
+          "enum": ["localfile", "remotefile", "msaccess", "msaccess-csv", "sparql", "auto"]
+        }
       },
-      "allOf": [{ "$ref": "#/$defs/ISourceOrDest" }]
+      "allOf": [{ "$ref": "#/$defs/ISourceOrTarget" }]
     },
-    "IDest": {
+    "ITarget": {
       "title": "Export destination for RDF data",
       "properties": {
         "type": {
-          "enum": ["file", "sparql", "auto", "sparql-graph-store", "sparql-quad-store", "laces"]
+          "enum": [
+            "laces",
+            "localfile",
+            "sparql-graph-store",
+            "sparql-quad-store",
+            "sparql",
+            "triplydb"
+          ],
+          "default": "localfile"
         }
       },
-      "allOf": [{ "$ref": "#/$defs/ISourceOrDest" }]
+      "allOf": [{ "$ref": "#/$defs/ISourceOrTarget" }]
     },
 
-    "ISourceDirect": {
-      "$ref": "#/$defs/ISourceOrDest/properties/url"
+    "IAnySource": {
+      "oneOf": [
+        { "$ref": "#/$defs/ISource" },
+        { "$ref": "#/$defs/ISourceOrTarget/properties/access" }
+      ]
     },
     "ISource1N": {
       "anyOf": [
-        { "$ref": "#/$defs/ISource" },
-        { "$ref": "#/$defs/ISourceDirect" },
+        { "$ref": "#/$defs/IAnySource" },
         {
           "type": "array",
-          "items": { "anyOf": [{ "$ref": "#/$defs/ISource" }, { "$ref": "#/$defs/ISourceDirect" }] }
+          "items": { "$ref": "#/$defs/IAnySource" }
         }
       ]
     },
-    "IDestDirect": {
-      "$ref": "#/$defs/ISourceOrDest/properties/url"
+    "IAnyTarget": {
+      "oneOf": [
+        { "$ref": "#/$defs/ITarget" },
+        { "$ref": "#/$defs/ISourceOrTarget/properties/access" }
+      ]
     },
-    "IDest1N": {
+    "ITarget1N": {
       "anyOf": [
-        { "$ref": "#/$defs/IDest" },
-        { "$ref": "#/$defs/IDestDirect" },
+        { "$ref": "#/$defs/IAnyTarget" },
         {
           "type": "array",
-          "items": { "anyOf": [{ "$ref": "#/$defs/IDest" }, { "$ref": "#/$defs/IDestDirect" }] }
+          "items": { "$ref": "#/$defs/IAnyTarget" }
         }
       ]
     },
@@ -154,7 +161,7 @@
     "URL": {
       "type": "string",
       "format": "iri-reference",
-      "description": "A http(s):// remote URL or local path (without file://)"
+      "description": "A http(s):// remote URL or local path"
     },
     "URL1N": {
       "anyOf": [
@@ -166,34 +173,31 @@
       ]
     },
 
-    "IAuthBasic": {
+    "ICredentialBasic": {
       "type": "object",
       "properties": {
         "type": { "const": "Basic", "description": "HTTP basic authentication" },
-        "user_env": {
+        "username": {
           "type": "string",
-          "description": "Environment variable name for the username"
+          "description": "Username required for access"
         },
-        "password_env": {
+        "password": {
           "type": "string",
-          "description": "Environment variable name for the password"
+          "description": "Password required for access with username"
         }
-      },
-      "allOf": [{ "$ref": "#/$defs/IBaseAuth" }]
+      }
     },
-    "IAuthBearer": {
+    "ICredentialBearer": {
       "type": "object",
       "properties": {
         "type": { "const": "Bearer", "description": "Bearer token authentication" },
-        "token_env": {
+        "token": {
           "type": "string",
-          "description": "Environment variable name for the token"
+          "description": "Token required for access"
         }
-      },
-
-      "allOf": [{ "$ref": "#/$defs/IBaseAuth" }]
+      }
     },
-    "IBaseAuth": {
+    "ICredential": {
       "description": "Method of authentication",
       "type": "object",
       "properties": {
@@ -201,10 +205,8 @@
           "type": "string",
           "description": "Authentication type"
         }
-      }
-    },
-    "IAuth": {
-      "oneOf": [{ "$ref": "#/$defs/IAuthBasic" }, { "$ref": "#/$defs/IAuthBearer" }]
+      },
+      "oneOf": [{ "$ref": "#/$defs/ICredentialBasic" }, { "$ref": "#/$defs/ICredentialBearer" }]
     },
 
     "Prefixes": {
@@ -219,36 +221,45 @@
       }
     },
 
-    "IBaseStep": {
-      "type": "object",
-      "title": "Transformation step in the pipeline",
-      "properties": {
-        "type": { "type": "string" },
-        "url": { "$ref": "#/$defs/URL1N" }
-      }
-    },
     "IStepDirect": {
-      "$ref": "#/$defs/IBaseStep/properties/url"
+      "$ref": "#/$defs/URL1N"
     },
 
     "IValidateStep": {
       "type": "object",
       "properties": {
-        "type": { "enum": ["shacl-validate"] }
+        "type": { "const": "shacl-validate" },
+        "access": { "$ref": "#/$defs/URL1N" }
       },
-      "allOf": [{ "$ref": "#/$defs/IBaseStep" }]
+      "required": ["type"]
+    },
+    "IInferenceStep": {
+      "type": "object",
+      "properties": {
+        "type": { "enum": ["n3-reasoner"] },
+        "intoGraph": {
+          "title": "Adds a graph to constructed triples.",
+          "description": "Empty: default graph.",
+          "$ref": "#/$defs/URL"
+        }
+      },
+      "required": ["type"]
     },
     "IUpdateStep": {
       "type": "object",
       "properties": {
-        "type": { "enum": ["sparql-update"] }
+        "type": { "const": "sparql-update" },
+        "access": { "$ref": "#/$defs/URL1N" },
+        "update": { "type": "string" }
       },
-      "allOf": [{ "$ref": "#/$defs/IBaseStep" }]
+      "not": { "required": ["update", "access"] }
     },
     "IConstructStep": {
       "type": "object",
       "properties": {
-        "type": { "enum": ["sparql-construct"] },
+        "type": { "const": "sparql-construct" },
+        "access": { "$ref": "#/$defs/URL1N" },
+        "construct": { "type": "string" },
         "intoGraph": {
           "title": "Adds a graph to constructed triples.",
           "description": "Empty: default graph. SPARQL 1.1 does not allow `GRAPH ?g { ... }` in CONSTRUCT queries.",
@@ -260,7 +271,7 @@
           "description": "Use a variable $this to select instances of the class $class."
         }
       },
-      "allOf": [{ "$ref": "#/$defs/IBaseStep" }]
+      "not": { "required": ["construct", "access"] }
     },
 
     "IConstructStep1N": {
@@ -269,7 +280,8 @@
         "oneOf": [
           { "$ref": "#/$defs/IConstructStep" },
           { "$ref": "#/$defs/IStepDirect" },
-          { "$ref": "#/$defs/IValidateStep" }
+          { "$ref": "#/$defs/IValidateStep" },
+          { "$ref": "#/$defs/IInferenceStep" }
         ]
       }
     },

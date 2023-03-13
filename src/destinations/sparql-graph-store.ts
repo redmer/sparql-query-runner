@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import N3 from "n3";
 import fetch from "node-fetch";
-import { IDest } from "../config/types.js";
+import { ITarget } from "../config/types.js";
 import {
   DestinationPartInfo,
   PipelinePart,
@@ -13,26 +13,26 @@ import { serialize } from "../utils/graphs-to-file.js";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import * as Report from "../utils/report.js";
 
-const name = "destinations/sparql-graph-store";
+const name = "targets/sparql-graph-store";
 
-export class SPARQLGraphStore implements PipelinePart<IDest> {
+export class SPARQLGraphStoreTarget implements PipelinePart<ITarget> {
   // Export a(ll) graph(s) to a file
   name = () => name;
 
-  qualifies(data: IDest): boolean {
+  qualifies(data: ITarget): boolean {
     if (data.type !== "sparql-graph-store") return false;
     return true;
   }
 
   /** Exported graphs are specified or implicit */
-  graphCount(data: IDest, store: N3.Store): string[] {
+  graphCount(data: ITarget, store: N3.Store): string[] {
     if (data.onlyGraphs) return data.onlyGraphs;
     const implicit = [];
     for (const g of store.getGraphs(null, null, null)) implicit.push(g.id);
     return implicit;
   }
 
-  async info(data: IDest): Promise<PipelinePartGetter> {
+  async info(data: ITarget): Promise<PipelinePartGetter> {
     // Export to n-triples
     const mimetype = getMediaTypeFromFilename(".nt");
 
@@ -58,24 +58,24 @@ export class SPARQLGraphStore implements PipelinePart<IDest> {
             });
           }
 
-          console.info(`${name}: Uploading to <${data.url}>...`);
+          console.info(`${name}: Uploading to <${data.access}>...`);
           for (const [i, graph] of graphs.entries()) {
             const tempFile = `${stepTempDir}/${i}.nq`;
             const contents = await fs.readFile(tempFile, { encoding: "utf-8" });
 
-            const destination = new URL(data.url);
+            const destination = new URL(data.access);
             const graphName = graph == "" ? "default" : graph;
             destination.search = `graph=${encodeURIComponent(graphName)}`;
 
             const response = await fetch(destination.href, {
-              headers: { ...Auth.asHeader(data.auth), "Content-Type": mimetype },
+              headers: { ...Auth.asHeader(data.credentials), "Content-Type": mimetype },
               method: "POST",
               body: contents,
             });
 
             if (!response.ok)
               throw new Error(`${name}: Upload failed: ${response.status} ${response.statusText}`);
-            console.info(`${name}: Uploaded triples to <${data.url}> ` + Report.DONE);
+            console.info(`${name}: Uploaded triples to <${data.access}> ` + Report.DONE);
           }
         },
       };

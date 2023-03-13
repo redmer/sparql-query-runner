@@ -3,13 +3,14 @@ import yaml from "yaml";
 import { ge1 } from "../utils/array.js";
 import { context } from "./rdfa11-context.js";
 import type {
-  IAuth,
   IConfiguration,
   IConstructPipeline,
   IConstructStep,
-  IDest,
+  ICredential,
   IEndpoint,
+  IInferStep,
   ISource,
+  ITarget,
   IUpdatePipeline,
   IUpdateStep,
   IValidateStep,
@@ -85,14 +86,14 @@ function validateUpdatePipeline(
 function validateConstructPipeline(
   data: unknown
 ): Omit<IConstructPipeline, "name" | "independent" | "prefixes"> | undefined {
-  if (!data["sources"] || !data["destinations"]) return undefined;
+  if (!data["sources"] || !data["targets"]) return undefined;
 
   const type = "construct-quads";
   const sources = ge1(data["sources"]).map((data) => validateSource(data));
-  const destinations = ge1(data["destinations"]).map((data) => validateDest(data));
+  const targets = ge1(data["targets"]).map((data) => validateTarget(data));
   const steps = ge1(data["steps"]).map((data) => validateConstructStep(data));
 
-  return { type, sources, destinations, steps };
+  return { type, sources, targets, steps };
 }
 
 function validateEndpoint(data: unknown): IEndpoint {
@@ -102,79 +103,86 @@ function validateEndpoint(data: unknown): IEndpoint {
 
   return {
     post: data["post"],
-    auth: validateAuthentication(data["auth"]),
+    credentials: validateAuthentication(data["credentials"]),
   };
 }
 
 function validateUpdateStep(data: unknown): IUpdateStep {
   if (typeof data === "string")
-    return validateUpdateStep({ type: "sparql-update", url: [data] } as IUpdateStep);
-  if (data["url"] === undefined)
-    throw new ConfigurationError(`A url value for an update step is missing.`);
+    return validateUpdateStep({ type: "sparql-update", access: [data] } as IUpdateStep);
+  if (data["access"] === undefined || data["update"] === undefined)
+    throw new ConfigurationError(`A query value (access,update) for step is missing.`);
 
   return {
     type: data["type"] ?? "sparql-update",
-    url: ge1(data["url"]),
+    access: ge1(data["access"]),
+    update: data["update"],
   };
 }
 
-function validateConstructStep(data: unknown): IConstructStep | IValidateStep {
+function validateConstructStep(data: unknown): IConstructStep | IValidateStep | IInferStep {
   if (typeof data === "string")
-    return validateConstructStep({ type: "sparql-construct", url: [data] } as IConstructStep);
-  if (data["url"] === undefined)
-    throw new ConfigurationError(`A url value for an update step is missing.`);
+    return validateConstructStep({ type: "sparql-construct", access: [data] } as IConstructStep);
+
+  // `access` or `construct` is required, except for the following types
+  if (data["access"] === undefined || data["construct"] === undefined)
+    if (!["n3-reasoner", "shacl-validate"].includes(data["type"]))
+      throw new ConfigurationError(`A query value (access,construct) for step is missing.`);
 
   return {
     type: data["type"] ?? "sparql-construct",
-    url: ge1(data["url"]),
+    access: ge1(data["access"]),
+    construct: data["construct"],
     intoGraph: data["intoGraph"],
     targetClass: data["targetClass"],
   };
 }
 
 function validateSource(data: unknown): ISource {
-  if (typeof data === "string") return validateSource({ type: "auto", url: data } as ISource);
-  if (data["url"] === undefined) throw new ConfigurationError(`Source requires a URL to find data`);
+  if (typeof data === "string") return validateSource({ type: "auto", access: data } as ISource);
+  if (data["access"] === undefined)
+    throw new ConfigurationError(`Source requires a URL to find data`);
 
   return {
     type: data["type"] ?? "auto",
-    url: data["url"],
+    access: data["access"],
+    credentials: validateAuthentication(data["credentials"]),
     onlyGraphs: ge1(data["onlyGraphs"]),
-    auth: validateAuthentication(data["auth"]),
   };
 }
 
-function validateDest(data: unknown): IDest {
-  if (typeof data === "string") return validateDest({ type: "auto", url: data } as IDest);
-  if (data["url"] === undefined)
+function validateTarget(data: unknown): ITarget {
+  if (typeof data === "string")
+    return validateTarget({ type: "localfile", access: data } as ITarget);
+  if (data["access"] === undefined)
     throw new ConfigurationError(`Source requires a target URL to export to`);
 
   return {
-    type: data["type"] ?? "auto",
-    url: data["url"],
+    type: data["type"] ?? "localfile",
+    access: data["access"],
+    credentials: validateAuthentication(data["authentication"]),
     onlyGraphs: ge1(data["onlyGraphs"]),
-    auth: validateAuthentication(data["authentication"]),
   };
 }
 
-function validateAuthentication(data: unknown): IAuth;
+function validateAuthentication(data: unknown): ICredential;
 function validateAuthentication(data: undefined): undefined;
-function validateAuthentication(data: unknown): IAuth | undefined {
+function validateAuthentication(data: unknown): ICredential | undefined {
   if (data === undefined) return undefined;
 
   // If password_env and user_env, this is a Basic auth type
-  if (data["password_env"] !== undefined && data["user_env"] !== undefined)
+  if (data["password"] !== undefined && data["username"] !== undefined)
     return {
       type: "Basic",
-      password_env: data["password_env"],
-      user_env: data["user_env"],
+      password: data["password"],
+      username: data["username"],
     };
 
   // If token_env, this is a Bearer type
-  if (data["token_env"] !== undefined)
+  if (data["token"] !== undefined)
     return {
       type: "Bearer",
-      token_env: data["token_env"],
+      token: data["token"],
     };
 
   throw new ConfigurationError(
@@ -187,7 +195,7 @@ function validateAuthentication(data: unknown): IAuth | undefined {
  * Get and parse configuration file.
  *
  * This function does not validate the configuration and the options specified.
- * Instead, it loads the pipelines, their sources, destinations, transformations, and validations
+ * Instead, it loads the pipelines, their sources, targets, transformations, and validations
  * configuration and passes their config values on.
  */
 export default async function compileConfigData(path?: string | string[]): Promise<IConfiguration> {

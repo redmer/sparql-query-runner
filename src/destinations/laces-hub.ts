@@ -1,5 +1,5 @@
 import { ConfigurationError } from "../config/validate.js";
-import type { IDest } from "../config/types.js";
+import type { ITarget } from "../config/types.js";
 import type {
   ConstructRuntimeCtx,
   DestinationPartInfo,
@@ -11,7 +11,7 @@ import type { LacesHubPublicationDesc } from "../utils/laces.js";
 import * as Laces from "../utils/laces.js";
 import * as Report from "../utils/report.js";
 
-const name = "destinations/laces-hub";
+const name = "targets/laces-hub";
 
 /**
  * This step exports results to Laces Hub.
@@ -20,27 +20,27 @@ const name = "destinations/laces-hub";
  * The publication needs to exist before it can be used as a destination.
  * Custom versioning mode is unsupported.
  */
-export class LacesHubDestination implements PipelinePart<IDest> {
+export class LacesHubTarget implements PipelinePart<ITarget> {
   // Export a(ll) graph(s) to Laces
   name = () => name;
 
-  qualifies(data: IDest): boolean {
+  qualifies(data: ITarget): boolean {
     if (data.type === "laces") return true;
-    if (data.url.match("^https?://hub.laces.tech/")) return true;
+    if (data.access.match("^https?://hub.laces.tech/")) return true;
     return false;
   }
 
-  async info(data: IDest): Promise<PipelinePartGetter> {
-    const [repoName, publName] = data.url.split("/").slice(-1);
-    const repoFullPath = new URL(data.url).pathname.split("/").slice(1, -1).join("/");
+  async info(data: ITarget): Promise<PipelinePartGetter> {
+    const [repoName, publName] = data.access.split("/").slice(-1);
+    const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
 
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
       const tempFile = `${context.tempdir}/laces-export-${new Date().getTime()}.ttl`;
       let metadata: LacesHubPublicationDesc;
 
-      const auth = data.auth;
+      const auth = data.credentials;
       if (auth === undefined)
-        throw new ConfigurationError(`${name}: Laces requires auth details <${data.url}>`);
+        throw new ConfigurationError(`${name}: Laces requires auth details <${data.access}>`);
 
       return {
         prepare: async () => {
@@ -74,7 +74,7 @@ export class LacesHubDestination implements PipelinePart<IDest> {
             prefixes: context.pipeline.prefixes,
           });
 
-          console.info(`${name}: Uploading to <${data.url}>...`);
+          console.info(`${name}: Uploading to <${data.access}>...`);
           // Update Laces publication with contents of temp file
           const response = await Laces.updatePublication(
             metadata.id,
@@ -91,7 +91,7 @@ export class LacesHubDestination implements PipelinePart<IDest> {
             throw new LacesHubError(
               `Upload ${response.status} (${response.statusText}):\n` + response.body
             );
-          console.info(`${name}: Uploaded to <${data.url}>` + Report.DONE);
+          console.info(`${name}: Uploaded to <${data.access}>` + Report.DONE);
         },
       };
     };

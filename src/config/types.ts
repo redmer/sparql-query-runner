@@ -30,8 +30,8 @@ interface IBasePipeline {
 export interface IConstructPipeline extends IBasePipeline {
   type: "construct-quads";
   sources?: ISource[];
-  destinations?: IDest[];
-  steps?: (IConstructStep | IValidateStep)[];
+  targets?: ITarget[];
+  steps?: (IConstructStep | IValidateStep | IInferStep)[];
 }
 
 export interface IUpdatePipeline extends IBasePipeline {
@@ -42,52 +42,57 @@ export interface IUpdatePipeline extends IBasePipeline {
 
 export interface IEndpoint {
   post: string;
-  auth: IAuth;
+  credentials?: ICredential;
 }
 
-export interface ISourceOrDest {
-  url: string;
+export interface ISourceOrTarget {
+  access: string;
   onlyGraphs?: string[];
-  auth?: IAuth;
+  credentials?: ICredential;
   type: string;
 }
 
-export interface ISource extends ISourceOrDest {
-  type: "local-file" | "sparql" | "auto" | "msaccess" | "msaccess-xyz";
+export interface ISource extends ISourceOrTarget {
+  type: "localfile" | "remotefile" | "sparql" | "auto" | "msaccess" | "msaccess-csv";
 }
 
-export interface IDest extends ISourceOrDest {
-  type: "file" | "sparql" | "auto" | "sparql-graph-store" | "sparql-quad-store" | "laces";
+export interface ITarget extends ISourceOrTarget {
+  type: "laces" | "localfile" | "sparql-graph-store" | "sparql-quad-store" | "sparql" | "triplydb";
 }
 
-export type IAuth = IAuthBasic | IAuthBearer;
+export type ICredential = IAuthBasic | IAuthBearer;
 
 export interface IAuthBasic {
   type: "Basic";
-  user_env: string;
-  password_env: string;
+  username: string;
+  password: string;
 }
 
 export interface IAuthBearer {
   type: "Bearer";
-  token_env: string;
+  token: string;
 }
 
-export interface IBaseStep {
-  type: string;
-  url: string[];
-}
-
-export interface IConstructStep extends IBaseStep {
+export interface IConstructStep {
   type: "sparql-construct";
+  access?: string[];
+  construct?: string;
   intoGraph?: string;
   targetClass: string;
 }
 
-export interface IUpdateStep extends IBaseStep {
+export interface IUpdateStep {
   type: "sparql-update";
+  access?: string[];
+  update?: string;
 }
 
-export interface IValidateStep extends IBaseStep {
+export interface IValidateStep {
   type: "shacl-validate";
+  access?: string[];
+}
+
+export interface IInferStep {
+  type: "n3-reasoner";
+  intoGraph?: string;
 }

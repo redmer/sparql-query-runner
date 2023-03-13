@@ -154,10 +154,15 @@ steps:  # in a construct-quads workflow
     targetClass: https://example.org/def/Book  # the sh:targetClass for a constructed sh:SPARQLRule
   - type: shacl-validate
     url: book-shapes.ttl  # the file containing the SHACL shapes
+  - query: >
+      CONSTRUCT { ?s a ex:Typo } WHERE { ?s a ex:SpellingError . }
+    intoGraph: https://example.org/id/MyGraph  # constructed quads go into the specified graph
 steps:  # in an direct-update workflow
   - query-update.ru
   - type: sparql-update
     url: query-update.ru
+  - update: >
+      INSERT { ?s a ex:Typo } WHERE { ?s a ex:SpellingError . }
 ```
 
 Steps perform SPARQL queries, either Update queries (`.ru`) or Construct queries (`.rq`) or perform SHACL validation.
