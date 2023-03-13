@@ -34,6 +34,11 @@ type IPipelineKeys = KeysOfUnion<IPipeline>;
 
 export class ModuleMatcherError extends Error {}
 
+/**
+ * Match parts of the pipeline data to the modules that will execute them.
+ *
+ * @param data Single pipeline hydrated, valid data
+ */
 export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<MatchResult> {
   const ALL_MODULES: Record<
     IPipelineKeys,

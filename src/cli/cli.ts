@@ -76,6 +76,7 @@ async function main() {
 
     PipelineSupervisor.runAll(config, {
       cacheIntermediateResults: args["cache"] as boolean,
+      verbose: args["verbose"] as boolean,
     });
   } catch (error) {
     console.error(Report.ERROR + error.message ?? error);

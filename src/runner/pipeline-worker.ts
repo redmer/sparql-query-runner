@@ -45,6 +45,12 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   const matchedParts = orderPipelineParts(await arrayFromGenerator(matchPipelineParts(data)));
   const initializedParts: WorkflowCache[] = [];
 
+  if (options.verbose)
+    console.info(
+      Report.INFO + "Matched modules:\n",
+      matchedParts.map((v, j) => `${j + 1}: ${v[1]}`).join(" ; ")
+    );
+
   let i = 0;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for await (const [key, name, part] of matchedParts) {
@@ -73,8 +79,15 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   // Finalize context, make it readonly
   Object.freeze(context);
 
+  for (const [j, part] of initializedParts.entries())
+    try {
+      part.info.prepare && (await part.info.prepare());
+    } catch (e) {
+      console.error(Report.ERROR + `prepare ${part.name} (${j + 1}):`, e);
+      throw e;
+    }
   try {
-    await Promise.allSettled(
+    await Promise.all(
       initializedParts.filter((i) => i.info.prepare != undefined).map((i) => i.info.prepare())
     );
   } catch (e) {
@@ -83,14 +96,14 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   }
 
   for (const [i, part] of initializedParts.filter((i) => i.info.start != undefined).entries()) {
-    console.group(`${i + 1}: ${part.name}`);
-    await part?.info?.start();
+    console.group(`(${i + 1}) ${part.name}...`);
+    await part.info?.start();
     console.groupEnd();
   }
 
   try {
     console.info(`Post-workflow cleanup...`);
-    await Promise.allSettled(
+    await Promise.all(
       initializedParts.filter((i) => i.info.cleanup != undefined).map((i) => i.info.cleanup())
     );
   } catch (e) {

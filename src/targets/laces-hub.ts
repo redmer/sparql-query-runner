@@ -33,6 +33,7 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
   async info(data: ITarget): Promise<PipelinePartGetter> {
     const [repoName, publName] = data.access.split("/").slice(-2);
     const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
+    const publicationUri = new URL(data.access).pathname;
 
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
       const tempFile = `${context.tempdir}/laces-export-${new Date().getTime()}.ttl`;
@@ -53,7 +54,7 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
             throw new LacesHubError(`${name}: Laces repository '${repoName}' not found`);
 
           const publs = await Laces.publications(targetRepo.id, auth);
-          metadata = publs.find((p) => p.name == publName);
+          metadata = publs.find((p) => p.uri.startsWith(publicationUri));
           if (!metadata)
             throw new LacesHubError(
               `${name}: Publication '${publName}' not found in repository '${repoName}'`

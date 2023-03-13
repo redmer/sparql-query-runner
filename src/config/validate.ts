@@ -19,7 +19,10 @@ export const CONFIG_FILENAME = "sparql-query-runner.json";
 export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ICliOptions {}
+export interface ICliOptions {
+  verbose?: boolean;
+  cacheIntermediateResults?: boolean;
+}
 
 export class ConfigurationError extends Error {}
 
