@@ -22,6 +22,7 @@ export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
 export interface ICliOptions {
   verbose?: boolean;
   cacheIntermediateResults?: boolean;
+  warningsAsErrors?: boolean;
 }
 
 export class ConfigurationError extends Error {}

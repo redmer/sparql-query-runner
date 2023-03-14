@@ -43,7 +43,7 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
           }
         },
         start: async () => {
-          const validator = new SHACLValidator(shapesStore);
+          const validator = new SHACLValidator(shapesStore, {});
           try {
             const report = validator.validate(context.quadStore);
             if (report.conforms) console.info(`${name}: Data conforms to shapes`);
@@ -56,6 +56,8 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
 source: ${r.sourceShape} / ${r.sourceConstraintComponent}`
                 );
               }
+              if (context.options.warningsAsErrors)
+                throw Error(`${name}: ${report.results.length} SHACL results`);
             }
           } catch (err) {
             console.error(`${name}: Could not validate, due to:` + err);

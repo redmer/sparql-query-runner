@@ -32,7 +32,12 @@ async function main() {
       verbose: {
         alias: "V",
         type: "boolean",
-        desc: "Increas output verbosity",
+        desc: "Increase output verbosity",
+        default: false,
+      },
+      "warnings-as-errors": {
+        alias: "e",
+        type: "boolean",
         default: false,
       },
     })
@@ -77,6 +82,7 @@ async function main() {
     PipelineSupervisor.runAll(config, {
       cacheIntermediateResults: args["cache"] as boolean,
       verbose: args["verbose"] as boolean,
+      warningsAsErrors: args["warnings-as-errors"] as boolean,
     });
   } catch (error) {
     console.error(Report.ERROR + error.message ?? error);
