@@ -1,4 +1,125 @@
-export interface TempdirProvider {
+/* eslint-disable @typescript-eslint/no-empty-interface */
+import type { QueryEngine } from "@comunica/query-sparql";
+import type { QueryStringContext } from "@comunica/types/lib";
+import type * as RDF from "@rdfjs/types";
+import N3 from "n3";
+import type { IPipeline } from "../config/types";
+import type { ICliOptions } from "../config/validate";
+
+/** A PipelinePart is a Source, Endpoint, Destination or Step.
+ *
+ * Endpoint: a remote or local SPARQL 1.1 endpoint
+ * Source: a source of RDF quads, as a remote or local file or via plugins
+ * Destination: an RDF file that is exporter, remote or local
+ * Step: a SPARQL update query, a construct query or a SHACL validation request
+ */
+export interface PipelinePartInfo {
+  /** Called before running the pipeline, use to initialize the pipeline part. */
+  prepare?: () => Promise<void>;
+
+  /** Runs the pipeline part, in defined order. */
+  start?: () => Promise<Iterable<RDF.Quad> | void>;
+
+  /** Called after running the pipeline, to clean up artifacts. */
+  cleanup?: () => Promise<void>;
+
+  /** Query context for Comunica query */
+  getQueryContext?: Partial<QueryContext>;
+
+  /** Local file paths that are used by this PipelinePart */
+  filepaths?: () => Promise<string[]>;
+}
+
+export type QueryContext = QueryStringContext; // & { source?: IDataSource | SourceType };
+// export type QueryContext = { sources?: IDataSource[] } & IQueryContextCommon & QueryStringContext;
+
+export interface QueryContextInfo {}
+
+export interface CacheableInfo {}
+
+// Specific PipelinePartInfo's
+export interface EndpointPartInfo extends PipelinePartInfo, QueryContextInfo {}
+export interface SourcePartInfo extends PipelinePartInfo, QueryContextInfo, CacheableInfo {}
+export interface DestinationPartInfo extends PipelinePartInfo {}
+export interface StepPartInfo extends PipelinePartInfo, CacheableInfo {}
+
+// Maximal pipeline context at runtime
+export interface RuntimeCtx {
+  readonly pipeline: IPipeline;
+  readonly options: Partial<ICliOptions>;
+
   /** The path to a temporary directory. */
-  tempdir: string;
+  readonly tempdir: string;
+
+  /** Invalidate the cache of subsequent steps (or also preceding steps) */
+  invalidateCache?(preceding: boolean): void;
+}
+
+export interface StepCache {
+  readonly stepName: string;
+
+  readonly payloadHash: string;
+  readonly urlETag: string;
+  readonly urlLastUpdated: string;
+
+  readonly state: unknown;
+
+  /** A deterministic hash of the step */
+  readonly stepHash: string;
+}
+
+export interface WorkflowLevelCache {
+  readonly sources: unknown;
+  readonly prefixes: unknown;
+  readonly endpoint: unknown;
+  readonly destinations: unknown;
+  readonly steps: StepCache[];
+
+  /** A deterministic hash of the workflow */
+  readonly workflowHash: string;
+}
+
+export interface ConfigLevelCache {
+  readonly workflows: WorkflowLevelCache[];
+
+  /** A deterministic hash of the configuration */
+  readonly configHash: string;
+
+  readonly configETag: string;
+  readonly configLastUpdated: string;
+}
+
+export interface UpdateRuntimeCtx extends RuntimeCtx {
+  readonly endpoint: string;
+}
+export interface ConstructRuntimeCtx extends RuntimeCtx {
+  /** The quad store for CONSTRUCTed quads */
+  readonly quadStore: N3.Store;
+
+  /** Query engine */
+  readonly engine: QueryEngine;
+
+  /** Query context for Comunica query */
+  queryContext: QueryContext;
+}
+
+// Base
+export type PipelinePartGetter = (
+  context: Readonly<ConstructRuntimeCtx>,
+  i?: number
+) => Promise<PipelinePartInfo>;
+
+export interface PipelinePart<T> {
+  /** Return true if the PipelinePart can handle this data. */
+  qualifies(data: T): boolean;
+
+  /** A reference name for the PipelinePart */
+  name(): string;
+
+  /** Return runtime info for the PipelinePart */
+  info(data: T): Promise<PipelinePartGetter>;
+}
+
+export interface Worker {
+  start: (data: IPipeline, options?: Partial<ICliOptions>) => Promise<void>;
 }

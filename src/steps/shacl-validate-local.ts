@@ -1,66 +1,66 @@
-import ParserN3 from "@rdfjs/parser-n3";
-import fs from "fs-extra";
-import { Store } from "n3";
-import factory from "rdf-ext";
+import fs from "fs";
+import N3 from "n3";
 import SHACLValidator from "rdf-validate-shacl";
-import { Step, StepGetter } from ".";
-import { IStep } from "../config/types";
-import { PipelineSupervisor } from "../runner";
-import { SQRError, SQRInfo, SQRWarning } from "../utils/errors";
+import type { IValidateStep } from "../config/types";
+import type {
+  ConstructRuntimeCtx,
+  PipelinePart,
+  PipelinePartGetter,
+  StepPartInfo,
+} from "../runner/types";
+import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
-/**
- * A SHACL validator (shacl-validate-local).
- *
- * @param type string "shacl-validate-local"
- * @param url string[] path to files with statements to be validated
- * @param shapeFiles string[] path to files with SHACL classes
- */
-export default class ShaclValidateLocal implements Step {
-  identifier = () => "shacl-validate-local";
+const name = "steps/shacl-validate-local";
 
-  async info(config: IStep): Promise<StepGetter> {
-    return async (app: PipelineSupervisor) => {
+export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
+  name = () => name;
+
+  qualifies(data: IValidateStep): boolean {
+    if (data.type !== "shacl-validate") return false;
+    if (data.access === undefined) return false;
+    return true;
+  }
+
+  async info(data: IValidateStep): Promise<PipelinePartGetter> {
+    return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
+      const shapesStore = new N3.Store();
+      if (Object.hasOwn(data, "onlyGraphs"))
+        console.warn(`${name}: Only shapes in the default graph are used`);
+
       return {
+        prepare: async () => {
+          for (const url of data.access) {
+            const mimetype = getMediaTypeFromFilename(url);
+            const stream = fs.createReadStream(url);
+            const parser = new N3.StreamParser({ format: mimetype });
+            const emitter = shapesStore.import(parser.import(stream));
+
+            // Wait until the Store has loaded
+            await new Promise((resolve, reject) => {
+              emitter.on("end", resolve);
+              emitter.on("error", reject);
+            });
+          }
+        },
         start: async () => {
-          const shapes = factory.dataset();
-          const store = new Store();
-
-          for (const url of config["shapeFiles"]) {
-            const stream = fs.createReadStream(url);
-            const parser = new ParserN3({ factory });
-            try {
-              await shapes.import(parser.import(stream));
-            } catch (err) {
-              SQRError(6192, `Could not import ${url}`);
-            }
-          }
-
-          for (const url of config.url) {
-            const stream = fs.createReadStream(url);
-            const parser = new ParserN3({ factory });
-            try {
-              await store.import(parser.import(stream));
-            } catch (err) {
-              SQRError(6193, `Could not import ${url}`);
-            }
-          }
-
-          const validator = new SHACLValidator(shapes, { factory });
+          const validator = new SHACLValidator(shapesStore, {});
           try {
-            const report = await validator.validate(store);
-            if (report.conforms) {
-              SQRInfo(`Conforms`);
-            }
-            for (const r of report.results) {
-              SQRWarning(
-                6194,
-                `\n${r.severity}: ${r.message}
-\t$    On: {r.focusNode} ${r.path} ${r.term}
-\t$  From: {r.sourceShape} / ${r.sourceConstraintComponent}`
-              );
+            const report = validator.validate(context.quadStore);
+            if (report.conforms) console.info(`${name}: Data conforms to shapes`);
+            else {
+              for (const r of report.results) {
+                console.warn(
+                  `
+ SHACL: ${r.severity}: ${r.message}
+    at: ${r.focusNode} ${r.path} ${r.term}
+source: ${r.sourceShape} / ${r.sourceConstraintComponent}`
+                );
+              }
+              if (context.options.warningsAsErrors)
+                throw Error(`${name}: ${report.results.length} SHACL results`);
             }
           } catch (err) {
-            SQRError(6191, `Could not validate using the shapes provided.`);
+            console.error(`${name}: Could not validate, due to:` + err);
           }
         },
       };

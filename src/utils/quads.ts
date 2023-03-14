@@ -1,5 +1,5 @@
-import fs from "fs-extra";
-import { Store, WriterOptions, Writer } from "n3";
+import fs from "fs/promises";
+import { OTerm, Store, Writer, WriterOptions } from "n3";
 import path from "path";
 
 /**
@@ -12,7 +12,7 @@ import path from "path";
 export function graphsToFile(
   store: Store,
   filepath: string,
-  includeGraphs?: string[],
+  includeGraphs?: OTerm[],
   options?: WriterOptions
 ): Promise<void> {
   return new Promise((resolve, reject) => {

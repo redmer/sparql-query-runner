@@ -1,3 +1,4 @@
+/** RDFa Core Initial Context <https://www.w3.org/2011/rdfa-context/rdfa-1.1> */
 export const context = {
   as: "https://www.w3.org/ns/activitystreams#",
   cc: "http://creativecommons.org/ns#",

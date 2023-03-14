@@ -1,0 +1,282 @@
+{
+  "$id": "https://rdmr.eu/sparql-query-runner/schema.json",
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "title": "sparql-query-runner Configuration Schema v4",
+  "type": "object",
+  "required": ["version", "pipelines"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^v4",
+      "description": "Version of the sparql-query-runner configuration"
+    },
+    "pipelines": { "$ref": "#/$defs/IPipeline1N" },
+    "$schema": {
+      "anyOf": [
+        {
+          "type": "string",
+          "const": "https://rdmr.eu/sparql-query-runner/schema.json"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "IUpdatePipeline": {
+      "type": "object",
+      "title": "A pipeline, performing a sequence of SPARQL Update steps",
+      "properties": {
+        "type": { "const": "direct-update" },
+        "endpoint": {
+          "oneOf": [{ "$ref": "#/$defs/IEndpoint" }, { "$ref": "#/$defs/IEndpointDirect" }]
+        },
+        "steps": { "$ref": "#/$defs/IUpdateStep1N" }
+      },
+      "not": { "required": ["sources", "targets"] }
+    },
+    "IConstructPipeline": {
+      "type": "object",
+      "title": "A pipeline, performing a sequence of SPARQL CONSTRUCT-query steps",
+      "properties": {
+        "type": { "const": "construct-quads" },
+        "sources": { "$ref": "#/$defs/ISource1N" },
+        "targets": { "$ref": "#/$defs/ITarget1N" },
+        "steps": { "$ref": "#/$defs/IConstructStep1N" }
+      },
+      "not": { "required": ["endpoint"] }
+    },
+    "IAnyPipeline": {
+      "type": "object",
+      "properties": {
+        "type": { "title": "Pipeline subtype", "type": "string" },
+        "name": { "title": "Reference name of the pipeline", "type": "string" },
+        "independent": {
+          "title": "Pipeline does not depend on preceding pipeline",
+          "type": "boolean",
+          "default": false
+        },
+        "prefixes": { "$ref": "#/$defs/Prefixes" }
+      },
+      "oneOf": [{ "$ref": "#/$defs/IUpdatePipeline" }, { "$ref": "#/$defs/IConstructPipeline" }]
+    },
+    "IPipeline1N": {
+      "oneOf": [
+        { "$ref": "#/$defs/IAnyPipeline" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/IAnyPipeline" }
+        }
+      ]
+    },
+
+    "IEndpoint": {
+      "type": "object",
+      "properties": {
+        "post": {
+          "type": "string",
+          "format": "iri-reference",
+          "title": "SPARQL endpoint (POST)"
+        },
+        "credentials": { "$ref": "#/$defs/ICredential" }
+      },
+      "required": ["post"]
+    },
+    "IEndpointDirect": {
+      "$ref": "#/$defs/IEndpoint/properties/post"
+    },
+
+    "ISourceOrTarget": {
+      "type": "object",
+      "properties": {
+        "access": { "$ref": "#/$defs/URL" },
+        "onlyGraphs": { "$ref": "#/$defs/URL1N" },
+        "credentials": { "$ref": "#/$defs/ICredential" },
+        "type": {
+          "type": "string",
+          "default": "auto"
+        }
+      },
+      "allowOtherProperties": false
+    },
+    "ISource": {
+      "title": "Source of RDF data",
+      "properties": {
+        "type": {
+          "enum": ["localfile", "remotefile", "msaccess", "msaccess-csv", "sparql", "auto"]
+        }
+      },
+      "allOf": [{ "$ref": "#/$defs/ISourceOrTarget" }]
+    },
+    "ITarget": {
+      "title": "Export destination for RDF data",
+      "properties": {
+        "type": {
+          "enum": [
+            "laces",
+            "localfile",
+            "sparql-graph-store",
+            "sparql-quad-store",
+            "sparql",
+            "triplydb"
+          ],
+          "default": "localfile"
+        }
+      },
+      "allOf": [{ "$ref": "#/$defs/ISourceOrTarget" }]
+    },
+
+    "IAnySource": {
+      "oneOf": [
+        { "$ref": "#/$defs/ISource" },
+        { "$ref": "#/$defs/ISourceOrTarget/properties/access" }
+      ]
+    },
+    "ISource1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/IAnySource" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/IAnySource" }
+        }
+      ]
+    },
+    "IAnyTarget": {
+      "oneOf": [
+        { "$ref": "#/$defs/ITarget" },
+        { "$ref": "#/$defs/ISourceOrTarget/properties/access" }
+      ]
+    },
+    "ITarget1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/IAnyTarget" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/IAnyTarget" }
+        }
+      ]
+    },
+
+    "URL": {
+      "type": "string",
+      "format": "iri-reference",
+      "description": "A http(s):// remote URL or local path"
+    },
+    "URL1N": {
+      "anyOf": [
+        { "$ref": "#/$defs/URL" },
+        {
+          "type": "array",
+          "items": { "$ref": "#/$defs/URL" }
+        }
+      ]
+    },
+
+    "ICredentialBasic": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "Basic", "description": "HTTP basic authentication" },
+        "username": {
+          "type": "string",
+          "description": "Username required for access"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password required for access with username"
+        }
+      }
+    },
+    "ICredentialBearer": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "Bearer", "description": "Bearer token authentication" },
+        "token": {
+          "type": "string",
+          "description": "Token required for access"
+        }
+      }
+    },
+    "ICredential": {
+      "description": "Method of authentication",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Authentication type"
+        }
+      },
+      "oneOf": [{ "$ref": "#/$defs/ICredentialBasic" }, { "$ref": "#/$defs/ICredentialBearer" }]
+    },
+
+    "Prefixes": {
+      "description": "Prefixes used in the SPARQL queries and CONSTRUCT result files",
+      "type": "object",
+      "patternProperties": {
+        ".*": {
+          "description": "prefix: namespace",
+          "type": "string",
+          "format": "iri-reference"
+        }
+      }
+    },
+
+    "IStepDirect": {
+      "$ref": "#/$defs/URL1N"
+    },
+
+    "IValidateStep": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "shacl-validate" },
+        "access": { "$ref": "#/$defs/URL1N" }
+      },
+      "required": ["type"]
+    },
+    "IUpdateStep": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "sparql-update" },
+        "access": { "$ref": "#/$defs/URL1N" },
+        "update": { "type": "string" }
+      },
+      "not": { "required": ["update", "access"] }
+    },
+    "IConstructStep": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "sparql-construct" },
+        "access": { "$ref": "#/$defs/URL1N" },
+        "construct": { "type": "string" },
+        "intoGraph": {
+          "title": "Adds a graph to constructed triples.",
+          "description": "Empty: default graph. SPARQL 1.1 does not allow `GRAPH ?g { ... }` in CONSTRUCT queries.",
+          "$ref": "#/$defs/URL"
+        },
+        "targetClass": {
+          "type": "string",
+          "title": "sh:targetClass for a constructed sh:SPARQLRule",
+          "description": "Use a variable $this to select instances of the class $class."
+        }
+      },
+      "not": { "required": ["construct", "access"] }
+    },
+
+    "IConstructStep1N": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/$defs/IConstructStep" },
+          { "$ref": "#/$defs/IStepDirect" },
+          { "$ref": "#/$defs/IValidateStep" }
+        ]
+      }
+    },
+    "IUpdateStep1N": {
+      "type": "array",
+      "items": {
+        "oneOf": [{ "$ref": "#/$defs/IUpdateStep" }, { "$ref": "#/$defs/IStepDirect" }]
+      }
+    }
+  }
+}
