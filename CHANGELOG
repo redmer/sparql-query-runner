@@ -14,13 +14,8 @@
   SHACL errors are fatal (i.e., stop pipeline execution).
   On the CLI, the option `--warnings-as-errors/-e` makes SHACL warnings fatal.
   SHACL information-level messages are posted to stdout.
-- On the CLI, the option `--as-shacl-rules/-r` collects the construct queries
+- On the CLI, the subcommand `rules` collects the construct queries as SHACL rules.
 - Step `import-msaccess` is removed. This has been replaced with a `pipelines/source`
-- CLI option `--cache-intermediate-results/-i` is added.
-  This makes a `.sparql-query-runner-cache` folder with per-step intermediate results.
-  This can considerably speed-up pipeline development if working on a limited dataset,
-  as the cache also checks for changes to the pipeline and its queries, so it doesn't
-  re-run unchanged queries.
 - Destination `sparql-graph-store` is the W3C Recommendation [SPARQL 1.1 Graph Store][gs].
   Destination `sparql-quad-store` is not standardized, but is similar to the Graph Store protocol,
   but with Dataset semantics. I.e., multiple contexts can be passed and quads can be uploaded.
