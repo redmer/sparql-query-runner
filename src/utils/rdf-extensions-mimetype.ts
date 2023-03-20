@@ -22,5 +22,5 @@ const key = (ext: string): string | undefined =>
 export function getMediaTypeFromFilename(path: string): string {
   const dotIndex = path.lastIndexOf(".");
   // Get extension after last dot and map to media
-  return (dotIndex >= 0 && key(path.slice(dotIndex + 1))) || "";
+  return (dotIndex >= 0 && key(path.slice(dotIndex))) || "";
 }

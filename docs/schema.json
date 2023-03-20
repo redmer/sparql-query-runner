@@ -74,17 +74,17 @@
     "IEndpoint": {
       "type": "object",
       "properties": {
-        "post": {
+        "access": {
           "type": "string",
           "format": "iri-reference",
           "title": "SPARQL endpoint (POST)"
         },
         "credentials": { "$ref": "#/$defs/ICredential" }
       },
-      "required": ["post"]
+      "required": ["access"]
     },
     "IEndpointDirect": {
-      "$ref": "#/$defs/IEndpoint/properties/post"
+      "$ref": "#/$defs/IEndpoint/properties/access"
     },
 
     "ISourceOrTarget": {

@@ -25,17 +25,14 @@ export default class SparqlUpdate implements PipelinePart<IUpdateStep> {
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
       // let engine: QueryEngine;
+      if (data.access)
+        for (const url of data.access) {
+          const body = await fs.readFile(url, { encoding: "utf-8" });
+          queries.push(body);
+        }
+      if (data.update) queries.push(data.update);
 
       return {
-        prepare: async () => {
-          if (data.access)
-            for (const url of data.access) {
-              const body = await fs.readFile(url, { encoding: "utf-8" });
-              queries.push(body);
-            }
-          if (data.update) queries.push(data.update);
-          // engine = new QueryEngine();
-        },
         start: async () => {
           for (const [j, q] of queries.entries()) {
             console.info(`${name}: Executing query '${data.access?.[j] ?? j + 1}'...`);

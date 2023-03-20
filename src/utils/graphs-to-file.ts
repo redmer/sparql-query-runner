@@ -9,25 +9,50 @@ export interface GraphToFileOptions {
 
 export type FilteredGraphOptions = Omit<GraphToFileOptions, "prefixes" | "format">;
 
-/** Serialize all or specified graphs of a N3.Store to a path */
-export async function serialize(store: N3.Store, path: string, options?: GraphToFileOptions) {
+export function serializeStreamingly(store: N3.Store, path: string, options?: GraphToFileOptions) {
   const fd = fs.createWriteStream(path, { encoding: "utf-8" });
-  const writer = new N3.StreamWriter(fd, options);
-
+  const streamWriter = new N3.StreamWriter(options);
   if (options?.graphs) {
     // Write streams per-graph
     for (const g of options.graphs.sort()) {
       const graph = new N3.NamedNode(g);
-      writer.write(store.match(null, null, null, graph));
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore-next-line
+      return store.match(null, null, null, graph).pipe(streamWriter).pipe(fd);
     }
   } else {
-    // All graphs
-    writer.write(store.match());
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore-next-line
+    return store.match(null, null, null, null).pipe(streamWriter).pipe(fd);
   }
+}
 
-  await new Promise((resolve, reject) => {
-    writer.on("end", resolve);
-    writer.on("error", reject);
+/** Serialize all or specified graphs of a N3.Store to a path */
+export function serialize(store: N3.Store, path: string, options?: GraphToFileOptions) {
+  return new Promise((resolve, reject) => {
+    // If a pretty serialization isn't required, use a more efficient streaming serializer
+    if (["application/n-quads", "application/n-triples"].includes(options.format))
+      resolve(serializeStreamingly(store, path, options));
+
+    // Else, use a blocking, pretty writer
+    const fd = fs.createWriteStream(path, { encoding: "utf-8" });
+    const plainWriter = new N3.Writer(fd, options);
+
+    if (options?.graphs) {
+      // Write streams per-graph
+      for (const g of options.graphs.sort()) {
+        const graph = new N3.NamedNode(g);
+        plainWriter.addQuads(store.getQuads(null, null, null, graph));
+      }
+    } else {
+      // All graphs
+      plainWriter.addQuads(store.getQuads(null, null, null, null));
+    }
+
+    plainWriter.end((error, result) => {
+      if (error) return reject(error);
+      resolve(result);
+    });
   });
 }
 

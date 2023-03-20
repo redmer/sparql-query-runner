@@ -18,7 +18,7 @@ export class SparqlEndpoint implements PipelinePart<IEndpoint> {
   name = () => name;
 
   qualifies(data: IEndpoint): boolean {
-    if (data.post) return true;
+    if (data.access) return true;
     return false;
   }
 
@@ -30,7 +30,7 @@ export class SparqlEndpoint implements PipelinePart<IEndpoint> {
         // We only need to insert Basic authentication between URL schema and rest...
         // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
         getQueryContext: {
-          destination: { type: "sparql", value: data.post },
+          destination: { type: "sparql", value: data.access },
           httpAuth: Auth.httpSyntax(data.credentials),
         },
       };

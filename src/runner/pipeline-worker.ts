@@ -86,14 +86,6 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
       console.error(Report.ERROR + `prepare ${part.name} (${j + 1}):`, e);
       throw e;
     }
-  try {
-    await Promise.all(
-      initializedParts.filter((i) => i.info.prepare != undefined).map((i) => i.info.prepare())
-    );
-  } catch (e) {
-    console.error(Report.ERROR + `Error during prepare() stage`);
-    throw e;
-  }
 
   for (const [i, part] of initializedParts.filter((i) => i.info.start != undefined).entries()) {
     console.group(`(${i + 1}) ${part.name}...`);

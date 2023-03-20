@@ -2,7 +2,7 @@ version: v4
 pipelines:
   name: Test 1
   endpoint:
-    post: ENV_($ENDPOINT)
+    access: ENV_($ENDPOINT)
     credentials:
       type: Basic
       username: ENV_($GRAPHDB_USERNAME)

@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import yaml from "yaml";
 import { ge1 } from "../utils/array.js";
+import { substitute } from "../utils/compile-envvars.js";
 import { context } from "./rdfa11-context.js";
 import type {
   IConfiguration,
@@ -30,11 +31,13 @@ export class ConfigurationError extends Error {}
 /** Parse the configuration file. */
 export async function getJsonYamlContents(path: string): Promise<unknown> {
   try {
-    const contents = fs.readFile(path, { encoding: "utf-8" });
+    const rawContents = fs.readFile(path, { encoding: "utf-8" });
+    // Substitute ENV_($) env vars
+    const contents = substitute(await rawContents, process.env);
     if (path.endsWith(".yaml")) {
-      return yaml.parse(await contents, { strict: true, version: "1.2" });
+      return yaml.parse(contents, { strict: true, version: "1.2" });
     } else if (path.endsWith(".json")) {
-      return JSON.parse(await contents);
+      return JSON.parse(contents);
     }
   } catch (e) {
     throw new ConfigurationError(`Could not read ${path}`, e);
@@ -61,11 +64,13 @@ function validatePipeline(data: unknown): IUpdatePipeline | IConstructPipeline {
   if (!!asUpdate && !!asConstruct)
     throw new ConfigurationError(
       `Confusion. Pipeline is both valid as an update-pipeline and a construct-pipeline.` +
-        `Please split these pipelines into two.`
+        `Please split these pipelines into two. ${JSON.stringify(data)}`
     );
   if (!asUpdate && !asConstruct)
     throw new ConfigurationError(
-      `Pipeline couldn't be parsed as update-pipeline nor as construct-pipeline.`
+      `Pipeline couldn't be parsed as update-pipeline nor as construct-pipeline. ${JSON.stringify(
+        data
+      )}`
     );
 
   const prefixes = Object.assign({}, context, data["prefixes"]); // combine default RDFa context with supplied prefixes
@@ -93,25 +98,27 @@ function validateUpdatePipeline(
 function validateConstructPipeline(
   data: unknown
 ): Omit<IConstructPipeline, "name" | "independent" | "prefixes"> | undefined {
-  if (!data["sources"] || !data["targets"]) return undefined;
+  // A construct-quads pipeline should have either
+  // minimally sources and targets, steps and targets
+  if (!data["targets"]) return undefined;
 
   const type = "construct-quads";
-  const sources = ge1(data["sources"]).map((data) => validateSource(data));
+  const sources = ge1(data["sources"])?.map((data) => validateSource(data));
   const targets = ge1(data["targets"]).map((data) => validateTarget(data));
-  const steps = ge1(data["steps"]).map((data) => validateConstructStep(data));
+  const steps = ge1(data["steps"])?.map((data) => validateConstructStep(data));
 
   return { type, sources, targets, steps };
 }
 
 function validateEndpoint(data: unknown): IEndpoint {
-  if (typeof data === "string") return validateEndpoint({ post: data } as IEndpoint);
-  if (data["post"] === undefined)
+  if (typeof data === "string") return validateEndpoint({ access: data } as IEndpoint);
+  if (data["access"] === undefined)
     throw new ConfigurationError(
-      `An endpoint's target url ('post') is missing. (Data: ${JSON.stringify(data)})`
+      `An endpoint's target url ('access') is missing. (Data: ${JSON.stringify(data)})`
     );
 
   return {
-    post: data["post"],
+    access: data["access"],
     credentials: validateAuthentication(data["credentials"]),
   };
 }

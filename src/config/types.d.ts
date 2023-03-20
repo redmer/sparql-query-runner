@@ -17,7 +17,7 @@ interface IBasePipeline {
 export interface IConstructPipeline extends IBasePipeline {
   type: "construct-quads";
   sources?: ISource[];
-  targets?: ITarget[];
+  targets: ITarget[];
   steps?: (IConstructStep | IValidateStep)[];
 }
 
@@ -28,7 +28,7 @@ export interface IUpdatePipeline extends IBasePipeline {
 }
 
 export interface IEndpoint {
-  post: string;
+  access: string;
   credentials?: ICredential;
 }
 

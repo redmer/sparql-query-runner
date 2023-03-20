@@ -25,33 +25,29 @@ export class MsAccessSource implements PipelinePart<ISource> {
     return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
       const quadMode = data.type == "msaccess" ? "facade-x" : "csv";
       let inputFilePath: string;
-      let mdb: MSAccess;
 
       if (data.onlyGraphs) console.warn(`${name}: 'onlyGraphs' is not supported`);
 
-      return {
-        prepare: async () => {
-          // if file is remote, download it
-          if (data.access.match(/https?:/)) {
-            // Determine locally downloaded filename
-            inputFilePath = `${context.tempdir}/${basename(data.access)}`;
+      // if file is remote, download it
+      if (data.access.match(/https?:/)) {
+        // Determine locally downloaded filename
+        inputFilePath = `${context.tempdir}/${basename(data.access)}`;
 
-            // Download and save that file at that location
-            await download(data.access, inputFilePath, data.credentials);
-          } else {
-            // The file is presumed local
-            inputFilePath = data.access;
-          }
-        },
-        // The start promise either returns quads or void
-        start: async () => {
-          const db = await fs.readFile(inputFilePath);
-          mdb = new MSAccess(db, {
-            quadMode,
-            baseIRI: pathToFileURL(data.access).href + "#",
-          });
-        },
-        getQueryContext: { sources: [mdb] },
+        // Download and save that file at that location
+        await download(data.access, inputFilePath, data.credentials);
+      } else {
+        // The file is presumed local
+        inputFilePath = data.access;
+      }
+
+      const db = await fs.readFile(inputFilePath);
+      const mdb = new MSAccess(db, {
+        quadMode,
+        baseIRI: pathToFileURL(data.access).href + "#",
+      });
+
+      return {
+        getQueryContext: { sources: [mdb.store()] },
       };
     };
   }
