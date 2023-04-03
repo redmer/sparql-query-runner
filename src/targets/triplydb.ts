@@ -3,7 +3,7 @@ import type Dataset from "@triply/triplydb/lib/Dataset.js";
 import type { ITarget } from "../config/types.js";
 import { ConfigurationError } from "../config/validate.js";
 import type {
-  ConstructRuntimeCtx,
+  ConstructCtx,
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
@@ -25,7 +25,7 @@ export class TriplyDBTarget implements PipelinePart<ITarget> {
   async info(data: ITarget): Promise<PipelinePartGetter> {
     const [accountName, datasetName] = data.access.split("/").slice(-1);
 
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
       let dataset: Dataset;
 
       const auth = data.credentials;

@@ -2,7 +2,7 @@ import fs from "fs/promises";
 import fetch from "node-fetch";
 import { ITarget } from "../config/types.js";
 import {
-  ConstructRuntimeCtx,
+  ConstructCtx,
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
@@ -25,7 +25,7 @@ export class SPARQLQuadStoreTarget implements PipelinePart<ITarget> {
 
   async info(data: ITarget): Promise<PipelinePartGetter> {
     const mimetype = getMediaTypeFromFilename(".nq");
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
       const stepTempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;
 
       return {

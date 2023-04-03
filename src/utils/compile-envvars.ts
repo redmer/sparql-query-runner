@@ -8,5 +8,5 @@ export const ENV_VAR_RE = /ENV_\(\$(\S+)\)/g;
  * @returns {string} Replaced string
  */
 export function substitute(contents: string, lookup: Record<string, string>): string {
-  return contents.replace(ENV_VAR_RE, (match, p1) => lookup[p1] ?? "");
+  return contents.replace(ENV_VAR_RE, (match, p1) => lookup[p1] ?? match);
 }

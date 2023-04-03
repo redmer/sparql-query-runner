@@ -3,7 +3,7 @@ import N3 from "n3";
 import fetch from "node-fetch";
 import { ITarget } from "../config/types.js";
 import {
-  ConstructRuntimeCtx,
+  ConstructCtx,
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
@@ -36,7 +36,7 @@ export class SPARQLGraphStoreTarget implements PipelinePart<ITarget> {
     // Export to n-triples
     const mimetype = getMediaTypeFromFilename(".nt");
 
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
       // The issue here is that SPARQL 1.1 GRaph Store HTTP Protocol only supports
       // triples and not quads. Therefore, a loop over graphs in data.store is
       // necessary.

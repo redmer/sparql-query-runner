@@ -2,12 +2,7 @@ import fs from "fs";
 import N3 from "n3";
 import SHACLValidator from "rdf-validate-shacl";
 import type { IValidateStep } from "../config/types";
-import type {
-  ConstructRuntimeCtx,
-  PipelinePart,
-  PipelinePartGetter,
-  StepPartInfo,
-} from "../runner/types";
+import type { ConstructCtx, PipelinePart, PipelinePartGetter, StepPartInfo } from "../runner/types";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 const name = "steps/shacl-validate-local";
@@ -22,7 +17,7 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
   }
 
   async info(data: IValidateStep): Promise<PipelinePartGetter> {
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<StepPartInfo> => {
       const shapesStore = new N3.Store();
       if (Object.hasOwn(data, "onlyGraphs"))
         console.warn(`${name}: Only shapes in the default graph are used`);

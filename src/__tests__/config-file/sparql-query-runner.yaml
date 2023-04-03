@@ -8,3 +8,4 @@ pipelines:
         CONSTRUCT { <#s> <#p> <#o> } WHERE { }
   targets:
     - construct-quads.ttl
+    - construct-quads.nq

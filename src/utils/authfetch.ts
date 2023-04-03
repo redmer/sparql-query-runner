@@ -1,6 +1,6 @@
 import type { RequestInfo, RequestInit, Response } from "node-fetch";
 import fetch, { Request } from "node-fetch";
-import { encode } from "./auth.js";
+import { encodeB64 } from "./auth.js";
 
 /** fetch() replacement that rewrites in-URL auth */
 export function authfetch(url: RequestInfo, init?: RequestInit): Promise<Response> {
@@ -26,7 +26,7 @@ export function headerFromRequest(url: RequestInfo): [RequestInfo, string] {
   if (!username || !password) return; // return if URL is unauthenticated
 
   // The Authorization header
-  const header = `Basic ${encode(
+  const header = `Basic ${encodeB64(
     decodeURIComponent(username) + ":" + decodeURIComponent(password)
   )}`;
 

@@ -1,39 +1,35 @@
 import { IEndpoint } from "../config/types.js";
-import {
-  ConstructRuntimeCtx,
-  PipelinePart,
-  PipelinePartGetter,
-  SourcePartInfo,
-} from "../runner/types.js";
-import * as Auth from "../utils/auth.js";
-
-const name = "endpoints/comunica-sparql";
+import { BaseModule } from "../runner/base-module";
+import { UpdateCtx, WorkflowModule, WorkflowModuleInfo } from "../runner/types.js";
+import { BasicBearerAuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 /**
- * This destination is automatically supported by Comunica.
+ * A SPARQL endpoint is automatically supported by Comunica.
  *
  * Source: <https://comunica.dev/docs/query/advanced/destination_types/>
  * */
-export class SparqlEndpoint implements PipelinePart<IEndpoint> {
-  name = () => name;
+export class SparqlEndpoint extends BaseModule<IEndpoint> implements WorkflowModule<IEndpoint> {
+  static id = "endpoints/comunica-sparql";
 
-  qualifies(data: IEndpoint): boolean {
+  static qualifies(data: IEndpoint): boolean {
     if (data.access) return true;
     return false;
   }
 
-  async info(data: IEndpoint): Promise<PipelinePartGetter> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
-      // const destination = { type: "sparql", value: Auth.addToUrl(data.post, data.auth) };
-      return {
-        // We only need to insert Basic authentication between URL schema and rest...
-        // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-        getQueryContext: {
-          destination: { type: "sparql", value: data.access },
-          httpAuth: Auth.httpSyntax(data.credentials),
-        },
-      };
+  hash() {
+    return null; // An external endpoint cannot be cached
+  }
+
+  async info(_context: Readonly<UpdateCtx>): Promise<WorkflowModuleInfo> {
+    return {
+      queryContext: async () => {
+        return {
+          source: { type: "sparql", value: this.data.access },
+          // `httpAuth:` only supports Basic Auth, so instead use a proxy.
+          // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
+          httpProxyHandler: new BasicBearerAuthProxyHandler(this.data.credentials),
+        };
+      },
     };
   }
 }

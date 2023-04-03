@@ -1,5 +1,6 @@
 import fs from "fs";
 import { default as fetch } from "node-fetch";
+import path from "path";
 import type { ICredential } from "../config/types";
 import * as Auth from "./auth.js";
 
@@ -21,4 +22,34 @@ export async function download(url: string, path: string, auth?: ICredential) {
     response.body?.on("error", reject) ?? reject();
     stream.on("finish", resolve);
   });
+}
+
+export type IFetchContentOptions = {
+  cachedir?: string;
+  auth?: ICredential;
+  encoding?: BufferEncoding;
+};
+
+export async function fetchContent(
+  path_url: string,
+  { cachedir, auth, encoding }: IFetchContentOptions
+) {
+  if (!path_url.startsWith("http")) return fs.readFileSync(path_url, { encoding });
+
+  const response = await fetch(path_url, { method: "GET", headers: Auth.asHeader(auth) });
+  const contents = await response.text();
+  fs.writeFileSync(path.join(cachedir, basename(path_url)), contents);
+  return contents;
+}
+
+export async function streamContent(
+  path_url: string,
+  { cachedir, auth, encoding }: IFetchContentOptions
+) {
+  if (!path_url.startsWith("http")) return fs.readFileSync(path_url, { encoding });
+
+  const response = await fetch(path_url, { method: "GET", headers: Auth.asHeader(auth) });
+  const contents = await response.text();
+  fs.writeFileSync(path.join(cachedir, basename(path_url)), contents);
+  return contents;
 }

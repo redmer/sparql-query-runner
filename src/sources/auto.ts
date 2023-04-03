@@ -1,13 +1,8 @@
+import { QueryStringContext } from "@comunica/types";
 import { ISource } from "../config/types.js";
-import {
-  ConstructRuntimeCtx,
-  PipelinePart,
-  PipelinePartGetter,
-  SourcePartInfo,
-} from "../runner/types.js";
-import * as Auth from "../utils/auth.js";
-
-const name = "sources/comunica-auto";
+import { BaseModule } from "../runner/base-module.js";
+import { WorkflowModule } from "../runner/types.js";
+import { BasicBearerAuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 /**
  * These sources are automatically supported by Comunica.
@@ -20,26 +15,24 @@ const name = "sources/comunica-auto";
  *
  * Source: <https://comunica.dev/docs/query/advanced/source_types/#supported-source-types>
  * */
-export class AutoSource implements PipelinePart<ISource> {
-  name = () => name;
+export class AutoSource extends BaseModule<ISource> implements WorkflowModule<ISource> {
+  static id = "sources/comunica-auto";
 
-  qualifies(data: ISource): boolean {
-    if (data.onlyGraphs) return false;
-    if (!data.access.startsWith("http")) return false;
-    if (["auto", "sparql", "remotefile"].includes(data.type)) return true;
+  static qualifies(data: ISource): boolean {
+    if (data.onlyGraphs) return false; // no graph limitations supported
+    if (!data.access.startsWith("http")) return false; // only remote files supported
+    if (["auto", "sparql", "remotefile"].includes(data.type)) return true; // explicit types
     return false;
   }
 
-  async info(data: ISource): Promise<PipelinePartGetter> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
-      const httpAuth = data.credentials ? Auth.httpSyntax(data.credentials) : undefined;
-
-      return {
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        start: async () => {},
-        getQueryContext: { sources: [{ type: "auto", value: data.access }], httpAuth },
-      };
+  queryContext(): Partial<QueryStringContext> {
+    const handler = this.data.credentials
+      ? new BasicBearerAuthProxyHandler(this.data.credentials)
+      : undefined;
+    return {
+      sources: [{ type: "auto", value: this.data.access }],
+      // TODO: AuthProxyHandler should be isolated to a single source/destination
+      httpProxyHandler: handler,
     };
   }
 }

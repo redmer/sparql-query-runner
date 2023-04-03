@@ -1,6 +1,6 @@
 import { ITarget } from "../config/types.js";
 import {
-  ConstructRuntimeCtx,
+  ConstructCtx,
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
@@ -23,7 +23,7 @@ export class LocalFileTarget implements PipelinePart<ITarget> {
 
   async info(data: ITarget): Promise<PipelinePartGetter> {
     const mimetype = getMediaTypeFromFilename(data.access);
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
       return {
         start: async () => {
           console.info(

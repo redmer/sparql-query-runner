@@ -3,7 +3,7 @@ import fs from "fs/promises";
 import { pathToFileURL } from "node:url";
 import type { ISource } from "../config/types";
 import type {
-  ConstructRuntimeCtx,
+  ConstructCtx,
   PipelinePart,
   PipelinePartGetter,
   SourcePartInfo,
@@ -22,7 +22,7 @@ export class MsAccessSource implements PipelinePart<ISource> {
   }
 
   async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<SourcePartInfo> => {
       const quadMode = data.type == "msaccess" ? "facade-x" : "csv";
       let inputFilePath: string;
 

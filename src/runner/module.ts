@@ -1,11 +1,8 @@
 import type {
-  IConstructStep,
-  IEndpoint,
+  IBasePipeline,
+  IConstructPipeline,
   IPipeline,
-  ISource,
-  ITarget,
-  IUpdateStep,
-  IValidateStep,
+  IUpdatePipeline,
 } from "../config/types";
 
 import { SparqlEndpoint } from "../endpoints/sparql.js";
@@ -15,7 +12,7 @@ import { SPARQLGraphStoreTarget } from "../targets/sparql-graph-store.js";
 import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";
 import { SPARQLTarget } from "../targets/sparql.js";
 
-import type { PipelinePart, PipelinePartGetter } from "./types.js";
+import type { WorkflowModule } from "./types.js";
 
 import { AutoSource } from "../sources/auto.js";
 import { LocalFileSource } from "../sources/localfile.js";
@@ -25,66 +22,65 @@ import ShaclValidateLocal from "../steps/shacl-validate-local.js";
 import SparqlConstructQuery from "../steps/sparql-construct.js";
 import SparqlUpdate from "../steps/sparql-update.js";
 
-import { KeysOfUnion } from "../utils/types";
-
-/** A matched module. Pipeline key, module name, module info getter. */
-export type MatchResult = [KeysOfUnion<IPipeline>, string, PipelinePartGetter];
-
-type IPipelineKeys = KeysOfUnion<IPipeline>;
+type IConstructPipelineKeys = keyof Omit<IConstructPipeline, keyof IBasePipeline>;
+type IUpdatePipelineKeys = keyof Omit<IUpdatePipeline, keyof IBasePipeline>;
 
 export class ModuleMatcherError extends Error {}
 
-/**
- * Match parts of the pipeline data to the modules that will execute them.
- *
- * @param data Single pipeline hydrated, valid data
- */
-export async function* matchPipelineParts(data: IPipeline): AsyncGenerator<MatchResult> {
-  const ALL_MODULES: Record<
-    IPipelineKeys,
-    | PipelinePart<IEndpoint>[]
-    | PipelinePart<ITarget>[]
-    | PipelinePart<ISource>[]
-    | PipelinePart<IValidateStep | IUpdateStep | IConstructStep>[]
-  > = {
-    endpoint: [new SparqlEndpoint()],
-    targets: [
-      new LacesHubTarget(),
-      new LocalFileTarget(),
-      new SPARQLGraphStoreTarget(),
-      new SPARQLQuadStoreTarget(),
-      new SPARQLTarget(),
-    ],
-    sources: [new AutoSource(), new LocalFileSource(), new MsAccessSource()],
-    steps: [new ShaclValidateLocal(), new SparqlUpdate(), new SparqlConstructQuery()],
-    // No processing module required...
-    independent: undefined,
-    name: undefined,
-    prefixes: undefined,
-    type: undefined,
+/** These KNOWN_MODULES make pipeline part processing modules available, ordered -- as multiple processors may match. */
+export const KNOWN_CONSTRUCT_MODULES: Record<
+  IConstructPipelineKeys,
+  (typeof WorkflowModule<unknown>)[]
+> = {
+  sources: [AutoSource, LocalFileSource, MsAccessSource],
+  steps: [ShaclValidateLocal, SparqlConstructQuery],
+  targets: [
+    LacesHubTarget,
+    LocalFileTarget,
+    SPARQLGraphStoreTarget,
+    SPARQLQuadStoreTarget,
+    SPARQLTarget,
+  ],
+};
+
+export const KNOWN_UPDATE_MODULES: Record<IUpdatePipelineKeys, (typeof WorkflowModule<unknown>)[]> =
+  {
+    endpoint: [SparqlEndpoint],
+    steps: [SparqlUpdate],
   };
 
-  const orderedKeys: IPipelineKeys[] = ["sources", "endpoint", "steps", "targets"];
+export type ExecutablePipeline = {
+  [key in keyof IConstructPipeline | keyof IUpdatePipeline]?: [string, WorkflowModule<unknown>][];
+};
 
-  for (const workflowPart of orderedKeys) {
-    // First sources, then endpoint, then steps, etc.
-    const modulesForKey: PipelinePart<unknown>[] = ALL_MODULES[workflowPart];
-    if (!Array.isArray(modulesForKey)) continue;
+export async function match(
+  data: IConstructPipeline | IUpdatePipeline
+): Promise<ExecutablePipeline> {
+  if (data.type == "direct-update") return await matchModules(data, KNOWN_UPDATE_MODULES);
+  return await matchModules(data, KNOWN_CONSTRUCT_MODULES);
+}
 
-    const pipelineDataForKey = data[workflowPart];
-    if (!pipelineDataForKey) continue;
+/** Match modules for pipeline declaration data with a certain module configuration */
+async function matchModules(
+  data: IPipeline,
+  MODULES:
+    | Record<IConstructPipelineKeys, (typeof WorkflowModule<unknown>)[]>
+    | Record<IUpdatePipelineKeys, (typeof WorkflowModule<unknown>)[]>
+): Promise<ExecutablePipeline> {
+  const result: ExecutablePipeline = {};
 
-    for (const [i, stepData] of Object.entries(pipelineDataForKey)) {
-      const qualifyingModule = modulesForKey.find((module: PipelinePart<unknown>) =>
-        module.qualifies(stepData)
-      );
+  for (const [part, modules] of Object.entries(MODULES)) {
+    result[part] = result[part] ?? [];
 
-      if (!qualifyingModule)
-        throw new ModuleMatcherError(
-          `No appropriate module for /${workflowPart}[${i + 1}]: (${JSON.stringify(stepData)})`
-        );
+    for (const stepData of data[part]) {
+      // The qualifier
+      const qModules = modules.filter((m) => m.qualifies(stepData));
+      if (qModules.length == 0)
+        throw new ModuleMatcherError(`No matching modules //${part} (${JSON.stringify(stepData)})`);
+      // Note that multiple modules may qualify: we take the first, so the MODULES order is significant
 
-      yield [workflowPart, qualifyingModule.name(), await qualifyingModule.info(stepData)];
+      result[part].push([qModules[0].name(), new qModules[0](stepData)]);
     }
   }
+  return result;
 }

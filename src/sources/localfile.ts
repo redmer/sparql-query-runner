@@ -1,16 +1,10 @@
+import { QueryStringContext } from "@comunica/types";
 import fs from "fs";
 import N3 from "n3";
 import { ISource } from "../config/types.js";
-import {
-  ConstructRuntimeCtx,
-  PipelinePart,
-  PipelinePartGetter,
-  SourcePartInfo,
-} from "../runner/types.js";
-import { basename, download } from "../utils/download-remote.js";
+import { BaseModule } from "../runner/base-module.js";
+import { ConstructCtx, WorkflowModule } from "../runner/types.js";
 import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
-
-const name = "sources/localfile";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
@@ -19,8 +13,9 @@ const name = "sources/localfile";
  * Due to security concerns, `@comunica/query-sparql` does not support local file systems
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
-export class LocalFileSource implements PipelinePart<ISource> {
-  name = () => name;
+export class LocalFileSource extends BaseModule<ISource> implements WorkflowModule<ISource> {
+  static id = "sources/localfile";
+  #store: N3.Store;
 
   qualifies(data: ISource): boolean {
     // please try to keep in sync with <./auto.ts>
@@ -30,46 +25,33 @@ export class LocalFileSource implements PipelinePart<ISource> {
     return false;
   }
 
-  async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<SourcePartInfo> => {
-      const store = new N3.Store();
-      let inputFilePath: string;
+  async willQuery(_context: Readonly<ConstructCtx>): Promise<void> {
+    this.#store = new N3.Store();
 
-      return {
-        prepare: async () => {
-          // if file is remote, download it
-          if (data.access.match(/^https?:/)) {
-            // Determine locally downloaded filename
-            inputFilePath = `${context.tempdir}/${basename(data.access)}`;
+    const mimetype = getMediaTypeFromFilename(this.data.access);
+    const stream = fs.createReadStream(this.locateFile(this.data.access));
+    this.addCacheDependent({ type: "path", value: this.data.access });
 
-            // Download and save that file at that location
-            await download(data.access, inputFilePath, data.credentials);
-          } else {
-            // The file is presumed local
-            inputFilePath = data.access;
-          }
-        },
-        start: async () => {
-          const mimetype = getMediaTypeFromFilename(inputFilePath);
-          const stream = fs.createReadStream(inputFilePath);
-          const parser = new N3.StreamParser({ format: mimetype });
-          const emitter = store.import(parser.import(stream));
+    const parser = new N3.StreamParser({ format: mimetype });
+    const emitter = this.#store.import(parser.import(stream));
 
-          // Wait until the Store has loaded
-          await new Promise((resolve, reject) => {
-            emitter.on("end", resolve);
-            emitter.on("error", reject);
-          });
+    // Wait until the Store has loaded
+    await new Promise((resolve, reject) => {
+      emitter.on("end", resolve);
+      emitter.on("error", reject);
+    });
 
-          // Filter on specified graphs
-          for (const graph of store.getGraphs(null, null, null)) {
-            if (!data.onlyGraphs?.includes(graph.id)) store.deleteGraph(graph);
-          }
+    // Filter on specified graphs
+    for (const graph of this.#store.getGraphs(null, null, null)) {
+      if (!this.data.onlyGraphs?.includes(graph.id)) this.#store.deleteGraph(graph);
+    }
 
-          console.info(`${name}: Loaded ${store.size} quads from <${data.access}>`);
-        },
-        getQueryContext: { sources: [store] },
-      };
-    };
+    console.info(
+      `${this.constructor.name}: Loaded ${this.#store.size} quads from <${this.data.access}>`
+    );
+  }
+
+  queryContext(): Partial<QueryStringContext> {
+    return { sources: [this.#store] };
   }
 }

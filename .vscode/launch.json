@@ -13,7 +13,7 @@
       "args": ["run"],
       // "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "cwd": "${workspaceFolder}/src/__tests__/config-file"
+      "cwd": "${workspaceFolder}/test/imbor"
     }
   ]
 }

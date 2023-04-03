@@ -16,7 +16,6 @@ import type {
   IValidateStep,
 } from "./types";
 
-export const CONFIG_FILENAME = "sparql-query-runner.json";
 export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -28,20 +27,30 @@ export interface ICliOptions {
 
 export class ConfigurationError extends Error {}
 
-/** Parse the configuration file. */
-export async function getJsonYamlContents(path: string): Promise<unknown> {
+/** Get a configuration from a valid pipeline declaration file in JSON or YAML */
+export async function configFromPath(path: string, { secrets }): Promise<IConfiguration> {
   try {
-    const rawContents = fs.readFile(path, { encoding: "utf-8" });
-    // Substitute ENV_($) env vars
-    const contents = substitute(await rawContents, process.env);
-    if (path.endsWith(".yaml")) {
-      return yaml.parse(contents, { strict: true, version: "1.2" });
-    } else if (path.endsWith(".json")) {
-      return JSON.parse(contents);
-    }
+    const rawContents = await fs.readFile(path, { encoding: "utf-8" });
+    return await configFromString(rawContents, { secrets });
   } catch (e) {
-    throw new ConfigurationError(`Could not read ${path}`, e);
+    throw new ConfigurationError(`Could not read '${path}'`, e);
   }
+}
+
+/** Get a configuration from a valid pipeline declaration in JSON or YAML */
+export async function configFromString(contents: string, { secrets }): Promise<IConfiguration> {
+  try {
+    const substitutedContents = substitute(contents, secrets);
+    const config = yaml.parse(substitutedContents, { strict: true, version: "1.2" });
+    return validateConfiguration(config);
+  } catch (e) {
+    throw new ConfigurationError(`Could not read configuration '${contents.slice(0, 140)}'`, e);
+  }
+}
+
+/** Merge configuration files */
+export function mergeConfigurations(configs: IConfiguration[]): IConfiguration {
+  return { version: "v4.compiled", pipelines: configs.map((c) => c.pipelines).flat(1) };
 }
 
 /** Validate and hydrate a configuration file. */
@@ -63,12 +72,12 @@ function validatePipeline(data: unknown): IUpdatePipeline | IConstructPipeline {
 
   if (!!asUpdate && !!asConstruct)
     throw new ConfigurationError(
-      `Confusion. Pipeline is both valid as an update-pipeline and a construct-pipeline.` +
-        `Please split these pipelines into two. ${JSON.stringify(data)}`
+      `Confusion. Workflow is both valid as 'direct-update' and as 'construct-quads'.` +
+        `Consider splitting or explicitely add 'type: ...'. ${JSON.stringify(data)}`
     );
   if (!asUpdate && !asConstruct)
     throw new ConfigurationError(
-      `Pipeline couldn't be parsed as update-pipeline nor as construct-pipeline. ${JSON.stringify(
+      `Workflow couldn't be parsed as 'direct-update' nor as 'construct-quads'. ${JSON.stringify(
         data
       )}`
     );
@@ -76,7 +85,7 @@ function validatePipeline(data: unknown): IUpdatePipeline | IConstructPipeline {
   const prefixes = Object.assign({}, context, data["prefixes"]); // combine default RDFa context with supplied prefixes
 
   return {
-    name: data["name"] ?? "Pipeline", // static default
+    name: data["name"] ?? "SPARQL-Query-Runner workflow", // static default
     independent: data["independent"] ?? false, // safe default
     prefixes,
     ...(asUpdate ?? asConstruct),
@@ -225,24 +234,4 @@ function validateAuthentication(data: unknown): ICredential | undefined {
     `The authentication type was not recognized. Verify authentication details of:\n` +
       JSON.stringify(data, undefined, 2)
   );
-}
-
-/**
- * Get and parse configuration file.
- *
- * This function does not validate the configuration and the options specified.
- * Instead, it loads the pipelines, their sources, targets, transformations, and validations
- * configuration and passes their config values on.
- */
-export default async function compileConfigData(path?: string | string[]): Promise<IConfiguration> {
-  const allConfigs: IConfiguration = { version: "v4.compiled", pipelines: [] };
-
-  // If there are multiple paths, we can merge the pipelines into a single IConfiguration
-  for (const file of ge1(path)) {
-    const data = await getJsonYamlContents(file);
-    const config = validateConfiguration(data);
-    allConfigs.pipelines.push(...config.pipelines);
-  }
-
-  return allConfigs;
 }

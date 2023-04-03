@@ -1,19 +1,13 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import fs from "fs/promises";
 import N3 from "n3";
-import type { IPipeline } from "../config/types";
+import type { IConstructPipeline, IPipeline, IUpdatePipeline } from "../config/types";
 import type { ICliOptions } from "../config/validate";
-import { arrayFromGenerator } from "../utils/array.js";
 import { authfetch } from "../utils/authfetch.js";
 import * as Report from "../utils/report.js";
 import { KeysOfUnion } from "../utils/types";
-import { matchPipelineParts, MatchResult } from "./module.js";
-import type { ConstructRuntimeCtx, PipelinePartInfo } from "./types";
-
-interface WorkflowCache {
-  name: string;
-  info: PipelinePartInfo;
-}
+import { ExecutablePipeline, match } from "./module.js";
+import type { ConstructCtx } from "./types";
 
 export const TEMPDIR = `.cache/sparql-query-runner`;
 
@@ -25,13 +19,13 @@ async function provideTempDir(): Promise<string> {
 /** Initialize and start a workflow runner */
 export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   // A workflow must process `endpoint`, `sources`, `steps`, `destinations`.
-  // `prefixes` and `name` is configuration. `independent` is no longer relevant.
+  // `prefixes` and `name` is configuration. `independent` is irrelevant for a single worker.
 
   // Prepare running context
   const tempdir = provideTempDir();
 
   const store = new N3.Store(undefined, { factory: N3.DataFactory });
-  const context: ConstructRuntimeCtx = {
+  const context: ConstructCtx = {
     pipeline: data,
     options: options ?? {},
     tempdir: await tempdir,
@@ -42,27 +36,17 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
 
   // Prepare and gather all pipeline parts
   console.info(`Preparing modules...`);
-  const matchedParts = orderPipelineParts(await arrayFromGenerator(matchPipelineParts(data)));
-  const initializedParts: WorkflowCache[] = [];
+  const matchedModules = await match(data);
 
   if (options.verbose)
     console.info(
-      Report.INFO + "Matched modules:\n",
-      matchedParts.map((v, j) => `${j + 1}: ${v[1]}`).join(" ; ")
+      `Matched modules:\n\t-${Object.entries(matchedModules)
+        .map(
+          ([topLevelKey, modules]) =>
+            topLevelKey + ": " + modules.map(([name, __]) => name).join(", ")
+        )
+        .join("\n\t-")}`
     );
-
-  let i = 0;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  for await (const [key, name, part] of matchedParts) {
-    try {
-      i++;
-      const info = await part(context, i);
-      initializedParts.push({ name, info });
-    } catch (e) {
-      console.error(Report.ERROR + `Error during info() of ${name} (${key}[${i}])`);
-      throw e;
-    }
-  }
 
   // Gather and combine all query context for the QueryEngine
   context.queryContext = { fetch: authfetch, sources: [] as never };
@@ -101,6 +85,18 @@ export async function start(data: IPipeline, options?: Partial<ICliOptions>) {
   } catch (e) {
     console.error(Report.ERROR + `Error during cleanup() stage`);
     throw e;
+  }
+}
+
+async function runModuleOfType(
+  executablePipeline: ExecutablePipeline,
+  type: keyof IConstructPipeline | keyof IUpdatePipeline
+) {
+  for (const [name, module] of executablePipeline[type]) {
+    const info = await module.info(context);
+    await info?.beforeQuery();
+    await info?.queryContext;
+    await info?.afterQuery();
   }
 }
 

@@ -1,7 +1,7 @@
 import type { ITarget } from "../config/types.js";
 import { ConfigurationError } from "../config/validate.js";
 import type {
-  ConstructRuntimeCtx,
+  ConstructCtx,
   DestinationPartInfo,
   PipelinePart,
   PipelinePartGetter,
@@ -35,7 +35,7 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
     const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
     const publicationUri = new URL(data.access).pathname;
 
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<DestinationPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
       const tempFile = `${context.tempdir}/laces-export-${new Date().getTime()}.ttl`;
       let metadata: LacesHubPublicationDesc;
 

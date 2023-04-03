@@ -2,13 +2,21 @@
 
 import * as dotenv from "dotenv";
 import fs from "node:fs/promises";
+import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import compileConfigData, { CONFIG_FILENAME_YAML, ICliOptions } from "../config/validate.js";
+import {
+  configFromPath,
+  CONFIG_FILENAME_YAML,
+  ICliOptions,
+  mergeConfigurations,
+} from "../config/validate.js";
+import { newPipelineTemplate } from "../runner/new-pipeline.js";
 import * as PipelineSupervisor from "../runner/pipeline-supervisor.js";
 import { TEMPDIR } from "../runner/pipeline-worker.js";
 import * as RulesWorker from "../runner/shacl-rules-worker.js";
+import { ge1 } from "../utils/array.js";
 import * as Report from "../utils/report.js";
 
 dotenv.config();
@@ -17,10 +25,9 @@ dotenv.config();
 async function cli() {
   await yargs(hideBin(process.argv))
     .scriptName("sparql-query-runner")
-    // command name '*' is the default
     .command({
       command: "run",
-      describe: `Run a workflow to generate `,
+      describe: `Run a workflow to generate quads or execute SPARQL queries`,
       handler: async (argv) =>
         await runPipelines(argv["config"], {
           cacheIntermediateResults: argv["cache"],
@@ -36,7 +43,7 @@ async function cli() {
         config: {
           alias: "i",
           type: "string",
-          desc: "Path to pipeline file(s)",
+          desc: "Path to workflow file(s)",
           default: CONFIG_FILENAME_YAML,
         },
         verbose: {
@@ -60,11 +67,24 @@ async function cli() {
         config: {
           alias: "i",
           type: "string",
-          desc: "Path to pipeline file",
+          desc: "Path to workflow file",
           default: CONFIG_FILENAME_YAML,
         },
       },
       handler: async (argv) => await createShaclRules(argv["config"]),
+    })
+    .command({
+      command: "new",
+      describe: "Create a new workflow declaration file",
+      builder: {
+        output: {
+          alias: "o",
+          type: "string",
+          desc: "Output path to workflow file",
+          default: CONFIG_FILENAME_YAML,
+        },
+      },
+      handler: async (argv) => newPipeline(argv["output"]),
     })
     .command({
       command: "clear-cache",
@@ -91,12 +111,21 @@ async function clearCache({ force }: { force: boolean }) {
   return;
 }
 
+async function newPipeline(path: string) {
+  const contents = newPipelineTemplate();
+  await fs.writeFile(path, contents);
+  console.info(`Created ${resolve(path)}`);
+}
+
 async function runPipelines(
   configPaths: string[],
   { cacheIntermediateResults, verbose, warningsAsErrors }: ICliOptions
 ) {
-  const config = await compileConfigData(configPaths);
   try {
+    const configs = [];
+    for (const path of ge1(configPaths))
+      configs.push(await configFromPath(path, { secrets: process.env }));
+    const config = mergeConfigurations(configs);
     PipelineSupervisor.runAll(config, { cacheIntermediateResults, verbose, warningsAsErrors });
   } catch (error) {
     console.error(Report.ERROR + error.message ?? error);
@@ -105,9 +134,12 @@ async function runPipelines(
 }
 
 async function createShaclRules(configPaths: string[]) {
-  const config = await compileConfigData(configPaths);
-
   try {
+    const configs = [];
+    for (const path of ge1(configPaths))
+      configs.push(await configFromPath(path, { secrets: process.env }));
+    const config = mergeConfigurations(configs);
+
     config.pipelines.forEach(async (p) => {
       // TODO: Alternative destinations for `sh:SPARQLRule`s
       await RulesWorker.start(p, process.stdout);

@@ -21,17 +21,6 @@ export function usernamePasswordDict(data: ICredential): {
   };
 }
 
-/** Add Basic authentication to a URL */
-export function addToUrl(url: string, data?: ICredential): string {
-  // We need to insert Basic authentication between URL schema and rest...
-  // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-  if (!data) return url;
-  const newUrl = new URL(url);
-  const { username, password } = usernamePasswordDict(data);
-  [newUrl.username, newUrl.password] = [username, password];
-  return newUrl.href;
-}
-
 /** Concatenate username and password with a colon. */
 export function httpSyntax(data: ICredential): string {
   if (data === undefined) return undefined;
@@ -40,12 +29,13 @@ export function httpSyntax(data: ICredential): string {
 }
 
 /** Returns auth details ready for usage as an HTTP header */
-export function asHeader(data: ICredential): { Authorization: string } {
-  if (data.type === "Basic") {
+export function asHeader(data: ICredential): { Authorization?: string } {
+  if (data === undefined || data === null) return {};
+
+  if (data.type === "Basic")
     return {
-      Authorization: `Basic ${encode(httpSyntax(data))}`,
+      Authorization: `Basic ${encodeB64(httpSyntax(data))}`,
     };
-  }
 
   if (data.type === "Bearer") {
     const token = substitute(data.token, process.env);
@@ -59,6 +49,6 @@ export function asHeader(data: ICredential): { Authorization: string } {
 }
 
 /** Base64 encode */
-export function encode(value: string): string {
+export function encodeB64(value: string): string {
   return Buffer.from(value).toString("base64");
 }

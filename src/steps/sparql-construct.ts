@@ -2,12 +2,7 @@ import type { Quad } from "@rdfjs/types";
 import fs from "fs/promises";
 import { NamedNode } from "n3";
 import type { IConstructStep } from "../config/types";
-import type {
-  ConstructRuntimeCtx,
-  PipelinePart,
-  PipelinePartGetter,
-  StepPartInfo,
-} from "../runner/types";
+import type { ConstructCtx, PipelinePart, PipelinePartGetter, StepPartInfo } from "../runner/types";
 import * as Report from "../utils/report.js";
 
 const name = "steps/sparql-construct";
@@ -22,7 +17,7 @@ export default class SparqlQuadQuery implements PipelinePart<IConstructStep> {
   }
 
   async info(data: IConstructStep): Promise<PipelinePartGetter> {
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<StepPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<StepPartInfo> => {
       const queries: string[] = [];
       // let engine: QueryEngine;
 

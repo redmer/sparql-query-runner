@@ -1,4 +1,4 @@
-const MIMETYPE_MAP: Record<string, string[]> = {
+export const MIMETYPE_MAP = {
   "application/trig": [".trig"],
   "application/n-quads": [".nq", ".nquads"],
   "text/turtle": [".ttl", ".turtle"],

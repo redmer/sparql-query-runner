@@ -17,14 +17,14 @@ export async function runAll(data: IConfiguration, options: ICliOptions) {
   // Independent pipelines can run parallel
   await Promise.all(
     independentPipelines(data).map((p, i) => {
-      console.info(`pipeline ${i + 1}: start '${p.name}'`);
+      console.info(`workflow ${i + 1}: start '${p.name}'`);
       return PipelineWorker.start(p, options);
     })
   );
 
   // Dependent pipelines must run consecutive
   for await (const [i, p] of Object.entries(dependentPipelines(data))) {
-    console.group(`${Number(i) + 1}: pipeline '${p.name}'`);
+    console.group(`${Number(i) + 1}: workflow '${p.name}'`);
     await PipelineWorker.start(p, options);
     console.groupEnd();
   }

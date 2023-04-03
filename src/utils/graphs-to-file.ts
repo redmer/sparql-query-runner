@@ -1,5 +1,7 @@
 import fs from "fs";
 import N3 from "n3";
+import { dirname } from "path";
+import type { MIMETYPE_MAP } from "./rdf-extensions-mimetype.js";
 
 export interface GraphToFileOptions {
   graphs?: string[];
@@ -8,7 +10,13 @@ export interface GraphToFileOptions {
 }
 
 export type FilteredGraphOptions = Omit<GraphToFileOptions, "prefixes" | "format">;
+type SerializationFormat = keyof typeof MIMETYPE_MAP;
 
+export function streamableFormats(): SerializationFormat[] {
+  return ["application/n-quads", "application/n-triples"];
+}
+
+/** Serialize all or specified graphs of a N3.Store to a path */
 export function serializeStreamingly(store: N3.Store, path: string, options?: GraphToFileOptions) {
   const fd = fs.createWriteStream(path, { encoding: "utf-8" });
   const streamWriter = new N3.StreamWriter(options);
@@ -35,6 +43,7 @@ export function serialize(store: N3.Store, path: string, options?: GraphToFileOp
       resolve(serializeStreamingly(store, path, options));
 
     // Else, use a blocking, pretty writer
+    fs.mkdirSync(dirname(path), { recursive: true });
     const fd = fs.createWriteStream(path, { encoding: "utf-8" });
     const plainWriter = new N3.Writer(fd, options);
 

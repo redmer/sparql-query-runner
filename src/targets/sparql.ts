@@ -1,6 +1,6 @@
 import type { ITarget } from "../config/types.js";
 import type {
-  ConstructRuntimeCtx,
+  ConstructCtx,
   EndpointPartInfo,
   PipelinePart,
   PipelinePartGetter,
@@ -26,7 +26,7 @@ export class SPARQLTarget implements PipelinePart<ITarget> {
 
   async info(data: ITarget): Promise<PipelinePartGetter> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    return async (context: Readonly<ConstructRuntimeCtx>): Promise<EndpointPartInfo> => {
+    return async (context: Readonly<ConstructCtx>): Promise<EndpointPartInfo> => {
       return {
         getQueryContext: {
           destination: { type: "sparql", value: data.access },
