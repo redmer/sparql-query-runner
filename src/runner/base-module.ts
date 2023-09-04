@@ -5,7 +5,8 @@ import fs from "fs/promises";
 import fetch, { Response } from "node-fetch";
 import path from "path";
 import { digest } from "../utils/digest";
-import { TEMPDIR } from "./pipeline-worker";
+import { TEMPDIR } from "./job-supervisor";
+import { CacheDependentType, ICacheableModule } from "./types";
 
 export class BaseModule<T> implements ICacheableModule {
   data: T;
@@ -18,17 +19,18 @@ export class BaseModule<T> implements ICacheableModule {
 
   async locateFile(url_or_path: string) {
     if (!url_or_path.startsWith("http")) {
-      this.addCacheDependent({ type: "path", value: url_or_path });
+      this.addCacheInput({ type: "path", value: url_or_path });
       return url_or_path;
     }
     const response = await fetch(url_or_path, { method: "GET" });
-    const filename = this.addCacheDependent({ type: "url", value: url_or_path, response });
+    const filename = this.addCacheInput({ type: "url", value: url_or_path, response });
     const cachePath = path.join(TEMPDIR, "in-file", filename);
     fs.writeFile(cachePath, response.body);
     return cachePath;
   }
 
-  async addCacheDependent({
+  /** Register that some file or url needs to stay the same to let this step remain cacheable. */
+  addCacheInput({
     type,
     value,
     response,
@@ -36,7 +38,7 @@ export class BaseModule<T> implements ICacheableModule {
     type: CacheDependentType;
     value: string;
     response?: Response;
-  }): Promise<string> {
+  }): string {
     let digestable: string;
 
     if (type == "url" && response)
@@ -52,20 +54,4 @@ export class BaseModule<T> implements ICacheableModule {
   hash(): string {
     return digest(JSON.stringify(this.#dependents));
   }
-}
-
-export type CacheDependentType = "auto" | "url" | "path" | "contents";
-
-export interface ICacheableModule {
-  /**
-   * Add a local file or remote file or file contents to the cache. If it changes,
-   * the workflow should jettison the intermediate results of next steps.
-   */
-  addCacheDependent(info: { type: CacheDependentType; value: string }): void;
-
-  /**
-   * A value that changes when the inputs of this module change.
-   * If the modules results are indeterminable, return null.
-   */
-  hash(): string | null;
 }

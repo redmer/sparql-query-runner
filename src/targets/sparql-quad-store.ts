@@ -9,7 +9,7 @@ import {
 } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
 import { serialize } from "../utils/graphs-to-file.js";
-import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
+import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import * as Report from "../utils/report.js";
 
 const name = "targets/sparql-quad-store";
@@ -24,7 +24,7 @@ export class SPARQLQuadStoreTarget implements PipelinePart<ITarget> {
   }
 
   async info(data: ITarget): Promise<PipelinePartGetter> {
-    const mimetype = getMediaTypeFromFilename(".nq");
+    const mimetype = getRDFMediaTypeFromFilename(".nq");
     return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
       const stepTempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;
 
@@ -38,7 +38,7 @@ export class SPARQLQuadStoreTarget implements PipelinePart<ITarget> {
           await serialize(context.quadStore, stepTempFile, {
             format: mimetype,
             graphs: data.onlyGraphs,
-            prefixes: context.pipeline.prefixes,
+            prefixes: context.configuration.prefixes,
           });
 
           const contents = await fs.readFile(stepTempFile, { encoding: "utf-8" });

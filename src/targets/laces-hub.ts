@@ -74,7 +74,7 @@ export class LacesHubTarget implements PipelinePart<ITarget> {
           await serialize(context.quadStore, tempFile, {
             format: "text/turtle",
             graphs: data.onlyGraphs,
-            prefixes: context.pipeline.prefixes,
+            prefixes: context.configuration.prefixes,
           });
 
           console.info(`${name}: Uploading to <${data.access}>...`);

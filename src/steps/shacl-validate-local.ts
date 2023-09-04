@@ -3,7 +3,7 @@ import N3 from "n3";
 import SHACLValidator from "rdf-validate-shacl";
 import type { IValidateStep } from "../config/types";
 import type { ConstructCtx, PipelinePart, PipelinePartGetter, StepPartInfo } from "../runner/types";
-import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
+import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 const name = "steps/shacl-validate-local";
 
@@ -25,7 +25,7 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
       return {
         prepare: async () => {
           for (const url of data.access) {
-            const mimetype = getMediaTypeFromFilename(url);
+            const mimetype = getRDFMediaTypeFromFilename(url);
             const stream = fs.createReadStream(url);
             const parser = new N3.StreamParser({ format: mimetype });
             const emitter = shapesStore.import(parser.import(stream));
@@ -51,7 +51,7 @@ export default class ShaclValidateLocal implements PipelinePart<IValidateStep> {
 source: ${r.sourceShape} / ${r.sourceConstraintComponent}`
                 );
               }
-              if (context.options.warningsAsErrors)
+              if (context.cliOptions.warningsAsErrors)
                 throw Error(`${name}: ${report.results.length} SHACL results`);
             }
           } catch (err) {

@@ -1,7 +1,7 @@
 import type { IProxyHandler, IRequest } from "@comunica/types";
 import type { RequestInfo } from "node-fetch";
 import { Request } from "node-fetch";
-import type { ICredential } from "../config/types.js";
+import type { ICredentialData } from "../config/types.js";
 import * as Auth from "./auth.js";
 
 /**
@@ -10,16 +10,16 @@ import * as Auth from "./auth.js";
  * passed-through credentials.
  */
 export class BasicBearerAuthProxyHandler implements IProxyHandler {
-  #credentials: ICredential;
+  #credentials: ICredentialData;
 
   /**
    * Add supplied credentials to all requests.
    *
    * @param credentials The credentials to be passed through. Note that an
-   * {@link ICredential} is passed, so that future auth types may be supported.
+   * {@link ICredentialData} is passed, so that future auth types may be supported.
    * Such types would be implemented in {@link Auth.asHeader}.
    */
-  public constructor(credentials: ICredential) {
+  public constructor(credentials: ICredentialData) {
     this.#credentials = credentials;
   }
 

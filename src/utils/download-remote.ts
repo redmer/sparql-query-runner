@@ -1,7 +1,7 @@
 import fs from "fs";
 import { default as fetch } from "node-fetch";
 import path from "path";
-import type { ICredential } from "../config/types";
+import type { ICredentialData } from "../config/types";
 import * as Auth from "./auth.js";
 
 /** Extract basename from a filepath or a external URL */
@@ -11,7 +11,7 @@ export function basename(url: string) {
 }
 
 /** Download a remote file, with optional auth headers to path */
-export async function download(url: string, path: string, auth?: ICredential) {
+export async function download(url: string, path: string, auth?: ICredentialData) {
   // Syntax: { ...null } => { }
   const auhorizationHeader = auth ? Auth.asHeader(auth) : null;
   const response = await fetch(url, { method: "GET", headers: { ...auhorizationHeader } });
@@ -26,7 +26,7 @@ export async function download(url: string, path: string, auth?: ICredential) {
 
 export type IFetchContentOptions = {
   cachedir?: string;
-  auth?: ICredential;
+  auth?: ICredentialData;
   encoding?: BufferEncoding;
 };
 

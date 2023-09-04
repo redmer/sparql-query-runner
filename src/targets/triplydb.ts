@@ -38,7 +38,7 @@ export class TriplyDBTarget implements PipelinePart<ITarget> {
           // Get or create dataset (if create: no metadata)
           dataset = await (
             await Triply.getAccount(accountName)
-          ).ensureDataset(datasetName, { prefixes: context.pipeline.prefixes });
+          ).ensureDataset(datasetName, { prefixes: context.configuration.prefixes });
         },
         start: async () => {
           console.info(

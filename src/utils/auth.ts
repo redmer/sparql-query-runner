@@ -1,5 +1,5 @@
 import * as process from "node:process";
-import type { ICredential } from "../config/types";
+import type { ICredentialData } from "../config/types";
 import { substitute } from "./compile-envvars.js";
 
 const name = "utils/auth";
@@ -8,7 +8,7 @@ export class AuthTypeError extends Error {}
 export class AuthValueError extends Error {}
 
 /** { username, password } as an object */
-export function usernamePasswordDict(data: ICredential): {
+export function usernamePasswordDict(data: ICredentialData): {
   username: string;
   password: string;
 } {
@@ -22,14 +22,14 @@ export function usernamePasswordDict(data: ICredential): {
 }
 
 /** Concatenate username and password with a colon. */
-export function httpSyntax(data: ICredential): string {
+export function httpSyntax(data: ICredentialData): string {
   if (data === undefined) return undefined;
   const { username, password } = usernamePasswordDict(data);
   return `${username}:${password}`;
 }
 
 /** Returns auth details ready for usage as an HTTP header */
-export function asHeader(data: ICredential): { Authorization?: string } {
+export function asHeader(data: ICredentialData): { Authorization?: string } {
   if (data === undefined || data === null) return {};
 
   if (data.type === "Basic")
@@ -42,6 +42,12 @@ export function asHeader(data: ICredential): { Authorization?: string } {
 
     return {
       Authorization: `Bearer ${token}`,
+    };
+  }
+
+  if (data.type === "HTTP-Header") {
+    return {
+      ...data.headers,
     };
   }
 

@@ -3,8 +3,8 @@ import fs from "fs";
 import N3 from "n3";
 import { ISource } from "../config/types.js";
 import { BaseModule } from "../runner/base-module.js";
-import { ConstructCtx, WorkflowModule } from "../runner/types.js";
-import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
+import { ConstructCtx, IWorkflowModuleQueryDelegate } from "../runner/types.js";
+import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
@@ -13,7 +13,10 @@ import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
  * Due to security concerns, `@comunica/query-sparql` does not support local file systems
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
-export class LocalFileSource extends BaseModule<ISource> implements WorkflowModule<ISource> {
+export class LocalFileSource
+  extends BaseModule<ISource>
+  implements IWorkflowModuleQueryDelegate<ISource>
+{
   static id = "sources/localfile";
   #store: N3.Store;
 
@@ -28,9 +31,9 @@ export class LocalFileSource extends BaseModule<ISource> implements WorkflowModu
   async willQuery(_context: Readonly<ConstructCtx>): Promise<void> {
     this.#store = new N3.Store();
 
-    const mimetype = getMediaTypeFromFilename(this.data.access);
+    const mimetype = getRDFMediaTypeFromFilename(this.data.access);
     const stream = fs.createReadStream(this.locateFile(this.data.access));
-    this.addCacheDependent({ type: "path", value: this.data.access });
+    this.addCacheInput({ type: "path", value: this.data.access });
 
     const parser = new N3.StreamParser({ format: mimetype });
     const emitter = this.#store.import(parser.import(stream));

@@ -1,237 +1,208 @@
+import * as RDF from "@rdfjs/types";
 import fs from "fs/promises";
+import { DataFactory } from "rdf-data-factory";
 import yaml from "yaml";
 import { ge1 } from "../utils/array.js";
 import { substitute } from "../utils/compile-envvars.js";
 import { context } from "./rdfa11-context.js";
-import type {
-  IConfiguration,
-  IConstructPipeline,
-  IConstructStep,
-  ICredential,
-  IEndpoint,
-  ISource,
-  ITarget,
-  IUpdatePipeline,
-  IUpdateStep,
-  IValidateStep,
+import { JobSourceTypes, JobStepTypes, JobTargetTypes } from "./schema-types.js";
+import {
+  type IConfigurationData,
+  type ICredentialData,
+  type IJobData,
+  type IJobSourceData,
+  type IJobSourceKnownTypes,
+  type IJobStepData,
+  type IJobStepKnownTypes,
+  type IJobTargetData,
+  type IJobTargetKnownTypes,
 } from "./types";
 
 export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ICliOptions {
-  verbose?: boolean;
-  cacheIntermediateResults?: boolean;
-  warningsAsErrors?: boolean;
-}
-
 export class ConfigurationError extends Error {}
 
 /** Get a configuration from a valid pipeline declaration file in JSON or YAML */
-export async function configFromPath(path: string, { secrets }): Promise<IConfiguration> {
+export async function configFromPath(
+  path: string,
+  { secrets, defaultPrefixes }
+): Promise<IConfigurationData> {
   try {
     const rawContents = await fs.readFile(path, { encoding: "utf-8" });
-    return await configFromString(rawContents, { secrets });
+    return await configFromString(rawContents, { secrets, defaultPrefixes });
   } catch (e) {
     throw new ConfigurationError(`Could not read '${path}'`, e);
   }
 }
 
 /** Get a configuration from a valid pipeline declaration in JSON or YAML */
-export async function configFromString(contents: string, { secrets }): Promise<IConfiguration> {
+export async function configFromString(
+  contents: string,
+  { secrets, defaultPrefixes }
+): Promise<IConfigurationData> {
   try {
     const substitutedContents = substitute(contents, secrets);
-    const config = yaml.parse(substitutedContents, { strict: true, version: "1.2" });
-    return validateConfiguration(config);
+    const config = yaml.parse(substitutedContents, {
+      strict: true,
+      version: "1.2",
+      mapAsMap: true,
+    });
+    return validateConfiguration(config, defaultPrefixes);
   } catch (e) {
-    throw new ConfigurationError(`Could not read configuration '${contents.slice(0, 140)}'`, e);
+    throw new ConfigurationError(`Could not read configuration:`, e);
   }
 }
 
-/** Merge configuration files */
-export function mergeConfigurations(configs: IConfiguration[]): IConfiguration {
-  return { version: "v4.compiled", pipelines: configs.map((c) => c.pipelines).flat(1) };
-}
-
-/** Validate and hydrate a configuration file. */
-export function validateConfiguration(data: unknown): IConfiguration {
+/** Validate a configuratioun file */
+function validateConfiguration(
+  data: Readonly<Partial<IConfigurationData>>,
+  defaultPrefixes: boolean
+): IConfigurationData {
   const version: string | undefined = data["version"];
-  if (!version || !version.startsWith("v4"))
-    throw new ConfigurationError("Configuration file version 'v4' required");
+  if (!version || !version.startsWith("v5"))
+    throw new ConfigurationError("Configuration file version 'v5' required");
 
-  return {
-    version: version,
-    pipelines: ge1(data["pipelines"]).map((p) => validatePipeline(p)),
-  };
+  // Default prefixes are set here, config-level are copied here, so that jobs may get a copy, too
+  const prefixes = Object.assign(defaultPrefixes ? context : {}, data["prefixes"]);
+
+  // validate the jobs individually
+  if (!Object.hasOwn(data, "jobs")) throw new ConfigurationError(`Jobs are not correctly defined`);
+  const jobs = new Map();
+  for (const [name, job] of data["jobs"].entries()) jobs.set(name, validateJob(job, prefixes));
+
+  // return the original data, but override version, prefixes, jobs
+  return { ...data, version, prefixes, jobs };
 }
 
-/** Validate and hydrate pipeline data. */
-function validatePipeline(data: unknown): IUpdatePipeline | IConstructPipeline {
-  const asUpdate = validateUpdatePipeline(data);
-  const asConstruct = validateConstructPipeline(data);
+/** Normalize an IJob, copying configuration-level prefixes. */
+function validateJob(
+  data: Readonly<Partial<IJobData>>,
+  workflowPrefixes: Record<string, string>
+): IJobData {
+  const independent = data["independent"] ?? false;
+  const prefixes = Object.assign(workflowPrefixes, data["prefixes"]);
+  const sources = data["sources"]?.map((data) => validateSource(data, prefixes));
+  const steps = data["steps"]?.map((data) => validateStep(data, prefixes));
+  const targets = data["targets"]?.map((data) => validateTarget(data, prefixes));
 
-  if (!!asUpdate && !!asConstruct)
-    throw new ConfigurationError(
-      `Confusion. Workflow is both valid as 'direct-update' and as 'construct-quads'.` +
-        `Consider splitting or explicitely add 'type: ...'. ${JSON.stringify(data)}`
-    );
-  if (!asUpdate && !asConstruct)
-    throw new ConfigurationError(
-      `Workflow couldn't be parsed as 'direct-update' nor as 'construct-quads'. ${JSON.stringify(
-        data
-      )}`
-    );
-
-  const prefixes = Object.assign({}, context, data["prefixes"]); // combine default RDFa context with supplied prefixes
-
-  return {
-    name: data["name"] ?? "SPARQL-Query-Runner workflow", // static default
-    independent: data["independent"] ?? false, // safe default
-    prefixes,
-    ...(asUpdate ?? asConstruct),
-  };
+  return { ...data, independent, prefixes, sources, targets, steps };
 }
 
-function validateUpdatePipeline(
+/** Find keys that are well-known access types (sparql:, file:, etc.) */
+function knownTypeKeys(
+  shortHandTypes: typeof JobSourceTypes | typeof JobStepTypes | typeof JobTargetTypes,
   data: unknown
-): Omit<IUpdatePipeline, "name" | "independent" | "prefixes"> | undefined {
-  if (!data["endpoint"] || !data["steps"]) return undefined;
-
-  const type = "direct-update";
-  const endpoint = ge1(data["endpoint"]).map((data) => validateEndpoint(data));
-  const steps = ge1(data["steps"]).map((data) => validateUpdateStep(data));
-
-  return { type, endpoint, steps };
+) {
+  return Object.keys(data).filter((k: never) => shortHandTypes.includes(k));
 }
 
-function validateConstructPipeline(
-  data: unknown
-): Omit<IConstructPipeline, "name" | "independent" | "prefixes"> | undefined {
-  // A construct-quads pipeline should have either
-  // minimally sources and targets, steps and targets
-  if (!data["targets"]) return undefined;
-
-  const type = "construct-quads";
-  const sources = ge1(data["sources"])?.map((data) => validateSource(data));
-  const targets = ge1(data["targets"]).map((data) => validateTarget(data));
-  const steps = ge1(data["steps"])?.map((data) => validateConstructStep(data));
-
-  return { type, sources, targets, steps };
-}
-
-function validateEndpoint(data: unknown): IEndpoint {
-  if (typeof data === "string") return validateEndpoint({ access: data } as IEndpoint);
-  if (data["access"] === undefined)
-    throw new ConfigurationError(
-      `An endpoint's target url ('access') is missing. (Data: ${JSON.stringify(data)})`
-    );
+/** Validate the known values of a source, returning the full object */
+function validateSource(
+  data: Partial<IJobSourceData>,
+  prefixes: Record<string, string>
+): IJobSourceData {
+  const knownType = knownTypeKeys(JobSourceTypes, data) as IJobSourceKnownTypes[];
+  if (knownType.length != 1 && !Object.hasOwn(data, "type"))
+    throw new ConfigurationError(`No single type for source: found ${JSON.stringify(knownType)}`);
 
   return {
-    access: data["access"],
-    credentials: validateAuthentication(data["credentials"]),
+    ...data,
+    type: data["type"] ?? `sources/${knownType[0]}`,
+    access: data["access"] ?? data[knownType[0]],
+    with: {
+      ...data.with,
+      credentials: validateAuthentication(data["credentials"]),
+      onlyGraphs: ge1(data["only-graphs"])
+        .map((g) => expandCURIE(g, prefixes))
+        .map((g) => stringToGraph(g)),
+      targetGraph: [data["target-graph"]]
+        .map((g) => expandCURIE(g, prefixes))
+        .map((g) => stringToGraph(g))[0],
+    },
   };
 }
 
-function validateUpdateStep(data: unknown): IUpdateStep {
-  if (typeof data === "string")
-    return validateUpdateStep({ type: "sparql-update", access: [data] } as IUpdateStep);
-  if (data["access"] === undefined && data["update"] === undefined)
-    throw new ConfigurationError(
-      `A query value (access,update) for step is missing. (Data: ${JSON.stringify(data)})`
-    );
-
-  if (data["access"] && data["update"])
-    throw new ConfigurationError(
-      `Mutually exclusive 'access' and 'update' supplied for step. (Data: ${JSON.stringify(data)})`
-    );
+/** Validate the known values of a step, returning the full object */
+function validateStep(data: Partial<IJobStepData>, prefixes: Record<string, string>): IJobStepData {
+  const knownType = knownTypeKeys(JobStepTypes, data) as IJobStepKnownTypes[];
+  if (knownType.length != 1 && !Object.hasOwn(data, "type"))
+    throw new ConfigurationError(`No single type for step: found ${JSON.stringify(knownType)}`);
 
   return {
-    type: data["type"] ?? "sparql-update",
-    access: ge1(data["access"]),
-    update: data["update"],
+    ...data,
+    type: data["type"] ?? `steps/${knownType[0]}`,
+    access: data["access"] ?? data[knownType[0]],
+    with: {
+      ...data.with,
+      targetGraph: [data["target-graph"]]
+        .map((g) => expandCURIE(g, prefixes))
+        .map((g) => stringToGraph(g))[0],
+    },
   };
 }
 
-function validateConstructStep(data: unknown): IConstructStep | IValidateStep {
-  if (typeof data === "string")
-    return validateConstructStep({ type: "sparql-construct", access: [data] } as IConstructStep);
-
-  // `access` or `construct` is required, except for the following types
-  if (data["access"] === undefined && data["construct"] === undefined)
-    if (!["shacl-validate"].includes(data["type"]))
-      throw new ConfigurationError(
-        `A query value (access,construct) for step is missing. (Data: ${JSON.stringify(data)})`
-      );
-
-  if (data["access"] && data["construct"])
-    throw new ConfigurationError(
-      `Mutually exclusive 'access' and 'construct' supplied for step. (Data: ${JSON.stringify(
-        data
-      )})`
-    );
+/** Check the known values of a target, returning the full object */
+function validateTarget(
+  data: Partial<IJobTargetData>,
+  prefixes: Record<string, string>
+): IJobTargetData {
+  const knownType = knownTypeKeys(JobTargetTypes, data) as IJobTargetKnownTypes[];
+  if (knownType.length != 1 && !Object.hasOwn(data, "type"))
+    throw new ConfigurationError(`No single type for source: found ${JSON.stringify(knownType)}`);
 
   return {
-    type: data["type"] ?? "sparql-construct",
-    access: ge1(data["access"]),
-    construct: data["construct"],
-    intoGraph: data["intoGraph"],
-    targetClass: data["targetClass"],
+    ...data,
+    type: data["type"] ?? `targets/${knownType[0]}`,
+    access: data["access"] ?? data[knownType[0]],
+    with: {
+      ...data.with,
+      credentials: validateAuthentication(data["credentials"]),
+      onlyGraphs: ge1(data["only-graphs"])
+        .map((g) => expandCURIE(g, prefixes))
+        .map((g) => stringToGraph(g)),
+    },
   };
 }
 
-function validateSource(data: unknown): ISource {
-  if (typeof data === "string") return validateSource({ type: "auto", access: data } as ISource);
-  if (data["access"] === undefined)
-    throw new ConfigurationError(
-      `Source requires a URL to find data. (Data: ${JSON.stringify(data)})`
-    );
-
-  return {
-    type: data["type"] ?? "auto",
-    access: data["access"],
-    credentials: validateAuthentication(data["credentials"]),
-    onlyGraphs: ge1(data["onlyGraphs"]),
-  };
-}
-
-function validateTarget(data: unknown): ITarget {
-  if (typeof data === "string")
-    return validateTarget({ type: "localfile", access: data } as ITarget);
-  if (data["access"] === undefined)
-    throw new ConfigurationError(
-      `Source requires a target URL to export to. (Data: ${JSON.stringify(data)})`
-    );
-
-  return {
-    type: data["type"] ?? "localfile",
-    access: data["access"],
-    credentials: validateAuthentication(data["credentials"]),
-    onlyGraphs: ge1(data["onlyGraphs"]),
-  };
-}
-
-function validateAuthentication(data: unknown): ICredential;
 function validateAuthentication(data: undefined): undefined;
-function validateAuthentication(data: unknown): ICredential | undefined {
+function validateAuthentication(data: Readonly<Partial<ICredentialData>>): ICredentialData;
+function validateAuthentication(
+  data: Readonly<Partial<ICredentialData>>
+): ICredentialData | undefined {
   if (data === undefined) return undefined;
 
-  // If password_env and user_env, this is a Basic auth type
-  if (data["password"] && data["username"])
-    return {
-      type: "Basic",
-      password: data["password"],
-      username: data["username"],
-    };
+  const password = data["password"];
+  const username = data["username"];
+  const token = data["token"];
+  const headers = data["headers"];
 
-  // If token_env, this is a Bearer type
-  if (data["token"])
-    return {
-      type: "Bearer",
-      token: data["token"],
-    };
+  if (password && username) return { ...data, type: "Basic", password, username };
+  if (token) return { ...data, type: "Bearer", token };
+  if (headers) return { ...data, type: "HTTP-Header", headers };
+
+  // Credential type not recognized. For a useful error, some context but no full
+  // passwords should be given.
+  const value = JSON.stringify(headers ?? token ?? username ?? data);
+  const len = Math.min(Math.ceil(value.length / 5), 5);
 
   throw new ConfigurationError(
-    `The authentication type was not recognized. Verify authentication details of:\n` +
-      JSON.stringify(data, undefined, 2)
+    `The authentication type was not recognized. 
+    Verify authentication details (${value.slice(0, len)}...${value.slice(-len)})`
   );
+}
+
+/** Try to expand a CURIE; returns the original string if prefix is unknown */
+function expandCURIE(uriOrCurie: string, prefixes: Record<string, string>): string {
+  const sep = ":";
+  if (!uriOrCurie.includes(sep)) return uriOrCurie;
+
+  const [prefix, ...lname] = uriOrCurie.split(sep, 2);
+  const localname = lname.join(sep);
+  return (prefixes[prefix] ?? prefix) + localname;
+}
+
+function stringToGraph(graphName: string): RDF.Quad_Graph {
+  const df = new DataFactory();
+  if (graphName === "") return df.defaultGraph();
+  else return df.namedNode(graphName);
 }

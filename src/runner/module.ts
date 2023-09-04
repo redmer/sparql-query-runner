@@ -1,18 +1,9 @@
-import type {
-  IBasePipeline,
-  IConstructPipeline,
-  IPipeline,
-  IUpdatePipeline,
-} from "../config/types";
-
 import { SparqlEndpoint } from "../endpoints/sparql.js";
 import { LacesHubTarget } from "../targets/laces-hub.js";
 import { LocalFileTarget } from "../targets/local-file.js";
 import { SPARQLGraphStoreTarget } from "../targets/sparql-graph-store.js";
 import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";
 import { SPARQLTarget } from "../targets/sparql.js";
-
-import type { WorkflowModule } from "./types.js";
 
 import { AutoSource } from "../sources/auto.js";
 import { LocalFileSource } from "../sources/localfile.js";
@@ -21,9 +12,6 @@ import { MsAccessSource } from "../sources/msaccess.js";
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";
 import SparqlConstructQuery from "../steps/sparql-construct.js";
 import SparqlUpdate from "../steps/sparql-update.js";
-
-type IConstructPipelineKeys = keyof Omit<IConstructPipeline, keyof IBasePipeline>;
-type IUpdatePipelineKeys = keyof Omit<IUpdatePipeline, keyof IBasePipeline>;
 
 export class ModuleMatcherError extends Error {}
 
@@ -50,7 +38,10 @@ export const KNOWN_UPDATE_MODULES: Record<IUpdatePipelineKeys, (typeof WorkflowM
   };
 
 export type ExecutablePipeline = {
-  [key in keyof IConstructPipeline | keyof IUpdatePipeline]?: [string, WorkflowModule<unknown>][];
+  [key in keyof IConstructPipeline | keyof IUpdatePipeline]?: [
+    string,
+    IWorkflowModuleQueryDelegate<unknown>
+  ][];
 };
 
 export async function match(

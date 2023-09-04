@@ -1,42 +1,32 @@
-import { ITarget } from "../config/types.js";
-import {
-  ConstructCtx,
-  DestinationPartInfo,
-  PipelinePart,
-  PipelinePartGetter,
-} from "../runner/types.js";
+import type { IJobTargetData } from "../config/types";
+import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types";
 import { serialize } from "../utils/graphs-to-file.js";
-import { getMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
+import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import { DONE } from "../utils/report.js";
 
-const name = "targets/local-file";
-
 /** Export the CONSTRUCTed quads to a local file */
-export class LocalFileTarget implements PipelinePart<ITarget> {
-  // Export a(ll) graph(s) to a file
-  name = () => name;
+export class LocalFileTarget implements WorkflowPart<IJobTargetData> {
+  id = () => "targets/file";
 
-  qualifies(data: ITarget): boolean {
-    if (data.access.match(/^https?:/)) return false;
-    return true;
+  isQualified(data: IJobTargetData): boolean {
+    return data.access.match(/^https?:/) === null;
   }
 
-  async info(data: ITarget): Promise<PipelinePartGetter> {
-    const mimetype = getMediaTypeFromFilename(data.access);
-    return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
+  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+    return async (context: JobRuntimeContext) => {
+      const mimetype = getRDFMediaTypeFromFilename(data.access);
       return {
         start: async () => {
-          console.info(
-            `${name}: Exporting ${data.onlyGraphs ? data.onlyGraphs.length : "all"} graphs to ${
-              data.access
-            }...`
-          );
+          const count = data.with?.onlyGraphs?.length ?? "all";
+          context.info(`Exporting ${count} graphs to ${data.access}...`);
+
           await serialize(context.quadStore, data.access, {
             format: mimetype,
-            graphs: data.onlyGraphs,
-            prefixes: context.pipeline.prefixes,
+            graphs: data.with?.onlyGraphs,
+            prefixes: context.data.prefixes,
           });
-          console.info(`${name}: Exporting ` + DONE);
+
+          console.info(`Exporting ` + DONE);
         },
       };
     };

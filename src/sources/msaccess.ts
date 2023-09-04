@@ -1,53 +1,50 @@
 import { MSAccess } from "@rdmr-eu/rdfjs-source-msaccess";
 import fs from "fs/promises";
 import { pathToFileURL } from "node:url";
-import type { ISource } from "../config/types";
-import type {
-  ConstructCtx,
-  PipelinePart,
-  PipelinePartGetter,
-  SourcePartInfo,
-} from "../runner/types";
-import { basename, download } from "../utils/download-remote.js";
+import type { IJobSourceData } from "../config/types";
+import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types";
 
-const name = "sources/msaccess";
+export class MsAccessSource implements WorkflowPart<IJobSourceData> {
+  id = () => "sources/msaccess";
 
-export class MsAccessSource implements PipelinePart<ISource> {
-  name = () => name;
+  knownModels = ["facade-x", "csv"];
 
-  qualifies(data: ISource): boolean {
-    if (data.type === "msaccess") return true;
-    if (data.type === "msaccess-csv") return true;
-    return false;
+  isQualified(data: IJobSourceData): boolean {
+    return this.knownModels.includes(data.with?.["model"]);
   }
 
-  async info(data: ISource): Promise<PipelinePartGetter> {
-    return async (context: Readonly<ConstructCtx>): Promise<SourcePartInfo> => {
-      const quadMode = data.type == "msaccess" ? "facade-x" : "csv";
-      let inputFilePath: string;
+  shouldCacheAccess(data: IJobSourceData): boolean {
+    // Assume that HTTP accessed resources are cacheable
+    return data.access.match(/^https?:/) !== null;
+  }
 
-      if (data.onlyGraphs) console.warn(`${name}: 'onlyGraphs' is not supported`);
+  info(data: IJobSourceData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+    return async (context: JobRuntimeContext) => {
+      const quadMode = data.with?.["model"] ?? "facade-x";
+      // let inputFilePath: string;
 
-      // if file is remote, download it
-      if (data.access.match(/https?:/)) {
-        // Determine locally downloaded filename
-        inputFilePath = `${context.tempdir}/${basename(data.access)}`;
+      if (data.with?.onlyGraphs) context.warning(`'onlyGraphs' not supported`);
 
-        // Download and save that file at that location
-        await download(data.access, inputFilePath, data.credentials);
-      } else {
-        // The file is presumed local
-        inputFilePath = data.access;
-      }
+      // // if file is remote, download it
+      // if (data.access.match(/https?:/)) {
+      //   // Determine locally downloaded filename
+      //   inputFilePath = `${context.tempdir}/${basename(data.access)}`;
 
-      const db = await fs.readFile(inputFilePath);
+      //   // Download and save that file at that location
+      //   await download(data.access, inputFilePath, data.with?.credentials);
+      // } else {
+      //   // The file is presumed local
+      //   inputFilePath = data.access;
+      // }
+
+      const db = await fs.readFile(data.access);
       const mdb = new MSAccess(db, {
         quadMode,
         baseIRI: pathToFileURL(data.access).href + "#",
       });
 
       return {
-        getQueryContext: { sources: [mdb.store()] },
+        data: async () => mdb.store(),
       };
     };
   }

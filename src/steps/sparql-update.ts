@@ -1,17 +1,21 @@
 import fs from "fs/promises";
 import type { IUpdateStep } from "../config/types";
 import { BaseModule } from "../runner/base-module";
-import { UpdateCtx, WorkflowModule } from "../runner/types";
+import { IWorkflowModuleQueryDelegate, UpdateCtx } from "../runner/types";
 import * as Report from "../utils/report.js";
-
-export class UpdateStepError extends Error {}
+import { IJobStepData } from "../config/types";
+import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint) */
-export default class SparqlUpdate
-  extends BaseModule<IUpdateStep>
-  implements WorkflowModule<IUpdateStep>
-{
-  static id = "steps/sparql-update";
+export default class SparqlUpdate implements WorkflowPart<IJobStepData> {
+  id = () => "steps/update";
+
+  
+
+  async isQualified(data: IJobStepData): Promise<boolean> {
+      if (data.access)
+  }
+
   #queries: string[] = [];
 
   static qualifies(data: IUpdateStep): boolean {
@@ -23,13 +27,13 @@ export default class SparqlUpdate
     if (this.data.access)
       for (const url of this.data.access) {
         const body = await fs.readFile(url, { encoding: "utf-8" });
-        this.addCacheDependent({ type: "path", value: url });
+        this.addCacheInput({ type: "path", value: url });
         this.#queries.push(body);
       }
 
     if (this.data.update) {
       this.#queries.push(this.data.update);
-      this.addCacheDependent({ type: "contents", value: this.data.update });
+      this.addCacheInput({ type: "contents", value: this.data.update });
     }
   }
 
