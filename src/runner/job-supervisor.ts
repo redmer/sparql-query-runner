@@ -5,6 +5,7 @@ import path from "path";
 import { RdfStore } from "rdf-stores";
 import type { ICliOptions } from "../cli/cli-options";
 import type { IConfigurationData, IJobData } from "../config/types";
+import { AuthProxyHandler } from "../utils/auth-proxy-handler";
 import { authfetch } from "../utils/authfetch.js";
 import { CacheLayerJob } from "../utils/layer-cache";
 import * as Report from "../utils/report.js";
@@ -48,8 +49,11 @@ export class JobSupervisor implements Supervisor<IJobData> {
       engine,
       quadStore,
       queryContext: {} as never,
+      httpProxyHandler: new AuthProxyHandler(),
       tempdir: await this.tempdir(this.#name),
     };
+
+    // for each part, set infoMsg, warningMsg, errorMsg
 
     // TODO: REWRITE STOPS HERE
 

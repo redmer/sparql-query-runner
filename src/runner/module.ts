@@ -6,7 +6,7 @@ import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";
 import { SPARQLTarget } from "../targets/sparql.js";
 
 import { AutoSource } from "../sources/auto.js";
-import { LocalFileSource } from "../sources/localfile.js";
+import { LocalFileSource } from "../sources/file-local.js";
 import { MsAccessSource } from "../sources/msaccess.js";
 
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";

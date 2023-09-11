@@ -6,7 +6,7 @@ import {
   IWorkflowModuleStatic,
   UpdateCtx,
 } from "../runner/types.js";
-import { BasicBearerAuthProxyHandler } from "../utils/auth-proxy-handler.js";
+import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 /**
  * A SPARQL endpoint is automatically supported by Comunica.
@@ -36,7 +36,7 @@ export class SparqlEndpoint
       source: { type: "sparql", value: this.data.access },
       // `httpAuth:` only supports Basic Auth, so instead use a proxy.
       // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-      httpProxyHandler: new BasicBearerAuthProxyHandler(this.data.credentials),
+      httpProxyHandler: new AuthProxyHandler(this.data.credentials),
     };
   }
 }

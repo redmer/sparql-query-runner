@@ -9,8 +9,8 @@ import * as Auth from "./auth.js";
  * that enables bearer tokens, too. It modifies every Comunica request with the
  * passed-through credentials.
  */
-export class BasicBearerAuthProxyHandler implements IProxyHandler {
-  #credentials: ICredentialData;
+export class AuthProxyHandler implements IProxyHandler {
+  #credentials: Record<string, ICredentialData> = {};
 
   /**
    * Add supplied credentials to all requests.
@@ -19,8 +19,8 @@ export class BasicBearerAuthProxyHandler implements IProxyHandler {
    * {@link ICredentialData} is passed, so that future auth types may be supported.
    * Such types would be implemented in {@link Auth.asHeader}.
    */
-  public constructor(credentials: ICredentialData) {
-    this.#credentials = credentials;
+  public add(credentials: ICredentialData, forURL?: URL) {
+    this.#credentials[forURL.origin] = credentials;
   }
 
   public async getProxy(request: IRequest): Promise<IRequest> {
@@ -31,6 +31,8 @@ export class BasicBearerAuthProxyHandler implements IProxyHandler {
   }
 
   public modifyInput(input: RequestInfo): RequestInfo {
-    return new Request(input, { headers: { ...Auth.asHeader(this.#credentials) } });
+    const request = new Request(input);
+    const origin = new URL(request.url).origin;
+    return new Request(input, { headers: { ...Auth.asHeader(this.#credentials[origin]) } });
   }
 }
