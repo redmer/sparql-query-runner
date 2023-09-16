@@ -14,8 +14,9 @@ export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
 
       const auth = data.with?.credentials;
       if (auth === undefined) context.error(`TriplyDB requires auth details <${data.access}>`);
+      if (auth.type !== "Bearer") context.error(`TriplyDB requires auth with "token:" `);
 
-      const Triply = App.get({ token: process.env.TRIPLYDB_TOKEN });
+      const Triply = App.default.get({ token: auth.token });
       // Get or create dataset (if create: no metadata)
       const dataset = await (
         await Triply.getAccount(accountName)

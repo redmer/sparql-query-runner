@@ -26,19 +26,18 @@ export function overrideDataset(
 export async function overrideStore<T extends RDF.Store>(
   store: T,
   options: OverrideGraphOptions
-): Promise<T> {
+): Promise<RDF.Store> {
   if (!options.graph) return store;
 
   const overriddenStore = RdfStore.createDefault();
   const df = overriddenStore.dataFactory;
 
   const stream = store.match();
-  return new Promise((resolve, reject) => {
-    stream
-      .on("data", (quad) => {
-        overriddenStore.addQuad(df.quad(quad.subject, quad.predicate, quad.object, options.graph));
-      })
-      .on("error", reject)
-      .once("end", () => resolve(overriddenStore));
+  stream.on("data", (quad) => {
+    overriddenStore.addQuad(df.quad(quad.subject, quad.predicate, quad.object, options.graph));
   });
+  await new Promise((resolve, reject) => {
+    stream.on("error", reject).once("end", resolve);
+  });
+  return overriddenStore;
 }

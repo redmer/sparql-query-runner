@@ -8,12 +8,11 @@ import * as Report from "../utils/report.js";
 /**
  * This step exports results to Laces Hub.
  *
- * The URL needs to be <https://hub.laces.tech/.../repo/publication>.
+ * The URL needs to be <https://hub.laces.tech/.../{repo}/{publication}>.
  * The publication needs to exist before it can be used as a destination.
  * Custom versioning mode is unsupported.
  */
 export class LacesHubTarget implements WorkflowPart<IJobTargetData> {
-  // Export a(ll) graph(s) to Laces
   id = () => "targets/laces-hub";
 
   isQualified(data: IJobTargetData): boolean {

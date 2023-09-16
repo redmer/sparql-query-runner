@@ -1,5 +1,5 @@
 import * as process from "node:process";
-import type { ICredentialData } from "../config/types";
+import type { ICredentialData } from "../config/types.js";
 import { substitute } from "./compile-envvars.js";
 
 const name = "utils/auth";
