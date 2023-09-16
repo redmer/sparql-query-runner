@@ -1,4 +1,4 @@
-import { ge1, notEmpty } from "./array";
+import { ge1, notEmpty } from "./array.js";
 
 test("oneOrMore", () => {
   const inputSingle = "hello";

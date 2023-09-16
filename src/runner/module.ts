@@ -1,13 +1,11 @@
-import { SparqlEndpoint } from "../endpoints/sparql.js";
 import { LacesHubTarget } from "../targets/laces-hub.js";
 import { LocalFileTarget } from "../targets/local-file.js";
 import { SPARQLGraphStoreTarget } from "../targets/sparql-graph-store.js";
 import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";
 import { SPARQLTarget } from "../targets/sparql.js";
 
-import { AutoSource } from "../sources/auto.js";
+import { AutoSource } from "../sources/comunica-auto.js";
 import { LocalFileSource } from "../sources/file-local.js";
-import { MsAccessSource } from "../sources/msaccess.js";
 
 import ShaclValidateLocal from "../steps/shacl-validate-local.js";
 import SparqlConstructQuery from "../steps/sparql-construct.js";

@@ -1,10 +1,10 @@
 import type { QueryEngine } from "@comunica/query-sparql";
-import type { QueryStringContext } from "@comunica/types/lib";
+import type { IDataSource, QueryStringContext } from "@comunica/types/lib";
 import type * as RDF from "@rdfjs/types";
 import { RdfStore } from "rdf-stores";
-import type { ICliOptions } from "../cli/cli-options";
-import type { IConfigurationData, IJobData } from "../config/types";
-import { AuthProxyHandler } from "../utils/auth-proxy-handler";
+import type { ICliOptions } from "../cli/cli-options.js";
+import type { IConfigurationData, IJobData } from "../config/types.js";
+import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 export type QueryContext = QueryStringContext;
 
@@ -19,7 +19,9 @@ export interface WorkflowRuntimeContext {
 
 /** Workflow context of the present Job at runtime */
 export interface JobRuntimeContext {
-  readonly context: WorkflowRuntimeContext;
+  /** Find the context of the full workflow */
+  readonly workflowContext: WorkflowRuntimeContext;
+  /** The data of the Job */
   readonly data: IJobData;
   /** The path to a temporary directory. */
   readonly tempdir: string;
@@ -39,7 +41,7 @@ export interface JobRuntimeContext {
   /** Print a WARNING level message */
   warning(message: string): void;
   /** Print an ERROR level message */
-  error(message: string): void;
+  error(message: string): never;
 }
 
 /** A Source, Step or Target is a workflow part */
@@ -53,16 +55,16 @@ export interface WorkflowPart<T = unknown> {
   /** True if the workflow supervisor must download an external file */
   shouldCacheAccess?(data: T): boolean;
 
+  /** Get the Comuncia engine's query context */
+  additionalQueryContext?(data: T): Partial<QueryContext>;
+
   /** Return the awaitable part executable */
   info(data: T): (context: JobRuntimeContext) => Promise<WorkflowGetter>;
 }
 
 export interface WorkflowGetter {
-  /** Get the Comuncia engine's query context */
-  additionalQueryContext?(): Promise<Partial<QueryContext>>;
-
-  /** Return a RDFJS Store or a list of Quads */
-  data?(): Promise<RDF.Store | RDF.Quad[]>;
+  /** Return an RDFJS Store or a Comunica Source */
+  dataSources?(): Promise<[RDF.Store | IDataSource]>;
 
   /** Do something when the query is done */
   start?(): Promise<void>;

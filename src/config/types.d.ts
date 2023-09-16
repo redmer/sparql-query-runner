@@ -1,5 +1,5 @@
 import * as RDF from "@rdfjs/types";
-import { JobSourceTypes, JobStepTypes, JobTargetTypes } from "./schema-types";
+import { JobSourceTypes, JobStepTypes, JobTargetTypes } from "./schema-types.js";
 
 /** Represents a configuration file, that contains one or more {@link IPipeline}s. */
 export interface IConfigurationData {

@@ -1,7 +1,7 @@
 import fs from "fs";
 import { default as fetch } from "node-fetch";
 import path from "path";
-import type { ICredentialData } from "../config/types";
+import type { ICredentialData } from "../config/types.js";
 import * as Auth from "./auth.js";
 
 /** Extract basename from a filepath or a external URL */

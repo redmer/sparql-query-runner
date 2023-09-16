@@ -1,58 +1,42 @@
 import fs from "fs/promises";
 import fetch from "node-fetch";
-import { ITarget } from "../config/types.js";
-import {
-  ConstructCtx,
-  DestinationPartInfo,
-  PipelinePart,
-  PipelinePartGetter,
-} from "../runner/types.js";
+import { IJobTargetData } from "../config/types.js";
+import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import * as Report from "../utils/report.js";
 
-const name = "targets/sparql-quad-store";
-
-export class SPARQLQuadStoreTarget implements PipelinePart<ITarget> {
+export class SPARQLQuadStoreTarget implements WorkflowPart<IJobTargetData> {
   // Export a(ll) graph(s) to a file
-  name = () => name;
+  id = () => "targets/sparql-quad-store";
 
-  qualifies(data: ITarget): boolean {
-    if (data.type !== "sparql-quad-store") return false;
-    return true;
-  }
-
-  async info(data: ITarget): Promise<PipelinePartGetter> {
-    const mimetype = getRDFMediaTypeFromFilename(".nq");
-    return async (context: Readonly<ConstructCtx>): Promise<DestinationPartInfo> => {
+  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+    return async (context: JobRuntimeContext) => {
+      const mimetype = getRDFMediaTypeFromFilename(".nq");
       const stepTempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;
 
       return {
         start: async () => {
-          console.info(
-            `${name}: Gathering ${
-              data.onlyGraphs ? data.onlyGraphs.length : "all"
-            } graphs for export...`
-          );
+          context.info(`Gathering ${data.with?.onlyGraphs?.length ?? "all"} graphs for export...`);
           await serialize(context.quadStore, stepTempFile, {
             format: mimetype,
-            graphs: data.onlyGraphs,
-            prefixes: context.configuration.prefixes,
+            graphs: data.with.onlyGraphs,
+            prefixes: context.data.prefixes,
           });
 
           const contents = await fs.readFile(stepTempFile, { encoding: "utf-8" });
 
-          console.info(`${name}: Uploading to <${data.access}...>`);
+          context.info(`Uploading to <${data.access}...>`);
           const response = await fetch(data.access, {
-            headers: { ...Auth.asHeader(data.credentials), "Content-Type": mimetype },
+            headers: { ...Auth.asHeader(data.with.credentials), "Content-Type": mimetype },
             method: "POST",
             body: contents,
           });
 
           if (!response.ok)
-            throw new Error(`${name}: Upload failed: ${response.status} ${response.statusText}`);
-          console.info(`${name}: Uploaded quads to <${data.access}> ` + Report.DONE);
+            context.error(`Upload failed: ${response.status} ${response.statusText}`);
+          context.info(`Uploaded quads to <${data.access}> ` + Report.DONE);
         },
       };
     };

@@ -23,10 +23,10 @@ export function overrideDataset(
 }
 
 /** Override the context/graph of all quads in a RDF Store */
-export async function overrideStore(
-  store: RDF.Store,
+export async function overrideStore<T extends RDF.Store>(
+  store: T,
   options: OverrideGraphOptions
-): Promise<RDF.Store> {
+): Promise<T> {
   if (!options.graph) return store;
 
   const overriddenStore = RdfStore.createDefault();

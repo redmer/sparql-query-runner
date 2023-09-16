@@ -1,4 +1,4 @@
-import { type IConfigurationData } from "./types";
+import { type IConfigurationData } from "./types.js";
 import { ConfigurationError } from "./validate.js";
 
 /** Merge configuration files: throws if job names aren't unique */

@@ -72,8 +72,7 @@
       "title": "RDF data sources",
       "properties": {
         "file": { "$ref": "#/$defs/Parts/Source/File" },
-        "laces": { "$ref": "#/$defs/Parts/Source/Laces" },
-        "msaccess": { "$ref": "#/$defs/Parts/Source/Msaccess" },
+        "laces-hub": { "$ref": "#/$defs/Parts/Source/LacesHub" },
         "sparql": { "$ref": "#/$defs/Parts/Source/Sparql" },
         "triplydb": { "$ref": "#/$defs/Parts/Source/Triplydb" },
         "with": {
@@ -88,8 +87,7 @@
       },
       "oneOf": [
         { "required": ["file"] },
-        { "required": ["laces"] },
-        { "required": ["msaccess"] },
+        { "required": ["laces-hub"] },
         { "required": ["sparql"] },
         { "required": ["tripldb"] }
       ]
@@ -121,7 +119,7 @@
       "type": "object",
       "properties": {
         "file": { "$ref": "#/$defs/Parts/Target/File" },
-        "laces": { "$ref": "#/$defs/Parts/Target/Laces" },
+        "laces-hub": { "$ref": "#/$defs/Parts/Target/LacesHub" },
         "sparql-graph-store": { "$ref": "#/$defs/Parts/Target/SparqlGraphStore" },
         "sparql-quad-store": { "$ref": "#/$defs/Parts/Target/SparqlQuadStore" },
         "sparql": { "$ref": "#/$defs/Parts/Target/Sparql" },
@@ -137,7 +135,7 @@
       },
       "oneOf": [
         { "required": ["file"] },
-        { "required": ["laces"] },
+        { "required": ["laces-hub"] },
         { "required": ["sparql-graph-store"] },
         { "required": ["sparql-quad-store"] },
         { "required": ["sparql"] },
@@ -148,7 +146,8 @@
     "Options": {
       "TargetGraph": { "type": "string", "description": "(Option) Override the quads' graph." },
       "OnlyGraphs": {
-        "$ref": "#/$defs/string1N",
+        "type": "array",
+        "items": { "type": "string" },
         "description": "(Option) Limit import or output to only these graphs"
       },
       "CredentialsAnyHeader": {
@@ -209,8 +208,7 @@
     "Parts": {
       "Source": {
         "File": { "type": "string", "description": "Path or URL to a RDF file" },
-        "Laces": { "type": "string", "description": "URL to a Laces dataset" },
-        "Msaccess": { "type": "string", "description": "Path or URL to a MS Access database file" },
+        "LacesHub": { "type": "string", "description": "URL to a Laces dataset" },
         "Sparql": { "type": "string", "description": "URL to a SPARQL endpoint" },
         "Triplydb": { "type": "string", "description": "URL to a TriplyDB dataset" }
       },
@@ -231,16 +229,12 @@
       },
       "Target": {
         "File": { "type": "string", "description": "Path or URL to a save a RDF file to" },
-        "Laces": { "type": "string", "description": "URL to a Laces dataset to replace" },
+        "LacesHub": { "type": "string", "description": "URL to a Laces dataset to replace" },
         "SparqlGraphStore": { "type": "string", "description": "URL to a SPARQL Graph Store" },
         "SparqlQuadStore": { "type": "string", "description": "URL to a SPARQL Quad Store" },
         "Sparql": { "type": "string", "description": "URL to a SPARQL Update endpoint" },
         "Triplydb": { "type": "string", "description": "URL to a TriplyDB dataset" }
       }
-    },
-
-    "string1N": {
-      "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
     }
   }
 }

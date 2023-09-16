@@ -1,6 +1,6 @@
-import fs from "fs";
+import fs from "fs/promises";
 import fetch, { FormData, Response } from "node-fetch";
-import type { ICredentialData } from "../config/types";
+import type { ICredentialData } from "../config/types.js";
 import * as Auth from "./auth.js";
 
 export interface LacesHubRepositoryDesc {
@@ -58,7 +58,8 @@ export async function updatePublication(
   const metadata = { ...metadataPayload };
 
   const form = new FormData();
-  form.append("content", fs.createReadStream(contentPayloadPath));
+  const stream = await fs.readFile(contentPayloadPath);
+  form.append("content", new Blob([stream]));
   form.append("metadata", JSON.stringify(metadata));
 
   const resp = await fetch(endpoint, {

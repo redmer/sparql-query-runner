@@ -37,7 +37,7 @@ export class LocalFileSource implements WorkflowPart<IJobSourceData> {
       store = await overrideStore(store, { graph: data?.with?.targetGraph });
 
       return {
-        data: async () => store,
+        dataSources: async () => store,
       };
     };
   }

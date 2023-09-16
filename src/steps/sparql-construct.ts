@@ -1,9 +1,10 @@
 import fs from "fs/promises";
 import { storeStream } from "rdf-store-stream";
-import type { IJobStepData } from "../config/types";
-import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types";
-import { overrideStore } from "../utils/dataset-store-override";
-import { fileExistsLocally } from "../utils/local-remote-file";
+import type { IJobStepData } from "../config/types.js";
+import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
+import { overrideStore } from "../utils/dataset-store-override.js";
+import { fileExistsLocally } from "../utils/local-remote-file.js";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) */
 export default class SparqlQuadQuery implements WorkflowPart<IJobStepData> {
@@ -15,7 +16,7 @@ export default class SparqlQuadQuery implements WorkflowPart<IJobStepData> {
 
       if (fileExistsLocally(data.access))
         queryBody = await fs.readFile(data.access, { encoding: "utf-8" });
-      else queryBody = data.access;
+      else queryBody = addPrefixesToQuery(data.access, context.data.prefixes);
 
       return {
         start: async () => {

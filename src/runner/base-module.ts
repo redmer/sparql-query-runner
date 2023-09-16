@@ -2,7 +2,7 @@
 
 import fss from "fs";
 import fs from "fs/promises";
-import fetch, { Response } from "node-fetch";
+// import fetch, { Response } from "node-fetch";
 import path from "path";
 import { digest } from "../utils/digest";
 import { TEMPDIR } from "./job-supervisor";

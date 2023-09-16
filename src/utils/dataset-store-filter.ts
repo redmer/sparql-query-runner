@@ -1,6 +1,6 @@
 import type * as RDF from "@rdfjs/types";
 import { RdfStore } from "rdf-stores";
-import { rdfTermSort } from "./rdf-term-sort";
+import { rdfTermSort } from "./rdf-term-sort.js";
 
 export interface FilteredGraphOptions {
   graphs?: RDF.Quad_Graph[];

@@ -16,7 +16,7 @@ import {
   type IJobStepKnownTypes,
   type IJobTargetData,
   type IJobTargetKnownTypes,
-} from "./types";
+} from "./types.js";
 
 export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
 
@@ -194,9 +194,9 @@ function validateAuthentication(
 /** Try to expand a CURIE; returns the original string if prefix is unknown */
 function expandCURIE(uriOrCurie: string, prefixes: Record<string, string>): string {
   const sep = ":";
-  if (!uriOrCurie.includes(sep)) return uriOrCurie;
+  if (uriOrCurie.includes("/")) return uriOrCurie;
 
-  const [prefix, ...lname] = uriOrCurie.split(sep, 2);
+  const [prefix, ...lname] = uriOrCurie.split(sep);
   const localname = lname.join(sep);
   return (prefixes[prefix] ?? prefix) + localname;
 }

@@ -3,13 +3,13 @@ import fs from "fs/promises";
 import stringify from "json-stable-stringify";
 import path from "path";
 import { RdfStore } from "rdf-stores";
-import type { ICliOptions } from "../cli/cli-options";
-import type { IConfigurationData, IJobData } from "../config/types";
-import { AuthProxyHandler } from "../utils/auth-proxy-handler";
+import type { ICliOptions } from "../cli/cli-options.js";
+import type { IConfigurationData, IJobData } from "../config/types.js";
+import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 import { authfetch } from "../utils/authfetch.js";
-import { CacheLayerJob } from "../utils/layer-cache";
+import { CacheLayerJob } from "../utils/layer-cache.js";
 import * as Report from "../utils/report.js";
-import { KeysOfUnion } from "../utils/types";
+import { KeysOfUnion } from "../utils/types.js";
 import { ExecutablePipeline, match } from "./module.js";
 import type { JobRuntimeContext, Supervisor, WorkflowRuntimeContext } from "./types";
 export const TEMPDIR = `.cache/sparql-query-runner`;
@@ -44,7 +44,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
     const quadStore = RdfStore.createDefault();
 
     const jobCtx: JobRuntimeContext = {
-      context: workflowCtx,
+      workflowContext: workflowCtx,
       data,
       engine,
       quadStore,

@@ -1,6 +1,4 @@
 import type { IProxyHandler, IRequest } from "@comunica/types";
-import type { RequestInfo } from "node-fetch";
-import { Request } from "node-fetch";
 import type { ICredentialData } from "../config/types.js";
 import * as Auth from "./auth.js";
 
@@ -8,6 +6,8 @@ import * as Auth from "./auth.js";
  * Comunica only supports Basic auth by default, this helper provides middleware
  * that enables bearer tokens, too. It modifies every Comunica request with the
  * passed-through credentials.
+ *
+ * This handler also adds per-origin credentials and not just a single per origin.
  */
 export class AuthProxyHandler implements IProxyHandler {
   #credentials: Record<string, ICredentialData> = {};
@@ -30,7 +30,7 @@ export class AuthProxyHandler implements IProxyHandler {
     };
   }
 
-  public modifyInput(input: RequestInfo): RequestInfo {
+  public modifyInput(input: RequestInfo | string): RequestInfo {
     const request = new Request(input);
     const origin = new URL(request.url).origin;
     return new Request(input, { headers: { ...Auth.asHeader(this.#credentials[origin]) } });

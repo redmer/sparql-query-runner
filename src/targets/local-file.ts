@@ -1,8 +1,7 @@
-import type { IJobTargetData } from "../config/types";
-import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types";
+import type { IJobTargetData } from "../config/types.js";
+import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
-import { DONE } from "../utils/report.js";
 
 /** Export the CONSTRUCTed quads to a local file */
 export class LocalFileTarget implements WorkflowPart<IJobTargetData> {
@@ -25,8 +24,6 @@ export class LocalFileTarget implements WorkflowPart<IJobTargetData> {
             graphs: data.with?.onlyGraphs,
             prefixes: context.data.prefixes,
           });
-
-          console.info(`Exporting ` + DONE);
         },
       };
     };

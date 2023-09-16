@@ -1,7 +1,8 @@
 import fs from "fs/promises";
-import { IJobStepData } from "../config/types";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types";
-import { fileExistsLocally } from "../utils/local-remote-file";
+import { IJobStepData } from "../config/types.js";
+import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
+import { fileExistsLocally } from "../utils/local-remote-file.js";
 
 /** Run a SPARQL update query (using a POST-enabled endpoint).
  *
@@ -16,7 +17,7 @@ export default class SparqlUpdate implements WorkflowPart<IJobStepData> {
 
       if (fileExistsLocally(data.access))
         queryBody = await fs.readFile(data.access, { encoding: "utf-8" });
-      else queryBody = data.access;
+      else queryBody = addPrefixesToQuery(data.access, context.data.prefixes);
 
       return {
         start: async () => {

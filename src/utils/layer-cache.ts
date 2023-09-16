@@ -1,4 +1,4 @@
-import { digest } from "./digest";
+import { digest } from "./digest.js";
 
 export const BASE_TEMPDIR = `.cache/sparql-query-runner`;
 
