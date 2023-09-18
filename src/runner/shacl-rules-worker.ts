@@ -34,7 +34,7 @@ export function* quadsForQuery(
   //* ?rule a sh:SPARQLRule ;
   //*   sh:order ?i .  # ordinal from .yaml
   yield quad(rule, RDFNS("type"), SH("SPARQLRule"));
-  yield quad(rule, SH("order"), literal(i));
+  yield quad(rule, SH("order"), literal(i.toFixed(0), XSD("decimal")));
 
   // ↓↓ ?rule sh:prefixes __ .
   for (const [, val] of Object.entries(results.prefixes))

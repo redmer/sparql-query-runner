@@ -26,7 +26,7 @@ Data from unfiltered remote file sources and SPARQL endpoints are never collecte
 After installation, `sparql-query-runner` is available on your $PATH.
 Provide the `--help` option to describe all subcommands and options.
 
-Create a file called `sparql-query-runner.sqr.yaml` (or at least ending in `.sqqr.yaml`) to let `sparql-query-runner` automatically find the workflow file.
+Create a file called `workflow.sqr.yaml` (or at least ending in `.sqr.yaml`) to let `sparql-query-runner` automatically find the workflow file.
 Although YAML is easy enough to edit with a text editor, you need to be careful with -- in YAML meaningful -- spaces, quotation marks and indentation.
 An IDE may provide feedback (VS Code does), by associating the workflow file with the JSON schema at `https://rdmr.eu/sparql-query-runner/schema.json`.
 

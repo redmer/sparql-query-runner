@@ -18,7 +18,7 @@ import {
   type IWorkflowData,
 } from "./types.js";
 
-export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
+export const CONFIG_FILENAME_YAML = "workflow.sqr.yaml";
 
 export class ConfigurationError extends Error {}
 

@@ -13,7 +13,7 @@ import type {
   Supervisor,
   WorkflowPart,
   WorkflowRuntimeContext,
-} from "./types";
+} from "./types.js";
 export const TEMPDIR = `.cache/sparql-query-runner`;
 
 export class JobSupervisor implements Supervisor<IJobData> {

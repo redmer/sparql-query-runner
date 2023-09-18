@@ -27,7 +27,7 @@ async function cli() {
       command: "run",
       describe: `Run a workflow to generate quads or execute SPARQL queries`,
       handler: async (argv) =>
-        await runPipelines(argv["config"], {
+        await runPipelines(argv["config"] ?? [CONFIG_FILENAME_YAML], {
           cacheIntermediateResults: argv["cache"],
           defaultPrefixes: !argv["no-default-prefixes"],
           verbose: argv["verbose"],
@@ -35,38 +35,32 @@ async function cli() {
           allowShellScripts: argv["exec-shell"],
         }),
       builder: {
-        // cache: {
-        //   type: "boolean",
-        //   default: false,
-        //   desc: "Cache step results",
-        // },
+        cache: {
+          type: "boolean",
+          desc: "Cache step results",
+        },
         config: {
           alias: "i",
           type: "string",
           desc: "Path to workflow file(s)",
-          default: CONFIG_FILENAME_YAML,
         },
         verbose: {
           alias: "V",
           type: "boolean",
           desc: "Increase output verbosity",
-          default: false,
         },
         "exec-shell": {
           type: "boolean",
-          desc: "Execute shell job steps. These any arbitrary, unsafe commands on your device.",
-          default: false,
+          desc: "Execute shell job steps",
         },
         "warnings-as-errors": {
           alias: "e",
           type: "boolean",
           desc: "Terminate on warnings",
-          default: false,
         },
         "no-default-prefixes": {
           type: "boolean",
           desc: "Do not supplement RDFa 1.1 default context namespace prefixes",
-          default: false,
         },
       },
     })
@@ -78,7 +72,6 @@ async function cli() {
           alias: "i",
           type: "string",
           desc: "Path to workflow file",
-          default: CONFIG_FILENAME_YAML,
         },
       },
       handler: async (argv) => await createShaclRules(argv["config"]),
@@ -91,7 +84,6 @@ async function cli() {
           alias: "o",
           type: "string",
           desc: "Output path to workflow file",
-          default: CONFIG_FILENAME_YAML,
         },
       },
       handler: async (argv) => await createNewPipelineFile(argv["output"]),
@@ -104,7 +96,6 @@ async function cli() {
           alias: "f",
           type: "boolean",
           desc: "Force deletion of the cache",
-          default: false,
         },
       },
       handler: async (argv) => await clearCache(argv["force"]),

@@ -8,7 +8,7 @@ import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types
  *   These source MUST be remote, unsupported via local filesystem in @comunica/query-sparql.
  * - `sparql`
  * - `hypermedia` (Triple/Quad Pattern Fragments)
- * - `rdfjsSource` (not available via sparql-query-runner.yaml)
+ * - `rdfjsSource` (not available via workflow.sqr.yaml)
  *
  * Source: <https://comunica.dev/docs/query/advanced/source_types/#supported-source-types>
  * */
