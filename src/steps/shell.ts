@@ -29,7 +29,7 @@ export class ShellPart implements WorkflowPart<IJobStepData> {
 
           const securityDelay = 1;
           context.info(`will execute command (${command}) in ${securityDelay} s...`);
-          await sleep(securityDelay * 1000);
+          await sleep(securityDelay * 1000); // TODO: We already have the --exec-shell command
 
           return new Promise((resolve, reject) => {
             exec(data.access, (error, stdout, stderr) => {

@@ -3,7 +3,7 @@ import App from "@triply/triplydb";
 import { storeStream } from "rdf-store-stream";
 import type { IJobTargetData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
-import { filteredStream } from "../utils/dataset-store-filter.js";
+import { filteredStream } from "../utils/rdf-stream-filter.js";
 import * as Report from "../utils/report.js";
 
 export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {

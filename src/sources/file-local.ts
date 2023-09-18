@@ -2,8 +2,8 @@ import fs from "fs";
 import rdfParser from "rdf-parse";
 import { IJobSourceData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
-import { filteredStream } from "../utils/dataset-store-filter.js";
-import { overrideStream } from "../utils/dataset-store-override.js";
+import { filteredStream } from "../utils/rdf-stream-filter.js";
+import { overrideStream } from "../utils/rdf-stream-override.js";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.

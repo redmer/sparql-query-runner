@@ -72,10 +72,14 @@ export class JobSupervisor implements Supervisor<IJobData> {
       ...modules.steps,
       ...modules.targets,
     ]) {
-      //@ts-expect-error: IJobXData are not compatible with eachother...
-      const shouldCache = m.shouldCacheAccess ? m.shouldCacheAccess(moduleData) : false;
+      const shouldCacheInput = this.#options.cacheIntermediateResults
+        ? m.shouldCacheAccess
+          ? // @ts-expect-error: IJobXData are not compatible with eachother...
+            m.shouldCacheAccess(moduleData)
+          : false
+        : false;
       // cache and rewrite data
-      if (shouldCache) moduleData.access = await this.cacheAccess(data, m, moduleData);
+      if (shouldCacheInput) moduleData.access = await this.cacheAccess(data, m, moduleData);
 
       const ctx: JobRuntimeContext = {
         workflowContext: this.workflowCtx,

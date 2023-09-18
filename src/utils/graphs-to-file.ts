@@ -4,9 +4,9 @@ import N3 from "n3";
 import { dirname } from "path";
 import { DataFactory } from "rdf-data-factory";
 import { storeStream } from "rdf-store-stream";
-import { filteredStream } from "./dataset-store-filter.js";
-import { overrideStream } from "./dataset-store-override.js";
 import type { SerializationFormat } from "./rdf-extensions-mimetype.js";
+import { filteredStream } from "./rdf-stream-filter.js";
+import { overrideStream } from "./rdf-stream-override.js";
 
 const DF = new DataFactory();
 
@@ -86,8 +86,4 @@ export function serializePretty(store: RDF.Store, path: string, options?: GraphT
     dataStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
     dataStream.on("end", () => plainWriter.end());
   });
-}
-
-export function graphSorter(a: RDF.Quad_Graph, b: RDF.Quad_Graph) {
-  return a.value > b.value ? 1 : b.value > a.value ? -1 : 0;
 }

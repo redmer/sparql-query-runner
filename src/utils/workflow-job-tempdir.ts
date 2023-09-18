@@ -25,12 +25,8 @@ function moduleTempDirName(module: WorkflowPart, moduleData: IJobModuleData): st
   return [category, lname + hash.slice(0, 7)];
 }
 
-export function tempdir(job: IJobData, module: WorkflowPart, moduleData: IJobModuleData) {
-  const fullPath = path.join(
-    TEMPDIR,
-    jobTempDirName(job),
-    ...moduleTempDirName(module, moduleData)
-  );
+export function tempdir(job: IJobData, module: WorkflowPart, data: IJobModuleData) {
+  const fullPath = path.join(TEMPDIR, jobTempDirName(job), ...moduleTempDirName(module, data));
   mkdir(fullPath, { recursive: true });
   return fullPath;
 }

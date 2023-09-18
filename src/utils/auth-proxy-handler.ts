@@ -24,8 +24,8 @@ export class AuthProxyHandler implements IProxyHandler {
    * {@link ICredentialData} is passed, so that future auth types may be supported.
    * Such types would be implemented in {@link Auth.asHeader}.
    */
-  public add(handler: AuthProxyHandler);
-  public add(credentials: ICredentialData, forURL?: string);
+  public add(handler: AuthProxyHandler): void;
+  public add(credentials: ICredentialData, forURL?: string): void;
   public add(credentialsOrHandler: ICredentialData | AuthProxyHandler, forURL?: string) {
     if (credentialsOrHandler instanceof AuthProxyHandler)
       this.credentials = Object.assign(this.credentials, credentialsOrHandler.credentials);

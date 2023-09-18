@@ -35,11 +35,11 @@ async function cli() {
           allowShellScripts: argv["exec-shell"],
         }),
       builder: {
-        cache: {
-          type: "boolean",
-          default: false,
-          desc: "Cache step results",
-        },
+        // cache: {
+        //   type: "boolean",
+        //   default: false,
+        //   desc: "Cache step results",
+        // },
         config: {
           alias: "i",
           type: "string",

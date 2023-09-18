@@ -2,8 +2,8 @@ import fs from "fs/promises";
 import type { IJobStepData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
 import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
-import { overrideStream } from "../utils/dataset-store-override.js";
 import { fileExistsLocally } from "../utils/local-remote-file.js";
+import { overrideStream } from "../utils/rdf-stream-override.js";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) -- always locally */
 export class SparqlQuadQuery implements WorkflowPart<IJobStepData> {
