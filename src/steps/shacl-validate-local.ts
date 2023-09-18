@@ -7,7 +7,7 @@ import type { IJobStepData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
-export default class ShaclValidateLocal implements WorkflowPart<IJobStepData> {
+export class ShaclValidateLocal implements WorkflowPart<IJobStepData> {
   id = () => "steps/shacl";
 
   info(data: IJobStepData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {

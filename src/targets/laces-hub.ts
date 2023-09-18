@@ -49,9 +49,8 @@ export class LacesHubTarget implements WorkflowPart<IJobTargetData> {
           // Save graphs to temp file, as we need to serialize to text/turtle
           context.info(`Gathering ${data.with?.onlyGraphs ?? "all"} graphs for export...`);
           await serialize(context.quadStore, tempFile, {
-            format: "text/turtle",
+            format: "application/n-triples",
             graphs: data.with.onlyGraphs,
-            prefixes: context.data.prefixes,
           });
 
           context.info(`Uploading to <${data.access}>...`);

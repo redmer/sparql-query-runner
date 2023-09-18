@@ -2,7 +2,7 @@ import * as RDF from "@rdfjs/types";
 import { JobSourceTypes, JobStepTypes, JobTargetTypes } from "./schema-types.js";
 
 /** Represents a configuration file, that contains one or more {@link IPipeline}s. */
-export interface IConfigurationData {
+export interface IWorkflowData {
   version: string;
   prefixes?: Record<string, string>;
   jobs: Map<string, IJobData>;
@@ -10,6 +10,7 @@ export interface IConfigurationData {
 
 /** A consecutively executed part of a workflow */
 export interface IJobData {
+  name: string;
   independent?: boolean;
   prefixes?: Record<string, string>;
   sources?: IJobSourceData[];
@@ -22,7 +23,7 @@ export type IJobSourceData = {
   [key in IJobSourceKnownTypes]?: string;
 } & {
   readonly type: `sources/${IJobSourceKnownTypes}`;
-  readonly access: string;
+  access: string;
   with?: {
     credentials?: ICredentialData;
     onlyGraphs?: RDF.Quad_Graph[];
@@ -35,7 +36,7 @@ export type IJobStepData = {
   [key in IJobStepKnownTypes]?: string;
 } & {
   readonly type: `steps/${IJobStepKnownTypes}`;
-  readonly access: string;
+  access: string;
   with?: {
     targetGraph?: RDF.Quad_Graph;
   };
@@ -46,12 +47,14 @@ export type IJobTargetData = {
   [key in IJobTargetKnownTypes]?: string;
 } & {
   readonly type: `targets/${IJobTargetKnownTypes}`;
-  readonly access: string;
+  access: string;
   with?: {
     credentials?: ICredentialData;
     onlyGraphs?: RDF.Quad_Graph[];
   };
 };
+
+export type IJobModuleData = IJobSourceData | IJobStepData | IJobTargetData;
 
 export type ICredentialData = IAuthBasicData | IAuthBearerData | IAuthHeaderData;
 

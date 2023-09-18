@@ -21,9 +21,9 @@ export class AutoSource implements WorkflowPart<IJobSourceData> {
 
   info(data: IJobSourceData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
     return async (context: JobRuntimeContext) => {
-      context.httpProxyHandler.add(data?.with?.credentials, new URL(data.access));
+      context.httpProxyHandler.add(data?.with?.credentials, data.access);
       return {
-        dataSources: async () => [{ type: "auto", value: data.access }],
+        dataSources: () => [{ type: "auto", value: data.access }],
       };
     };
   }

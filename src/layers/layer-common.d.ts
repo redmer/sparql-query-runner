@@ -3,15 +3,15 @@ import { QueryStringContext } from "@comunica/types";
 import N3 from "n3";
 import { ICliOptions } from "../cli/cli-options";
 import {
-  IConfigurationData,
   IJobData,
   IJobSourceData,
   IJobStepData,
   IJobTargetData,
+  IWorkflowData,
 } from "../config/types";
 
 export type AnyLayerData =
-  | IConfigurationData
+  | IWorkflowData
   | IJobData
   | IJobSourceData
   | IJobStepData
@@ -22,7 +22,7 @@ export interface CacheLayer {
   dependsOn: CacheLayer[];
 }
 
-export type ConfigurationContext = { data: IConfigurationData; cliOptions: ICliOptions };
+export type ConfigurationContext = { data: IWorkflowData; cliOptions: ICliOptions };
 export type JobContext = { configuration: ConfigurationContext; data: IJobData; cacheDir: string };
 export type _SourceStepTargetContext<T> = { job: JobContext; data: T; cacheFile: string };
 export type SourceContext = _SourceStepTargetContext<IJobSourceData>;

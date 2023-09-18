@@ -12,20 +12,21 @@ and [some vendors](#upload-to-laces-hub-or-triplydb-with-targetslaces-hub-or-tar
 
 It does all this building on [Comunica][comunica], _a knowledge graph querying framework_.
 
+#### Terminology
+
 A **workflow** is run from a **workflow file** (`.sqr.yaml`) and configures the steps taken.
 A workflow consists of one or more **jobs** that each define sources, transformation steps, and targets.
 A **source** is a RDF file or SPARQL endpoint, providing the data against which the later steps perform queries.
 A **step** is a [SPARQL Update][sparql-update] or [SPARQL Construct][sparql-construct] query, a SHACL validation step or a shell command.
 A **target** is a SPARQL endpoint, a local file or a remote graph store.
+Data from unfiltered remote file sources and SPARQL endpoints are never collected for a target: these are queried differently.
 
-# Calling
+# Running after installation
 
 After installation, `sparql-query-runner` is available on your $PATH.
 Provide the `--help` option to describe all subcommands and options.
 
-# On further configuration
-
-Create a file called `sparql-query-runner.sqqr.yaml` (or at least ending in `.sqqr.yaml`) to let `sparql-query-runner` automatically find the workflow file.
+Create a file called `sparql-query-runner.sqr.yaml` (or at least ending in `.sqqr.yaml`) to let `sparql-query-runner` automatically find the workflow file.
 Although YAML is easy enough to edit with a text editor, you need to be careful with -- in YAML meaningful -- spaces, quotation marks and indentation.
 An IDE may provide feedback (VS Code does), by associating the workflow file with the JSON schema at `https://rdmr.eu/sparql-query-runner/schema.json`.
 
@@ -39,13 +40,13 @@ Every job is an dictionary containing the details of that job.
 The name of the job is lowercase \[a-z0-9\_-] and cannot start with a number.
 
 **Prefixes** can be defined at the workflow or job level.
-Workflow-level prefixes are copied to each job, but jobs can overwrite them (do not recommend, as this is an easy source of bugs).
+Workflow-level prefixes are copied to each job, but jobs can overwrite them (do not recommend: this is an easy source of bugs).
 By default, the [RDFa core initial context prefixes][rdfa] are defined (i.a. `rdf:`, `sh:`).
 Disable these default prefixes with the CLI option `--no-default-prefixes`.
 
 The prefixes are used in three places:
 
-- When exporting files to abbreviated (i.e., not NQuads or NTriples) serialization formats.
+- When exporting quads to abbreviated (i.e., not NQuads or NTriples) serialization formats.
 - To expand CURIEs of graph arguments if those use known prefixes.
   That only happens with `with: only-graphs:` and `with: target-graph:`.
 - To add prefix definitions with inline SPARQL Update and Construct queries.
@@ -81,7 +82,7 @@ An env-file should not be committed to public version control.
 
 > [!TIP]
 >
-> With the following workflow file, the env-file thereafter, `sparql-query-runner` combines them as if
+> With the following workflow file, provided the env-file thereafter, `sparql-query-runner` combines them as if
 > the third example was what was written.
 >
 > ```yaml

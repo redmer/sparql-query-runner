@@ -8,7 +8,7 @@ import { fileExistsLocally } from "../utils/local-remote-file.js";
  *
  * Update steps are either URLs or complete SPARQL Update queries.
  */
-export default class SparqlUpdate implements WorkflowPart<IJobStepData> {
+export class SparqlUpdate implements WorkflowPart<IJobStepData> {
   id = () => "steps/update";
 
   info(data: IJobStepData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {

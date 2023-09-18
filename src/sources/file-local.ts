@@ -1,10 +1,9 @@
 import fs from "fs";
 import rdfParser from "rdf-parse";
-import { storeStream } from "rdf-store-stream";
 import { IJobSourceData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
-import { filteredStore } from "../utils/dataset-store-filter.js";
-import { overrideStore } from "../utils/dataset-store-override.js";
+import { filteredStream } from "../utils/dataset-store-filter.js";
+import { overrideStream } from "../utils/dataset-store-override.js";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
@@ -26,19 +25,36 @@ export class LocalFileSource implements WorkflowPart<IJobSourceData> {
     return false;
   }
 
+  shouldCacheAccess(_data: IJobSourceData): boolean {
+    return true;
+  }
+
   info(data: IJobSourceData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
-    return async (_context: JobRuntimeContext) => {
+    return async (context: JobRuntimeContext) => {
       const mimetype = rdfParser.getContentTypeFromExtension(data.access);
-      const stream = fs.createReadStream(data.access);
-      const importer = rdfParser.parse(stream, { contentType: mimetype });
 
-      let store = await storeStream(importer);
-      store = await filteredStore(store, { graphs: data?.with?.onlyGraphs });
-      store = await overrideStore(store, { graph: data?.with?.targetGraph });
+      // if (!data?.with?.onlyGraphs && !data?.with?.targetGraph) {
+      //   const value = await readFile(data.access, { encoding: "utf-8" });
+      //   return {
+      //     dataSources: () => [{ type: "stringSource", value, mediaType: mimetype }],
+      //   };
+      // }
 
-      return {
-        dataSources: async () => store,
-      };
+      const fileStream = fs.createReadStream(data.access);
+      const quadStream = rdfParser.parse(fileStream, { contentType: mimetype });
+
+      const emitter = context.quadStore.import(
+        overrideStream(filteredStream(quadStream, { graphs: data?.with?.onlyGraphs }), {
+          graph: data?.with?.targetGraph,
+        })
+      );
+
+      await new Promise((resolve, reject) => {
+        emitter.on("end", resolve);
+        emitter.on("error", reject);
+      });
+
+      return {};
     };
   }
 }

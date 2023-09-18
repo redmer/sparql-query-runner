@@ -10,7 +10,12 @@ import * as Auth from "./auth.js";
  * This handler also adds per-origin credentials and not just a single per origin.
  */
 export class AuthProxyHandler implements IProxyHandler {
-  #credentials: Record<string, ICredentialData> = {};
+  credentials: Record<string, ICredentialData> = {};
+
+  constructor(credentials?: ICredentialData, forURL?: string) {
+    this.credentials = {};
+    if (credentials) this.add(credentials, forURL);
+  }
 
   /**
    * Add supplied credentials to all requests.
@@ -19,10 +24,21 @@ export class AuthProxyHandler implements IProxyHandler {
    * {@link ICredentialData} is passed, so that future auth types may be supported.
    * Such types would be implemented in {@link Auth.asHeader}.
    */
-  public add(credentials: ICredentialData, forURL?: URL) {
-    this.#credentials[forURL.origin] = credentials;
+  public add(handler: AuthProxyHandler);
+  public add(credentials: ICredentialData, forURL?: string);
+  public add(credentialsOrHandler: ICredentialData | AuthProxyHandler, forURL?: string) {
+    if (credentialsOrHandler instanceof AuthProxyHandler)
+      this.credentials = Object.assign(this.credentials, credentialsOrHandler.credentials);
+    else
+      try {
+        const url = new URL(forURL);
+        this.credentials[url.origin] = credentialsOrHandler;
+      } catch (err) {
+        this.credentials[""] = credentialsOrHandler;
+      }
   }
 
+  /** Comunica API */
   public async getProxy(request: IRequest): Promise<IRequest> {
     return {
       init: request.init,
@@ -30,9 +46,12 @@ export class AuthProxyHandler implements IProxyHandler {
     };
   }
 
+  /** Comunica API */
   public modifyInput(input: RequestInfo | string): RequestInfo {
     const request = new Request(input);
     const origin = new URL(request.url).origin;
-    return new Request(input, { headers: { ...Auth.asHeader(this.#credentials[origin]) } });
+    return new Request(input, {
+      headers: { ...Auth.asHeader(this.credentials[origin] ?? this.credentials[""]) },
+    });
   }
 }

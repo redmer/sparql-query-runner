@@ -2,7 +2,6 @@ import fs from "fs/promises";
 import type { Quad } from "n3";
 import N3, { DataFactory } from "n3";
 import sparqljs from "sparqljs";
-import { IConstructStep, IPipeline } from "../config/types.js";
 import { RDF, SH, XSD } from "../utils/namespaces.js";
 const { Generator, Parser } = sparqljs;
 

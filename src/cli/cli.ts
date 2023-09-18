@@ -7,12 +7,12 @@ import { pathToFileURL } from "node:url";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { mergeConfigurations } from "../config/merge.js";
-import { IConfigurationData } from "../config/types.js";
+import { IWorkflowData } from "../config/types.js";
 import { CONFIG_FILENAME_YAML, configFromPath } from "../config/validate.js";
-import * as PipelineSupervisor from "../runner/config-supervisor.js";
 import { TEMPDIR } from "../runner/job-supervisor.js";
 import { newPipelineTemplate } from "../runner/new-pipeline.js";
 import * as RulesWorker from "../runner/shacl-rules-worker.js";
+import { WorkflowSupervisor } from "../runner/workflow-supervisor.js";
 import { ge1 } from "../utils/array.js";
 import * as Report from "../utils/report.js";
 import { ICliOptions } from "./cli-options.js";
@@ -139,13 +139,13 @@ async function runPipelines(
 ) {
   try {
     // Gather all configurations
-    const configs: IConfigurationData[] = [];
+    const configs: IWorkflowData[] = [];
     for (const path of ge1(configPaths))
       configs.push(await configFromPath(path, { secrets: process.env, defaultPrefixes }));
     const config = mergeConfigurations(configs);
 
     // Run them all. The supervisor handles dependencies.
-    PipelineSupervisor.runAll(config, {
+    new WorkflowSupervisor(config).runAll({
       cacheIntermediateResults,
       verbose,
       warningsAsErrors,

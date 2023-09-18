@@ -7,7 +7,6 @@ import { substitute } from "../utils/compile-envvars.js";
 import { context } from "./rdfa11-context.js";
 import { JobSourceTypes, JobStepTypes, JobTargetTypes } from "./schema-types.js";
 import {
-  type IConfigurationData,
   type ICredentialData,
   type IJobData,
   type IJobSourceData,
@@ -16,6 +15,7 @@ import {
   type IJobStepKnownTypes,
   type IJobTargetData,
   type IJobTargetKnownTypes,
+  type IWorkflowData,
 } from "./types.js";
 
 export const CONFIG_FILENAME_YAML = "sparql-query-runner.yaml";
@@ -26,7 +26,7 @@ export class ConfigurationError extends Error {}
 export async function configFromPath(
   path: string,
   { secrets, defaultPrefixes }
-): Promise<IConfigurationData> {
+): Promise<IWorkflowData> {
   try {
     const rawContents = await fs.readFile(path, { encoding: "utf-8" });
     return await configFromString(rawContents, { secrets, defaultPrefixes });
@@ -39,7 +39,7 @@ export async function configFromPath(
 export async function configFromString(
   contents: string,
   { secrets, defaultPrefixes }
-): Promise<IConfigurationData> {
+): Promise<IWorkflowData> {
   try {
     const substitutedContents = substitute(contents, secrets);
     const config = yaml.parse(substitutedContents, {
@@ -55,9 +55,9 @@ export async function configFromString(
 
 /** Validate a configuratioun file */
 function validateConfiguration(
-  data: Readonly<Partial<IConfigurationData>>,
+  data: Readonly<Partial<IWorkflowData>>,
   defaultPrefixes: boolean
-): IConfigurationData {
+): IWorkflowData {
   const version: string | undefined = data["version"];
   if (!version || !version.startsWith("v5"))
     throw new ConfigurationError("Configuration file version 'v5' required");
@@ -68,7 +68,8 @@ function validateConfiguration(
   // validate the jobs individually
   if (!Object.hasOwn(data, "jobs")) throw new ConfigurationError(`Jobs are not correctly defined`);
   const jobs = new Map();
-  for (const [name, job] of data["jobs"].entries()) jobs.set(name, validateJob(job, prefixes));
+  for (const [name, job] of data["jobs"].entries())
+    jobs.set(name, validateJob(name, job, prefixes));
 
   // return the original data, but override version, prefixes, jobs
   return { ...data, version, prefixes, jobs };
@@ -76,6 +77,7 @@ function validateConfiguration(
 
 /** Normalize an IJob, copying configuration-level prefixes. */
 function validateJob(
+  name: string,
   data: Readonly<Partial<IJobData>>,
   workflowPrefixes: Record<string, string>
 ): IJobData {
@@ -85,7 +87,7 @@ function validateJob(
   const steps = data["steps"]?.map((data) => validateStep(data, prefixes));
   const targets = data["targets"]?.map((data) => validateTarget(data, prefixes));
 
-  return { ...data, independent, prefixes, sources, targets, steps };
+  return { ...data, name, independent, prefixes, sources, targets, steps };
 }
 
 /** Find keys that are well-known access types (sparql:, file:, etc.) */

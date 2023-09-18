@@ -1,225 +1,126 @@
 import { QueryEngine } from "@comunica/query-sparql";
-import fs from "fs/promises";
-import stringify from "json-stable-stringify";
-import path from "path";
 import { RdfStore } from "rdf-stores";
 import type { ICliOptions } from "../cli/cli-options.js";
-import type { IConfigurationData, IJobData } from "../config/types.js";
+import type { IJobData, IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
-import { authfetch } from "../utils/authfetch.js";
-import { CacheLayerJob } from "../utils/layer-cache.js";
+import { download } from "../utils/download-remote.js";
 import * as Report from "../utils/report.js";
-import { KeysOfUnion } from "../utils/types.js";
-import { ExecutablePipeline, match } from "./module.js";
-import type { JobRuntimeContext, Supervisor, WorkflowRuntimeContext } from "./types";
+import { tempdir } from "../utils/workflow-job-tempdir.js";
+import { match } from "./module.js";
+import type {
+  JobRuntimeContext,
+  QueryContext,
+  Supervisor,
+  WorkflowPart,
+  WorkflowRuntimeContext,
+} from "./types";
 export const TEMPDIR = `.cache/sparql-query-runner`;
 
 export class JobSupervisor implements Supervisor<IJobData> {
   #name: string;
-  #configuration: IConfigurationData;
   #options: ICliOptions;
+  workflowCtx: WorkflowRuntimeContext;
 
-  constructor(name: string, configuration: IConfigurationData, options: ICliOptions) {
+  constructor(name: string, context: WorkflowRuntimeContext) {
     this.#name = name;
-    this.#options = options;
-    this.#configuration = configuration;
-  }
-
-  async tempdir(sub: string) {
-    const jobTempDir = path.join(TEMPDIR, sub);
-    await fs.mkdir(jobTempDir, { recursive: true });
-    return jobTempDir;
+    this.workflowCtx = context;
   }
 
   async start(data: IJobData) {
     // A job must process the data `sources`, `steps`, `destinations`.
     // `prefixes`, `independent` are already processed.
-    const workflowCtx: WorkflowRuntimeContext = {
-      data: this.#configuration,
-      options: this.#options,
-      tempdir: await this.tempdir(undefined),
-    };
+    const jobInfo = Report.infoMsg(this.#name, 1);
+    jobInfo(`Starting...`);
 
     const engine = new QueryEngine();
     const quadStore = RdfStore.createDefault();
 
-    const jobCtx: JobRuntimeContext = {
-      workflowContext: workflowCtx,
-      data,
-      engine,
-      quadStore,
-      queryContext: {} as never,
-      httpProxyHandler: new AuthProxyHandler(),
-      tempdir: await this.tempdir(this.#name),
-    };
-
-    // for each part, set infoMsg, warningMsg, errorMsg
-
-    // TODO: REWRITE STOPS HERE
+    // overrideGraphs, filterGraphs ?
 
     // Prepare and gather all pipeline parts
-    console.info(`Preparing modules...`);
-    const matchedModules = await match(job);
+    const modules = await match(data);
+    if (this.workflowCtx.options.verbose) {
+      const sources = modules.sources?.map((s) => s.module.id()).join(", ");
+      const steps = modules.steps?.map((s) => s.module.id()).join(", ");
+      const targets = modules.targets?.map((s) => s.module.id()).join(", ");
+      console.info(`job ${data.name} matched modules:
+        sources: ${sources}
+        steps: ${steps}
+        targets: ${targets}
+      `);
+    }
 
-    if (cliOptions.verbose)
-      console.info(
-        `Matched modules:\n\t-${Object.entries(matchedModules)
-          .map(
-            ([topLevelKey, modules]) =>
-              topLevelKey + ": " + modules.map(([name, __]) => name).join(", ")
-          )
-          .join("\n\t-")}`
-      );
+    let queryContext: QueryContext = {
+      sources: [{ type: "rdfjsSource", value: quadStore }],
+    };
+    const httpProxyHandler = new AuthProxyHandler();
 
-    // Gather and combine all query context for the QueryEngine
-    context.queryContext = { fetch: authfetch, sources: [] as never };
-    initializedParts
-      .filter((i) => i.info.getQueryContext != undefined)
-      .forEach((part) => {
-        if (part.info.getQueryContext.sources) {
-          context.queryContext.sources.push(...part.info.getQueryContext.sources);
-          delete part.info.getQueryContext.sources;
-        }
-
-        Object.assign(context.queryContext, part.info.getQueryContext);
+    // Static properties can be gathered before execution
+    modules.targets
+      .filter((m) => m.module.staticQueryContext)
+      .forEach((m) => {
+        queryContext = Object.assign([queryContext, m.module.staticQueryContext(m.data)]);
       });
-    // Finalize context, make it readonly
-    Object.freeze(context);
+    modules.targets
+      .filter((m) => m.module.staticAuthProxyHandler)
+      .forEach((m) => {
+        httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data));
+      });
 
-    for (const [j, part] of initializedParts.entries())
-      try {
-        part.info.prepare && (await part.info.prepare());
-      } catch (e) {
-        console.error(Report.ERROR + `prepare ${part.name} (${j + 1}):`, e);
-        throw e;
-      }
+    for (const { data: moduleData, module: m } of [
+      ...modules.sources,
+      ...modules.steps,
+      ...modules.targets,
+    ]) {
+      //@ts-expect-error: IJobXData are not compatible with eachother...
+      const shouldCache = m.shouldCacheAccess ? m.shouldCacheAccess(moduleData) : false;
+      // cache and rewrite data
+      if (shouldCache) moduleData.access = await this.cacheAccess(data, m, moduleData);
 
-    for (const [i, part] of initializedParts.filter((i) => i.info.start != undefined).entries()) {
-      console.group(`(${i + 1}) ${part.name}...`);
-      await part.info?.start();
-      console.groupEnd();
+      const ctx: JobRuntimeContext = {
+        workflowContext: this.workflowCtx,
+        data,
+        engine,
+        quadStore,
+        queryContext,
+        httpProxyHandler,
+        tempdir: tempdir(data, m, moduleData),
+        error: Report.errorMsg(m.id(), 2),
+        info: Report.infoMsg(m.id(), 2),
+        warning: Report.warningMsg(m.id(), 2, { fatal: this.#options.warningsAsErrors }),
+      };
+
+      ctx.info(`Starting...`);
+      const oldQuadsCount = quadStore.countQuads();
+
+      //@ts-expect-error: IJobXData are not compatible with eachother...
+      const runnable = await m.info(moduleData)(ctx);
+      if (runnable.dataSources)
+        //@ts-expect-error: IJobXData are not compatible with eachother...
+        queryContext.sources = queryContext.sources.concat(...runnable.dataSources());
+      await runnable.start();
+
+      const newQuadsCount = quadStore.countQuads();
+      ctx.info(Report.DONE + `(diff: ${newQuadsCount - oldQuadsCount} quads)`);
     }
 
-    try {
-      console.info(`Post-workflow cleanup...`);
-      await Promise.all(
-        initializedParts.filter((i) => i.info.cleanup != undefined).map((i) => i.info.cleanup())
-      );
-    } catch (e) {
-      console.error(Report.ERROR + `Error during cleanup() stage`);
-      throw e;
-    }
+    const finalQuadCount = quadStore.countQuads();
+    jobInfo(Report.DONE + `(total: ${finalQuadCount} quads)`);
   }
-}
 
-/** Initialize and start a job runner */
-export async function start(
-  name: string,
-  job: IJobData,
-  cliOptions: Partial<ICliOptions>,
-  configContext: Readonly<IConfigurationData>,
-  dependsOn: CacheLayerJob[]
-): Promise<CacheLayerJob> {
-  // A job must process `endpoint`, `sources`, `steps`, `destinations`.
-  // `prefixes` and `name` is configuration. `independent` is irrelevant for a single layer.
-  // Its dependencies determine whether this job uses cached parts.
-
-  const jobLayer: CacheLayerJob = { grp: "job", typ: name, dep: [stringify(job), ...dependsOn] };
-
-  // Prepare running context
-  const tempdir = provideTempDir();
-
-  const store = RdfStore.createDefault(); //  new N3.Store(undefined, { factory: N3.DataFactory });
-  const context: ConstructCtx = {
-    configuration: job,
-    cliOptions: cliOptions ?? {},
-    tempdir: await tempdir,
-    quadStore: store,
-    engine: new QueryEngine(),
-    queryContext: {} as never,
-  };
-
-  // Prepare and gather all pipeline parts
-  console.info(`Preparing modules...`);
-  const matchedModules = await match(job);
-
-  if (cliOptions.verbose)
-    console.info(
-      `Matched modules:\n\t-${Object.entries(matchedModules)
-        .map(
-          ([topLevelKey, modules]) =>
-            topLevelKey + ": " + modules.map(([name, __]) => name).join(", ")
-        )
-        .join("\n\t-")}`
+  /** Returns the path of the locally cached file */
+  async cacheAccess(
+    job: IJobData,
+    module: WorkflowPart,
+    moduleData: IJobModuleData
+  ): Promise<string> {
+    if (moduleData.access.match(/^https?:/) === null) return moduleData.access;
+    const targetPath = tempdir(job, module, moduleData);
+    await download(
+      moduleData.access,
+      targetPath,
+      (moduleData as IJobSourceData | IJobTargetData)?.with?.credentials
     );
-
-  // Gather and combine all query context for the QueryEngine
-  context.queryContext = { fetch: authfetch, sources: [] as never };
-  initializedParts
-    .filter((i) => i.info.getQueryContext != undefined)
-    .forEach((part) => {
-      if (part.info.getQueryContext.sources) {
-        context.queryContext.sources.push(...part.info.getQueryContext.sources);
-        delete part.info.getQueryContext.sources;
-      }
-
-      Object.assign(context.queryContext, part.info.getQueryContext);
-    });
-  // Finalize context, make it readonly
-  Object.freeze(context);
-
-  for (const [j, part] of initializedParts.entries())
-    try {
-      part.info.prepare && (await part.info.prepare());
-    } catch (e) {
-      console.error(Report.ERROR + `prepare ${part.name} (${j + 1}):`, e);
-      throw e;
-    }
-
-  for (const [i, part] of initializedParts.filter((i) => i.info.start != undefined).entries()) {
-    console.group(`(${i + 1}) ${part.name}...`);
-    await part.info?.start();
-    console.groupEnd();
+    return targetPath;
   }
-
-  try {
-    console.info(`Post-workflow cleanup...`);
-    await Promise.all(
-      initializedParts.filter((i) => i.info.cleanup != undefined).map((i) => i.info.cleanup())
-    );
-  } catch (e) {
-    console.error(Report.ERROR + `Error during cleanup() stage`);
-    throw e;
-  }
-
-  return jobLayer;
-}
-
-async function runModuleOfType(
-  executablePipeline: ExecutablePipeline,
-  type: keyof IConstructPipeline | keyof IUpdatePipeline
-) {
-  for (const [name, module] of executablePipeline[type]) {
-    const info = await module.info(context);
-    await info?.beforeQuery();
-    await info?.queryContext;
-    await info?.afterQuery();
-  }
-}
-
-function orderPipelineParts(data: MatchResult[]) {
-  const order: Record<KeysOfUnion<IJobData>, number> = {
-    // Inconsequential to execution order
-    type: 1,
-    name: 2,
-    independent: 4,
-    prefixes: 8,
-    // order meaningful
-    endpoint: 16,
-    sources: 32,
-    steps: 64,
-    // comes last
-    targets: 128,
-  };
-  return data.sort((A, B) => order[A[0]] - order[B[0]]);
 }

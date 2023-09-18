@@ -1,8 +1,8 @@
 import commandExists from "command-exists";
 import { exec } from "node:child_process";
-import { IJobStepData } from "../config/types";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types";
-import { sleep } from "../utils/sleep";
+import { IJobStepData } from "../config/types.js";
+import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { sleep } from "../utils/sleep.js";
 
 export class ShellPart implements WorkflowPart<IJobStepData> {
   id = () => "steps/shell";
@@ -34,7 +34,7 @@ export class ShellPart implements WorkflowPart<IJobStepData> {
           return new Promise((resolve, reject) => {
             exec(data.access, (error, stdout, stderr) => {
               if (error) reject(stderr);
-              resolve();
+              resolve(undefined);
             });
           });
         },

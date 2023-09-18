@@ -1,7 +1,9 @@
+import * as RDF from "@rdfjs/types";
 import App from "@triply/triplydb";
+import { storeStream } from "rdf-store-stream";
 import type { IJobTargetData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
-import { filter } from "../utils/graphs-to-file.js";
+import { filteredStream } from "../utils/dataset-store-filter.js";
 import * as Report from "../utils/report.js";
 
 export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
@@ -16,7 +18,7 @@ export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
       if (auth === undefined) context.error(`TriplyDB requires auth details <${data.access}>`);
       if (auth.type !== "Bearer") context.error(`TriplyDB requires auth with "token:" `);
 
-      const Triply = App.default.get({ token: auth.token });
+      const Triply = App.get({ token: auth.token });
       // Get or create dataset (if create: no metadata)
       const dataset = await (
         await Triply.getAccount(accountName)
@@ -26,8 +28,10 @@ export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
         start: async () => {
           context.info(`Gathering ${data.with?.onlyGraphs ?? "all"} graphs for export...`);
 
-          const dataStore = data.with?.onlyGraphs?.length
-            ? await filter(context.quadStore, { graphs: data.with.onlyGraphs })
+          const dataStore: RDF.Store = data.with?.onlyGraphs?.length
+            ? await storeStream(
+                filteredStream(context.quadStore.match(), { graphs: data.with.onlyGraphs })
+              )
             : context.quadStore;
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
