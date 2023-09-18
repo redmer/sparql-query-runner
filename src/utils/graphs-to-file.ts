@@ -4,7 +4,6 @@ import N3 from "n3";
 import { dirname } from "path";
 import { DataFactory } from "rdf-data-factory";
 import { storeStream } from "rdf-store-stream";
-import { RdfStore } from "rdf-stores";
 import { filteredStream } from "./dataset-store-filter.js";
 import { overrideStream } from "./dataset-store-override.js";
 import type { SerializationFormat } from "./rdf-extensions-mimetype.js";
@@ -43,7 +42,6 @@ export async function serialize(
   path: string,
   options?: GraphToFileOptions & FilteredGraphOptions
 ) {
-  // const filteredStore = await filter(store, options);
   const filteredStore = await storeStream(filteredStream(store.match(), options));
 
   // If a pretty serialization isn't required, use streaming serializer
@@ -88,24 +86,6 @@ export function serializePretty(store: RDF.Store, path: string, options?: GraphT
     dataStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
     dataStream.on("end", () => plainWriter.end());
   });
-}
-
-export async function filter(store: RDF.Store, options: FilteredGraphOptions): Promise<RDF.Store> {
-  // Sort filtered graphs. If there are none, return the original store
-  if (!options.graphs) return store;
-  const graphs = options.graphs.sort(graphSorter);
-
-  // This RDF.Store only contains the requested graphs
-  const filteredStore = RdfStore.createDefault();
-
-  for (const g of graphs) {
-    void (await new Promise((resolve, _reject) => {
-      const task = filteredStore.import(store.match(undefined, undefined, undefined, g));
-      task.on("end", () => resolve(undefined));
-    }));
-  }
-
-  return filteredStore;
 }
 
 export function graphSorter(a: RDF.Quad_Graph, b: RDF.Quad_Graph) {
