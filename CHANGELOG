@@ -23,6 +23,6 @@
   Destination `sparql-quad-store` is not standardized, but is similar to the Graph Store protocol,
   but with Dataset semantics. I.e., multiple contexts can be passed and quads can be uploaded.
 - Backend updated for RDF 1.2 support with quoted triples, i.e. RDF-Star and SPARQL-Star.
-- TODO: Remote files are automatically downloaded by the query runner.
+- Remote files are automatically downloaded by the query runner.
 
 [gs]: https://www.w3.org/TR/2013/REC-sparql11-http-rdf-update-20130321/
