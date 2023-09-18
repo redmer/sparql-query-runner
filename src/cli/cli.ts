@@ -84,6 +84,7 @@ async function cli() {
           alias: "o",
           type: "string",
           desc: "Output path to workflow file",
+          default: CONFIG_FILENAME_YAML,
         },
       },
       handler: async (argv) => await createNewPipelineFile(argv["output"]),

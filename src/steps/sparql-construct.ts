@@ -21,6 +21,7 @@ export class SparqlQuadQuery implements WorkflowPart<IJobStepData> {
         start: async () => {
           context.info(`Executing query '${data.access.substring(0, 32)}'...`);
           const tripleStream = await context.engine.queryQuads(queryBody, context.queryContext);
+          context.queryContext.lenient;
 
           // let store = await storeStream(tripleStream);
           // store = await overrideStore(store, { graph: data?.with?.targetGraph });

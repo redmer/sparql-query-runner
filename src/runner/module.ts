@@ -77,10 +77,12 @@ async function matchModules(data: IJobData, MODULES: JobModules): Promise<IExecu
 
     for (const stepData of data[part]) {
       // Recast for typing
-      const qModules = modules
-        .filter((m) => m.id() === stepData.type)
-        // @ts-expect-error
-        .filter((m) => (m.isQualified && m.isQualified(stepData)) || true);
+      const qModules = modules.filter(
+        // @ts-expect-error: the `type:` field cannot be combined across modules
+        (m) => (m.isQualified && m.isQualified(stepData)) || m.id() === stepData.type
+      );
+      // @xts-expect-error
+      // .filter((m) => (m.isQualified && m.isQualified(stepData)) || true);
 
       if (qModules.length == 0)
         throw new ModuleMatcherError(

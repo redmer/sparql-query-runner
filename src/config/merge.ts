@@ -34,7 +34,7 @@ export function mergePrefixes(prefixObjects: Record<string, string>[]): Record<s
   // then check if they're not identical, then add them to the compiled list. An empty list returns
   // undefined for .get()
   for (const [pfx, ns] of providedPrefixes) {
-    const currentValue = compiledPrefixes.get(pfx);
+    const currentValue = compiledPrefixes.get(pfx) ?? ns;
     if (currentValue !== ns)
       throw new ConfigurationError(`Multiple values for prefix '${pfx}:' across configurations.`);
     compiledPrefixes.set(pfx, ns);

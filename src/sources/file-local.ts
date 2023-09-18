@@ -1,9 +1,9 @@
 import fs from "fs";
-import rdfParser from "rdf-parse";
+import { StreamParser } from "n3";
 import { IJobSourceData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
-import { filteredStream } from "../utils/rdf-stream-filter.js";
-import { overrideStream } from "../utils/rdf-stream-override.js";
+import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
+import { FilteredStream, SingleGraphStream } from "../utils/rdf-stream-override.js";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
@@ -13,7 +13,7 @@ import { overrideStream } from "../utils/rdf-stream-override.js";
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
 export class LocalFileSource implements WorkflowPart<IJobSourceData> {
-  id = () => "sources/file-local";
+  id = () => "sources/file";
 
   isQualified(data: IJobSourceData): boolean {
     // please try to keep in sync with <./auto.ts>
@@ -31,23 +31,15 @@ export class LocalFileSource implements WorkflowPart<IJobSourceData> {
 
   info(data: IJobSourceData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
     return async (context: JobRuntimeContext) => {
-      const mimetype = rdfParser.getContentTypeFromExtension(data.access);
+      const mimetype = getRDFMediaTypeFromFilename(data.access);
 
-      // if (!data?.with?.onlyGraphs && !data?.with?.targetGraph) {
-      //   const value = await readFile(data.access, { encoding: "utf-8" });
-      //   return {
-      //     dataSources: () => [{ type: "stringSource", value, mediaType: mimetype }],
-      //   };
-      // }
+      const quadStream = fs
+        .createReadStream(data.access)
+        .pipe(new StreamParser({ format: mimetype }))
+        .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
+        .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
 
-      const fileStream = fs.createReadStream(data.access);
-      const quadStream = rdfParser.parse(fileStream, { contentType: mimetype });
-
-      const emitter = context.quadStore.import(
-        overrideStream(filteredStream(quadStream, { graphs: data?.with?.onlyGraphs }), {
-          graph: data?.with?.targetGraph,
-        })
-      );
+      const emitter = context.quadStore.import(quadStream);
 
       await new Promise((resolve, reject) => {
         emitter.on("end", resolve);

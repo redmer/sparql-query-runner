@@ -1,6 +1,5 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import { RdfStore } from "rdf-stores";
-import type { ICliOptions } from "../cli/cli-options.js";
 import type { IJobData, IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 import { download } from "../utils/download-remote.js";
@@ -18,7 +17,6 @@ export const TEMPDIR = `.cache/sparql-query-runner`;
 
 export class JobSupervisor implements Supervisor<IJobData> {
   #name: string;
-  #options: ICliOptions;
   workflowCtx: WorkflowRuntimeContext;
 
   constructor(name: string, context: WorkflowRuntimeContext) {
@@ -35,8 +33,6 @@ export class JobSupervisor implements Supervisor<IJobData> {
     const engine = new QueryEngine();
     const quadStore = RdfStore.createDefault();
 
-    // overrideGraphs, filterGraphs ?
-
     // Prepare and gather all pipeline parts
     const modules = await match(data);
     if (this.workflowCtx.options.verbose) {
@@ -50,36 +46,48 @@ export class JobSupervisor implements Supervisor<IJobData> {
       `);
     }
 
+    const httpProxyHandler = new AuthProxyHandler();
     let queryContext: QueryContext = {
       sources: [{ type: "rdfjsSource", value: quadStore }],
+      httpProxyHandler,
+      lenient: true,
     };
-    const httpProxyHandler = new AuthProxyHandler();
 
     // Static properties can be gathered before execution
     modules.targets
       .filter((m) => m.module.staticQueryContext)
       .forEach((m) => {
-        queryContext = Object.assign([queryContext, m.module.staticQueryContext(m.data)]);
+        queryContext = Object.assign(queryContext, m.module.staticQueryContext(m.data));
       });
-    modules.targets
+    [...modules.sources, ...modules.targets]
       .filter((m) => m.module.staticAuthProxyHandler)
       .forEach((m) => {
+        //@ts-expect-error: not compatible types...
         httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data));
       });
+
+    let previousPart: keyof IJobData = "name";
 
     for (const { data: moduleData, module: m } of [
       ...modules.sources,
       ...modules.steps,
       ...modules.targets,
     ]) {
-      const shouldCacheInput = this.#options.cacheIntermediateResults
+      // Stats
+      const oldQuadsCount = quadStore.countQuads();
+      // cache and rewrite data
+      const shouldCacheInput = this.workflowCtx.options.cacheIntermediateResults
         ? m.shouldCacheAccess
           ? // @ts-expect-error: IJobXData are not compatible with eachother...
             m.shouldCacheAccess(moduleData)
           : false
         : false;
-      // cache and rewrite data
       if (shouldCacheInput) moduleData.access = await this.cacheAccess(data, m, moduleData);
+
+      // Indicate
+      const currentPart = m.id().split("/", 1)[0];
+      if (currentPart !== previousPart) Report.infoMsg(currentPart, 2)(``);
+      previousPart = currentPart as keyof IJobData;
 
       const ctx: JobRuntimeContext = {
         workflowContext: this.workflowCtx,
@@ -87,29 +95,27 @@ export class JobSupervisor implements Supervisor<IJobData> {
         engine,
         quadStore,
         queryContext,
-        httpProxyHandler,
         tempdir: tempdir(data, m, moduleData),
-        error: Report.errorMsg(m.id(), 2),
-        info: Report.infoMsg(m.id(), 2),
-        warning: Report.warningMsg(m.id(), 2, { fatal: this.#options.warningsAsErrors }),
+        error: Report.errorMsg(m.id(), 3),
+        info: Report.infoMsg(m.id(), 3),
+        warning: Report.warningMsg(m.id(), 3, { fatal: this.workflowCtx.options.warningsAsErrors }),
       };
 
-      ctx.info(`Starting...`);
-      const oldQuadsCount = quadStore.countQuads();
-
-      //@ts-expect-error: IJobXData are not compatible with eachother...
+      //@ts-expect-error: IJob{Source|Step|Target}Data are not compatible with eachother...
       const runnable = await m.info(moduleData)(ctx);
       if (runnable.dataSources)
-        //@ts-expect-error: IJobXData are not compatible with eachother...
+        //@ts-expect-error: IJob{Source|Step|Target}Data are not compatible with eachother...
         queryContext.sources = queryContext.sources.concat(...runnable.dataSources());
-      await runnable.start();
+      if (runnable.start) await runnable.start();
 
       const newQuadsCount = quadStore.countQuads();
-      ctx.info(Report.DONE + `(diff: ${newQuadsCount - oldQuadsCount} quads)`);
+      const diff = newQuadsCount - oldQuadsCount;
+      const sign = diff > 0 ? "+" : "";
+      ctx.info(Report.DONE + ` (diff: ${sign}${diff} quads)`);
     }
 
     const finalQuadCount = quadStore.countQuads();
-    jobInfo(Report.DONE + `(total: ${finalQuadCount} quads)`);
+    jobInfo(Report.DONE + ` (total: ${finalQuadCount} quads)`);
   }
 
   /** Returns the path of the locally cached file */

@@ -1,5 +1,6 @@
 import type { ICliOptions } from "../cli/cli-options.js";
 import type { IJobData, IWorkflowData } from "../config/types.js";
+import * as Report from "../utils/report.js";
 import { JobSupervisor } from "./job-supervisor.js";
 import { WorkflowRuntimeContext } from "./types.js";
 
@@ -22,23 +23,32 @@ export class WorkflowSupervisor {
 
   /** Run all jobs, parallelizing independent ones and dependent ones in the right order. */
   async runAll(options: ICliOptions) {
+    const wfInfo = Report.infoMsg(`jobs`, 0);
     const context: WorkflowRuntimeContext = {
       data: this.data,
       options,
     };
 
+    const indep = this.independentJobs();
+    const dep = this.dependentJobs();
+
+    if (indep.length && dep.length) wfInfo(`Starting independent jobs...`);
+    else wfInfo(`Starting jobs...`);
+
     // Independent jobs can run parallel
     await Promise.all(
-      this.independentJobs().map(([name, j], i) => {
-        console.info(`workflow ${i + 1}: start '${name}'`);
+      indep.map(([name, j]) => {
         return new JobSupervisor(name, context).start(j);
       })
     );
 
-    // Dependent jobs must run consecutive
-    for (const [i, [name, j]] of Object.entries(this.dependentJobs())) {
-      console.info(`workflow ${i + 1}: start '${name}'`);
+    if (indep.length && dep.length) wfInfo(`Starting dependent jobs...`);
+
+    // Dependent jobs must run consecutive: await them each
+    for (const [name, j] of dep) {
       await new JobSupervisor(name, context).start(j);
     }
+
+    wfInfo(Report.DONE);
   }
 }

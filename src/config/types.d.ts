@@ -64,7 +64,6 @@ export interface IAuthBasicData {
   password: string;
 }
 
-/** @deprecated */
 export interface IAuthHeaderData {
   readonly type: "HTTP-Header";
   headers: Record<string, string>;

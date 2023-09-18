@@ -54,7 +54,7 @@ export async function updatePublication(
   metadataPayload: LacesHubPublicationPatch,
   auth: ICredentialData
 ): Promise<Response> {
-  const endpoint = `http://hub.laces.tech/api/v3/publications/${publicationId}`;
+  const endpoint = `https://hub.laces.tech/api/v3/publications/${publicationId}`;
   const metadata = { ...metadataPayload };
 
   const form = new FormData();

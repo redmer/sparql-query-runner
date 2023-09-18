@@ -31,8 +31,8 @@ export interface JobRuntimeContext {
   readonly engine: QueryEngine;
   /** Query context for Comunica query */
   queryContext: QueryContext;
-  /** Register query context proxy handlers for non-Basic authentication */
-  httpProxyHandler: AuthProxyHandler;
+  // /** Register query context proxy handlers for non-Basic authentication */
+  // httpProxyHandler: AuthProxyHandler;
   /** The quad store for in-mem CONSTRUCTed quads */
   readonly quadStore: RDF.Store & RdfStore;
 
@@ -65,7 +65,7 @@ export interface WorkflowPart<T extends IJobModuleData = IJobModuleData> {
    * Set the AuthProxyHandler details. This is called before info() and
    * can only be based on static information in the module's data.
    */
-  staticAuthProxyHandler?(data: T): JobRuntimeContext["httpProxyHandler"];
+  staticAuthProxyHandler?(data: T): AuthProxyHandler;
 
   /** Return the awaitable part executable */
   info(data: T): (context: JobRuntimeContext) => Promise<WorkflowGetter>;

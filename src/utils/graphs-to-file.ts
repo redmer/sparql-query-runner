@@ -1,12 +1,13 @@
 import type * as RDF from "@rdfjs/types";
 import fs from "fs";
 import N3 from "n3";
-import { dirname } from "path";
 import { DataFactory } from "rdf-data-factory";
 import { storeStream } from "rdf-store-stream";
+import { PassThrough } from "stream";
+import { pipeline } from "stream/promises";
 import type { SerializationFormat } from "./rdf-extensions-mimetype.js";
 import { filteredStream } from "./rdf-stream-filter.js";
-import { overrideStream } from "./rdf-stream-override.js";
+import { SingleGraphStream, StoreStream } from "./rdf-stream-override.js";
 
 const DF = new DataFactory();
 
@@ -58,32 +59,43 @@ export function serializeStreamingly(store: RDF.Store, path: string, options?: G
   const streamWriter = new N3.StreamWriter(options);
 
   const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
-  const dataStream = inTriples
-    ? overrideStream(store.match(), { graph: DF.defaultGraph() })
-    : store.match();
 
-  // @ts-ignore-next-line
-  return dataStream.pipe(streamWriter).pipe(fd);
+  return pipeline(
+    new StoreStream(store.match()),
+    inTriples
+      ? new SingleGraphStream({ graph: DF.defaultGraph() })
+      : new PassThrough({ objectMode: true }),
+    streamWriter,
+    fd
+  );
 }
 
 /** Serialize a RDF.Store to a path with a blocking, pretty formatter */
 export function serializePretty(store: RDF.Store, path: string, options?: GraphToFileOptions) {
   return new Promise((resolve, reject) => {
-    fs.mkdirSync(dirname(path), { recursive: true });
+    // fs.mkdirSync(dirname(path), { recursive: true });
     const fd = fs.createWriteStream(path, { encoding: "utf-8" });
     const plainWriter = new N3.Writer(fd, options);
 
     const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
-    const dataStream = inTriples
-      ? overrideStream(store.match(), { graph: DF.defaultGraph() })
-      : store.match();
 
-    plainWriter.end((error, result) => {
-      if (error) return reject(error);
-      resolve(result);
-    });
+    const quadStream = new StoreStream(store.match()).pipe(
+      inTriples
+        ? new SingleGraphStream({ graph: DF.defaultGraph() })
+        : new PassThrough({ objectMode: true })
+    );
 
-    dataStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
-    dataStream.on("end", () => plainWriter.end());
+    // plainWriter.end((error, result) => {
+    //   if (error) return reject(error);
+    //   resolve(result);
+    // });
+
+    quadStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
+    quadStream.on("end", () =>
+      plainWriter.end((error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      })
+    );
   });
 }

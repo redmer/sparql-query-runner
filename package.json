@@ -126,7 +126,6 @@
     "n3": "^1.10.0",
     "node-fetch": "^3.2.10",
     "rdf-data-factory": "^1.1.2",
-    "rdf-parse": "^2.3.2",
     "rdf-store-stream": "^2.0.0",
     "rdf-stores": "^1.0.0",
     "rdf-validate-shacl": "^0.4.5",

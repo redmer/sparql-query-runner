@@ -4,7 +4,6 @@ import { storeStream } from "rdf-store-stream";
 import type { IJobTargetData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
 import { filteredStream } from "../utils/rdf-stream-filter.js";
-import * as Report from "../utils/report.js";
 
 export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
   // Export a(ll) graph(s) to Laces
@@ -12,13 +11,13 @@ export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
 
   info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
     return async (context: JobRuntimeContext) => {
-      const [accountName, datasetName] = data.access.split("/").slice(-1);
+      const [accountName, datasetName] = data.access.split("/").slice(-2);
 
       const auth = data.with?.credentials;
       if (auth === undefined) context.error(`TriplyDB requires auth details <${data.access}>`);
       if (auth.type !== "Bearer") context.error(`TriplyDB requires auth with "token:" `);
 
-      const Triply = App.get({ token: auth.token });
+      const Triply = App.default.get({ token: auth.token });
       // Get or create dataset (if create: no metadata)
       const dataset = await (
         await Triply.getAccount(accountName)
@@ -34,15 +33,16 @@ export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
               )
             : context.quadStore;
 
+          context.info(`Uploading to <${data.access}>...`);
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await dataset.importFromStore(dataStore as any, { overwriteAll: true });
-          context.info(`Uploaded to <${(await dataset.getInfo()).id}>` + Report.DONE);
 
-          context.info(`Updating services...`);
-          for await (const service of dataset.getServices()) {
-            if (!(await service.isUpToDate())) service.update();
+          if ((await dataset.getInfo()).serviceCount > 0) {
+            context.info(`Updating services...`);
+            for await (const service of dataset.getServices()) {
+              if (!(await service.isUpToDate())) service.update();
+            }
           }
-          context.info(`All services are up-to-date` + Report.DONE);
         },
       };
     };

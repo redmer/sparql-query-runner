@@ -25,20 +25,27 @@ export function consoleMessage(
   fatal: boolean
 ): (message: string) => void;
 export function consoleMessage(type: MessageLevels, caller: string, depth = 0, fatal: boolean) {
-  const indent = "·".repeat(depth);
+  let indent = " ".repeat(depth * 2);
+  if (indent) indent += "";
+
   const flag =
     type == "warning"
-      ? chalk.bgYellow(`WARNING`) + `: `
+      ? fatal
+        ? chalk.bgRed(` Warning `) + `: `
+        : chalk.bgYellowBright(` Warning `) + `: `
       : type == "error"
-      ? chalk.bgRed(`ERROR`) + `: `
+      ? chalk.bgRed(` Error `) + `: `
       : ``;
+
+  const which = type == "warning" ? "warn" : type;
   /*
 · jobs/my-db - Starting job
 ·· steps/shell - WARNING: shell scripts not allowed (curl)
 ·· steps/shell - ERROR: shell scripts not allowed (curl)
 */
   return (message: string) => {
-    console[type](`${indent} ${caller} - ${flag}${message}`);
+    if (message) console[which](`${indent}${caller} - ${flag}${message}`);
+    else console[which](`${indent}${caller}`);
     if (fatal) process.exit(-1);
   };
 }

@@ -10,10 +10,10 @@ import * as Auth from "./auth.js";
  * This handler also adds per-origin credentials and not just a single per origin.
  */
 export class AuthProxyHandler implements IProxyHandler {
-  credentials: Record<string, ICredentialData> = {};
+  keychain: Record<string, ICredentialData>;
 
   constructor(credentials?: ICredentialData, forURL?: string) {
-    this.credentials = {};
+    this.keychain = {};
     if (credentials) this.add(credentials, forURL);
   }
 
@@ -28,30 +28,27 @@ export class AuthProxyHandler implements IProxyHandler {
   public add(credentials: ICredentialData, forURL?: string): void;
   public add(credentialsOrHandler: ICredentialData | AuthProxyHandler, forURL?: string) {
     if (credentialsOrHandler instanceof AuthProxyHandler)
-      this.credentials = Object.assign(this.credentials, credentialsOrHandler.credentials);
+      this.keychain = Object.assign(this.keychain, credentialsOrHandler.keychain);
     else
       try {
         const url = new URL(forURL);
-        this.credentials[url.origin] = credentialsOrHandler;
+        this.keychain[url.origin] = credentialsOrHandler;
       } catch (err) {
-        this.credentials[""] = credentialsOrHandler;
+        this.keychain[""] = credentialsOrHandler;
       }
   }
 
   /** Comunica API */
   public async getProxy(request: IRequest): Promise<IRequest> {
-    return {
-      init: request.init,
-      input: this.modifyInput(request.input),
-    };
-  }
+    const req = new Request(request.input);
+    const origin = new URL(req.url).origin;
 
-  /** Comunica API */
-  public modifyInput(input: RequestInfo | string): RequestInfo {
-    const request = new Request(input);
-    const origin = new URL(request.url).origin;
-    return new Request(input, {
-      headers: { ...Auth.asHeader(this.credentials[origin] ?? this.credentials[""]) },
-    });
+    return {
+      init: {
+        ...request.init,
+        headers: Auth.asHeader(this.keychain[origin] ?? this.keychain[""]),
+      },
+      input: request.input,
+    };
   }
 }

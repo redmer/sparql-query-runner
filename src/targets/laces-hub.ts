@@ -3,7 +3,6 @@ import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/
 import { serialize } from "../utils/graphs-to-file.js";
 import type { LacesHubPublicationDesc } from "../utils/laces.js";
 import * as Laces from "../utils/laces.js";
-import * as Report from "../utils/report.js";
 
 /**
  * This step exports results to Laces Hub.
@@ -25,7 +24,7 @@ export class LacesHubTarget implements WorkflowPart<IJobTargetData> {
       const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
       const publicationUri = new URL(data.access).pathname;
 
-      const tempFile = `${context.tempdir}/laces-export-${new Date().getTime()}.ttl`;
+      const tempFile = `${context.tempdir}/export.nt`;
       let metadata: LacesHubPublicationDesc;
 
       const auth = data.with.credentials;
@@ -50,7 +49,7 @@ export class LacesHubTarget implements WorkflowPart<IJobTargetData> {
           context.info(`Gathering ${data.with?.onlyGraphs ?? "all"} graphs for export...`);
           await serialize(context.quadStore, tempFile, {
             format: "application/n-triples",
-            graphs: data.with.onlyGraphs,
+            graphs: data.with?.onlyGraphs,
           });
 
           context.info(`Uploading to <${data.access}>...`);
@@ -69,9 +68,8 @@ export class LacesHubTarget implements WorkflowPart<IJobTargetData> {
           if (!response.ok)
             context.error(
               `Publication '${publName}': upload ${response.status} (${response.statusText}):\n` +
-                response.body
+                JSON.stringify(await response.text(), undefined, 2)
             );
-          context.info(`Uploaded to <${data.access}>` + Report.DONE);
         },
       };
     };

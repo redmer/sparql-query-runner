@@ -1,6 +1,4 @@
-import * as process from "node:process";
 import type { ICredentialData } from "../config/types.js";
-import { substitute } from "./compile-envvars.js";
 
 const name = "utils/auth";
 
@@ -16,8 +14,8 @@ export function usernamePasswordDict(data: ICredentialData): {
     throw new AuthTypeError(`${name}: Authentication type '${data.type}' not supported here`);
 
   return {
-    username: substitute(data.username, process.env),
-    password: substitute(data.password, process.env),
+    username: data.username,
+    password: data.password,
   };
 }
 
@@ -38,10 +36,8 @@ export function asHeader(data: ICredentialData): { Authorization?: string } {
     };
 
   if (data.type === "Bearer") {
-    const token = substitute(data.token, process.env);
-
     return {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${data.token}`,
     };
   }
 
