@@ -6,13 +6,13 @@ import {
   IJobTargetData,
 } from "../config/types.js";
 import { AutoSource } from "../parts/comunica-auto-datasource.js";
+import { LacesHubTarget } from "../parts/laces-hub.js";
+import { ShaclValidateLocal } from "../parts/shacl-validate-local.js";
 import type { WorkflowPart } from "../runner/types.js";
 import { LocalFileSource } from "../sources/file-local.js";
-import { ShaclValidateLocal } from "../steps/shacl-validate-local.js";
 import { ShellPart } from "../steps/shell.js";
 import { SparqlQuadQuery } from "../steps/sparql-construct.js";
 import { SparqlUpdate } from "../steps/sparql-update.js";
-import { LacesHubTarget } from "../targets/laces-hub.js";
 import { LocalFileTarget } from "../targets/local-file.js";
 import { SPARQLGraphStoreTarget } from "../targets/sparql-graph-store.js";
 import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";

@@ -1,7 +1,7 @@
 import fs from "fs";
 import { StreamParser } from "n3";
 import { IJobSourceData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowModuleInfo, WorkflowPart } from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import { FilteredStream, SingleGraphStream } from "../utils/rdf-stream-override.js";
 
@@ -13,10 +13,11 @@ import { FilteredStream, SingleGraphStream } from "../utils/rdf-stream-override.
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
 export class LocalFileSource implements WorkflowPart<"sources"> {
-  id = () => "sources/file";
+  id = () => "local-file-source";
+  names = ["sources/file"];
 
   isQualified(data: IJobSourceData): boolean {
-    // please try to keep in sync with <./auto.ts>
+    // please try to keep in sync with <./comunica-auto-datasource.ts>
     // Local files are not supported by the `auto` Comunica source.
     if (!data.access.startsWith("http")) return true;
     // Filtered graphs aren't supported by the `auto` Comunica source
@@ -29,7 +30,7 @@ export class LocalFileSource implements WorkflowPart<"sources"> {
     return true;
   }
 
-  info(data: IJobSourceData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  asSource(data: IJobSourceData): WorkflowModuleInfo {
     return async (context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(data.access);
 

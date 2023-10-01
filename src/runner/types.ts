@@ -57,8 +57,23 @@ export interface JobRuntimeContext {
 
 export type WorkflowModuleInfo = (context: JobRuntimeContext) => Promise<WorkflowGetter>;
 
+interface WorkflowSourcePart {
+  /** Return the awaitable workflow source module executable */
+  asSource(data: IJobSourceData): WorkflowModuleInfo;
+}
+
+interface WorkflowStepPart {
+  /** Return the awaitable workflow step module executable */
+  asStep(data: IJobStepData): P extends "steps" ? WorkflowModuleInfo : never;
+}
+
+interface WorkflowTargetPart {
+  /** Return the awaitable workflow target module executable */
+  asTarget(data: IJobTargetData): P extends "targets" ? WorkflowModuleInfo : never;
+}
+
 /** A Source, Step or Target is a workflow part */
-export interface WorkflowPart<P extends IJobPhase> {
+interface WFP {
   /** The canonical name of the workflow part */
   id(): string;
 
@@ -82,16 +97,15 @@ export interface WorkflowPart<P extends IJobPhase> {
    * can only be based on static information in the module's data.
    */
   staticAuthProxyHandler?(data: IJobSourceData | IJobTargetData): AuthProxyHandler;
-
-  /** Return the awaitable workflow source module executable */
-  asSource?(data: IJobSourceData): P extends "sources" ? WorkflowModuleInfo : never;
-
-  /** Return the awaitable workflow step module executable */
-  asStep?(data: IJobStepData): P extends "steps" ? WorkflowModuleInfo : never;
-
-  /** Return the awaitable workflow target module executable */
-  asTarget?(data: IJobTargetData): P extends "targets" ? WorkflowModuleInfo : never;
 }
+
+export type WorkflowPart<P extends IJobPhase> = P extends "sources"
+  ? WFP & WorkflowSourcePart
+  : P extends "steps"
+  ? WFP & WorkflowStepPart
+  : P extends "targets"
+  ? WFP & WorkflowTargetPart
+  : never;
 
 export interface WorkflowGetter {
   /** Return an RDFJS Store or a Comunica Source */
