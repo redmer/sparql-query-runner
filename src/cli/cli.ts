@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import * as dotenv from "dotenv";
+import { glob } from "glob";
 import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -8,7 +9,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { mergeConfigurations } from "../config/merge.js";
 import { IWorkflowData } from "../config/types.js";
-import { CONFIG_FILENAME_YAML, configFromPath } from "../config/validate.js";
+import { CONFIG_EXT, CONFIG_FILENAME_YAML, configFromPath } from "../config/validate.js";
 import { TEMPDIR } from "../runner/job-supervisor.js";
 import { newPipelineTemplate } from "../runner/new-pipeline.js";
 import * as RulesWorker from "../runner/shacl-rules-worker.js";
@@ -27,7 +28,7 @@ async function cli() {
       command: "run",
       describe: `Run a workflow to generate quads or execute SPARQL queries`,
       handler: async (argv) =>
-        await runPipelines(argv["config"] ?? [CONFIG_FILENAME_YAML], {
+        await runPipelines(argv["config"] ?? (await glob(`*.${CONFIG_EXT}`)), {
           cacheIntermediateResults: argv["cache"],
           defaultPrefixes: !argv["no-default-prefixes"],
           verbose: argv["verbose"],

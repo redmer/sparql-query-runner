@@ -15,7 +15,7 @@ export class SparqlQuadQuery implements WorkflowPart<IJobStepData> {
 
       if (fileExistsLocally(data.access))
         queryBody = await fs.readFile(data.access, { encoding: "utf-8" });
-      else queryBody = addPrefixesToQuery(data.access, context.data.prefixes);
+      else queryBody = addPrefixesToQuery(data.access, context.jobData.prefixes);
 
       return {
         start: async () => {

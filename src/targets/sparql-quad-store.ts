@@ -22,7 +22,7 @@ export class SPARQLQuadStoreTarget implements WorkflowPart<IJobTargetData> {
           await serialize(context.quadStore, stepTempFile, {
             format: mimetype,
             graphs: data.with.onlyGraphs,
-            prefixes: context.data.prefixes,
+            prefixes: context.jobData.prefixes,
           });
 
           const contents = await fs.readFile(stepTempFile, { encoding: "utf-8" });

@@ -1,5 +1,5 @@
 import { IJobSourceData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowModuleInfo, WorkflowPart } from "../runner/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 /**
@@ -13,13 +13,12 @@ import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
  *
  * Source: <https://comunica.dev/docs/query/advanced/source_types/#supported-source-types>
  * */
-export class AutoSource implements WorkflowPart<IJobSourceData> {
-  id = () => "sources/comunica-auto";
+export class AutoSource implements WorkflowPart<"sources"> {
+  id = () => "comunica-auto-datasource";
+  names = ["sources/sparql", "sources/file"];
 
   isQualified(data: IJobSourceData): boolean {
-    if (data.type === "sources/sparql") return true;
-    if (data.type === "sources/file" && data.access.match(/^https?:/)) return true;
-    return false;
+    return data.access.match(/^https?:/) !== null;
   }
 
   shouldCacheAccess(_data: IJobSourceData): boolean {
@@ -30,7 +29,7 @@ export class AutoSource implements WorkflowPart<IJobSourceData> {
     return new AuthProxyHandler(data?.with?.credentials, data.access);
   }
 
-  info(data: IJobSourceData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  asSource(data: IJobSourceData): WorkflowModuleInfo {
     return async (_context: JobRuntimeContext) => {
       const sourceType = data?.with?.["source-type"] ?? data.type.split("/").at(-1);
       return {

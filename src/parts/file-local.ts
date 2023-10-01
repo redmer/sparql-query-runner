@@ -12,7 +12,7 @@ import { FilteredStream, SingleGraphStream } from "../utils/rdf-stream-override.
  * Due to security concerns, `@comunica/query-sparql` does not support local file systems
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
-export class LocalFileSource implements WorkflowPart<IJobSourceData> {
+export class LocalFileSource implements WorkflowPart<"sources"> {
   id = () => "sources/file";
 
   isQualified(data: IJobSourceData): boolean {

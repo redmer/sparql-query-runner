@@ -1,5 +1,5 @@
-export const JobSourceTypes = ["file", "sparql"] as const;
-export const JobStepTypes = ["construct", "shacl", "shell", "update"] as const;
+export const JobSourceTypes = ["file", "sparql", "laces-hub", "triplydb"] as const;
+export const JobStepTypes = ["construct", "shacl", "shell", "update", "infer"] as const;
 export const JobTargetTypes = [
   "file",
   "laces-hub",

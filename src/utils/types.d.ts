@@ -16,6 +16,10 @@ export declare type ArrayElement<ArrayType extends readonly unknown[]> =
   ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
 
 /** Type of an Object.entries() */
-export declare type Entries<T> = {
-  [K in keyof T]: [K, T[K]];
-}[keyof T][];
+export declare type Entries<ObjectT> = {
+  [Key in keyof ObjectT]: [Key, ObjectT[Key]];
+}[keyof ObjectT][];
+
+export type ConditionalKeys<Base, Condition> = {
+  [Key in keyof Base]: Base[Key] extends Condition ? Key : never;
+}[keyof Base];

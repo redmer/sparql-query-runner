@@ -32,7 +32,7 @@ export class SPARQLGraphStoreTarget implements WorkflowPart<IJobTargetData> {
             await serialize(context.quadStore, tempFile, {
               format: mimetype,
               graphs: [graph],
-              prefixes: context.data.prefixes,
+              prefixes: context.jobData.prefixes,
             });
           }
 

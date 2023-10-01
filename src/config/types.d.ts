@@ -55,7 +55,8 @@ export type IJobTargetData = {
 };
 
 export type IJobModuleData = IJobSourceData | IJobStepData | IJobTargetData;
-
+export type IJobDataExecutable = Omit<IJobData, "name" | "independent" | "prefixes">;
+export type IJobPhase = keyof IJobDataExecutable;
 export type ICredentialData = IAuthBasicData | IAuthBearerData | IAuthHeaderData;
 
 export interface IAuthBasicData {

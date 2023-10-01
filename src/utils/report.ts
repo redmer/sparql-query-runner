@@ -1,4 +1,5 @@
 import chalk from "chalk";
+import { stderr } from "process";
 
 export const DONE = chalk.bgGreen(` DONE `);
 export const INFO = chalk.bgBlue(` INFO `) + " ";
@@ -37,15 +38,15 @@ export function consoleMessage(type: MessageLevels, caller: string, depth = 0, f
       ? chalk.bgRed(` Error `) + `: `
       : ``;
 
-  const which = type == "warning" ? "warn" : type;
+  // const which = type == "warning" ? "warn" : type;
   /*
 · jobs/my-db - Starting job
 ·· steps/shell - WARNING: shell scripts not allowed (curl)
 ·· steps/shell - ERROR: shell scripts not allowed (curl)
 */
   return (message: string) => {
-    if (message) console[which](`${indent}${caller} - ${flag}${message}`);
-    else console[which](`${indent}${caller}`);
+    if (message) stderr.write(`${indent}${caller} - ${flag}${message}\n`);
+    else stderr.write(`${indent}${caller}\r`);
     if (fatal) process.exit(-1);
   };
 }
@@ -54,3 +55,10 @@ export const infoMsg = (caller: string, depth = 0) => consoleMessage("info", cal
 export const warningMsg = (caller: string, depth = 0, { fatal }: { fatal: boolean }) =>
   consoleMessage("warning", caller, depth, fatal);
 export const errorMsg = (caller: string, depth = 0) => consoleMessage("error", caller, depth, true);
+export const ctxMsgs = (caller: string, depth = 0, { fatal }: { fatal: boolean }) => {
+  return {
+    error: errorMsg(caller, depth),
+    info: infoMsg(caller, depth),
+    warning: warningMsg(caller, depth, { fatal }),
+  };
+};

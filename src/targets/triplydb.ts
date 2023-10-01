@@ -21,7 +21,7 @@ export class TriplyDBTarget implements WorkflowPart<IJobTargetData> {
       // Get or create dataset (if create: no metadata)
       const dataset = await (
         await Triply.getAccount(accountName)
-      ).ensureDataset(datasetName, { prefixes: context.data.prefixes });
+      ).ensureDataset(datasetName, { prefixes: context.jobData.prefixes });
 
       return {
         start: async () => {

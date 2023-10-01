@@ -22,7 +22,8 @@ import {
   type IWorkflowData,
 } from "./types.js";
 
-export const CONFIG_FILENAME_YAML = "workflow.sqr.yaml";
+export const CONFIG_EXT = "sqr.yaml";
+export const CONFIG_FILENAME_YAML = `workflow.${CONFIG_EXT}`;
 
 export class ConfigurationError extends Error {}
 

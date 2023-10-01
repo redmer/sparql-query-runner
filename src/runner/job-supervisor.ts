@@ -1,8 +1,13 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import { RdfStore } from "rdf-stores";
-import type { IJobData, IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
+import type {
+  IJobData,
+  IJobPhase,
+  IJobSourceData,
+  IJobStepData,
+  IJobTargetData,
+} from "../config/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
-import { download } from "../utils/download-remote.js";
 import * as Report from "../utils/report.js";
 import { tempdir } from "../utils/workflow-job-tempdir.js";
 import { match } from "./module.js";
@@ -10,10 +15,19 @@ import type {
   JobRuntimeContext,
   QueryContext,
   Supervisor,
-  WorkflowPart,
+  WorkflowGetter,
   WorkflowRuntimeContext,
 } from "./types.js";
+
 export const TEMPDIR = `.cache/sparql-query-runner`;
+
+export class JobSupervisionError extends Error {}
+
+async function EnterModule(ctx: JobRuntimeContext, closure: () => Promise<void>) {
+  ctx.info(``);
+  await closure();
+  ctx.info(Report.DONE);
+}
 
 export class JobSupervisor implements Supervisor<IJobData> {
   #name: string;
@@ -24,22 +38,21 @@ export class JobSupervisor implements Supervisor<IJobData> {
     this.workflowCtx = context;
   }
 
-  async start(data: IJobData) {
-    // A job must process the data `sources`, `steps`, `destinations`.
+  async start(jobData: IJobData) {
+    // A job must process the data `sources`, `steps`, `targets`.
     // `prefixes`, `independent` are already processed.
-    const jobInfo = Report.infoMsg(this.#name, 1);
-    jobInfo(`Starting...`);
+    Report.infoMsg(this.#name, 1)(` `);
 
     const engine = new QueryEngine();
     const quadStore = RdfStore.createDefault();
 
     // Prepare and gather all pipeline parts
-    const modules = await match(data);
+    const modules = await match(jobData);
     if (this.workflowCtx.options.verbose) {
       const sources = modules.sources?.map((s) => s.module.id()).join(", ");
       const steps = modules.steps?.map((s) => s.module.id()).join(", ");
       const targets = modules.targets?.map((s) => s.module.id()).join(", ");
-      console.info(`job ${data.name} matched modules:
+      console.info(`job ${jobData.name} matched modules:
         sources: ${sources}
         steps: ${steps}
         targets: ${targets}
@@ -52,85 +65,48 @@ export class JobSupervisor implements Supervisor<IJobData> {
       httpProxyHandler,
       lenient: true,
     };
+    const fatal = this.workflowCtx.options.warningsAsErrors;
 
     // Static properties can be gathered before execution
     modules.targets
       .filter((m) => m.module.staticQueryContext)
-      .forEach((m) => {
-        queryContext = Object.assign(queryContext, m.module.staticQueryContext(m.data));
-      });
+      .forEach((m) => (queryContext = { ...queryContext, ...m.module.staticQueryContext(m.data) }));
     [...modules.sources, ...modules.targets]
       .filter((m) => m.module.staticAuthProxyHandler)
-      .forEach((m) => {
-        //@ts-expect-error: not compatible types...
-        httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data));
-      });
+      .forEach((m) => httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data)));
 
-    let previousPart: keyof IJobData = "name";
+    const phases: IJobPhase[] = ["sources", "steps", "targets"];
+    for (const phase of phases) {
+      Report.infoMsg("sources", 2)(` `); // Entering sources
+      for (const { data, module: m } of modules[phase] ?? []) {
+        const localname = data.type.split("/", 1)[1];
 
-    for (const { data: moduleData, module: m } of [
-      ...modules.sources,
-      ...modules.steps,
-      ...modules.targets,
-    ]) {
-      // Stats
-      const oldQuadsCount = quadStore.countQuads();
-      // cache and rewrite data
-      const shouldCacheInput = this.workflowCtx.options.cacheIntermediateResults
-        ? m.shouldCacheAccess
-          ? // @ts-expect-error: IJobXData are not compatible with eachother...
-            m.shouldCacheAccess(moduleData)
-          : false
-        : false;
-      if (shouldCacheInput) moduleData.access = await this.cacheAccess(data, m, moduleData);
+        const ctx: JobRuntimeContext = {
+          workflowContext: this.workflowCtx,
+          jobData: jobData,
+          engine,
+          quadStore,
+          queryContext,
+          tempdir: tempdir(jobData, m, data),
+          ...Report.ctxMsgs(localname, 3, { fatal }),
+        };
 
-      // Indicate
-      const currentPart = m.id().split("/", 1)[0];
-      if (currentPart !== previousPart) Report.infoMsg(currentPart, 2)(``);
-      previousPart = currentPart as keyof IJobData;
+        await EnterModule(ctx, async () => {
+          let info: WorkflowGetter;
+          if (phase == "sources") info = await m.asSource(<IJobSourceData>data)(ctx);
+          else if (phase == "steps") info = await m.asStep(<IJobStepData>data)(ctx);
+          else if (phase == "targets") info = await m.asTarget(<IJobTargetData>data)(ctx);
+          else throw new JobSupervisionError(`Module phase logic error`);
 
-      const ctx: JobRuntimeContext = {
-        workflowContext: this.workflowCtx,
-        data,
-        engine,
-        quadStore,
-        queryContext,
-        tempdir: tempdir(data, m, moduleData),
-        error: Report.errorMsg(m.id(), 3),
-        info: Report.infoMsg(m.id(), 3),
-        warning: Report.warningMsg(m.id(), 3, { fatal: this.workflowCtx.options.warningsAsErrors }),
-      };
-
-      //@ts-expect-error: IJob{Source|Step|Target}Data are not compatible with eachother...
-      const runnable = await m.info(moduleData)(ctx);
-      if (runnable.dataSources)
-        //@ts-expect-error: IJob{Source|Step|Target}Data are not compatible with eachother...
-        queryContext.sources = queryContext.sources.concat(...runnable.dataSources());
-      if (runnable.start) await runnable.start();
-
-      const newQuadsCount = quadStore.countQuads();
-      const diff = newQuadsCount - oldQuadsCount;
-      const sign = diff > 0 ? "+" : "";
-      ctx.info(Report.DONE + ` (diff: ${sign}${diff} quads)`);
+          if (info.dataSources)
+            queryContext.sources = queryContext.sources.concat(...info.dataSources());
+          if (info.start) await info.start();
+        });
+      }
     }
 
-    const finalQuadCount = quadStore.countQuads();
-    jobInfo(Report.DONE + ` (total: ${finalQuadCount} quads)`);
-  }
-
-  /** Returns the path of the locally cached file */
-  async cacheAccess(
-    job: IJobData,
-    module: WorkflowPart,
-    moduleData: IJobModuleData
-  ): Promise<string> {
-    if (moduleData.access.match(/^https?:/) === null) return moduleData.access;
-    const targetPath = tempdir(job, module, moduleData);
-    await download(
-      moduleData.access,
-      targetPath,
-      (moduleData as IJobSourceData | IJobTargetData)?.with?.credentials
-    );
-    return targetPath;
+    // TODO: Filtering, override graphs
+    // TODO: Write state to cache (.nq.gz and .head-n-20.nq) if not --in-mem
+    // TODO: Automatically GZip
   }
 }

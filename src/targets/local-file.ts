@@ -22,7 +22,7 @@ export class LocalFileTarget implements WorkflowPart<IJobTargetData> {
           await serialize(context.quadStore, data.access, {
             format: mimetype,
             graphs: data.with?.onlyGraphs,
-            prefixes: context.data.prefixes,
+            prefixes: context.jobData.prefixes,
           });
         },
       };

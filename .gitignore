@@ -102,6 +102,7 @@ dist
 
 # TernJS port file
 .tern-port
+
 workflow.sqr.yaml
 test1.ttl
 roundtripping.ttl
