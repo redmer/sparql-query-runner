@@ -89,7 +89,7 @@
         { "required": ["file"] },
         { "required": ["laces-hub"] },
         { "required": ["sparql"] },
-        { "required": ["tripldb"] }
+        { "required": ["triplydb"] }
       ]
     },
     "JobStep": {

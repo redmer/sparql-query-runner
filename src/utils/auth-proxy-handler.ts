@@ -11,10 +11,17 @@ import * as Auth from "./auth.js";
  */
 export class AuthProxyHandler implements IProxyHandler {
   keychain: Record<string, ICredentialData>;
+  headers: Record<string, Record<string, string>>;
 
-  constructor(credentials?: ICredentialData, forURL?: string) {
+  constructor(
+    credentials?: ICredentialData,
+    forURL?: string,
+    additionalHeaders?: Record<string, string>
+  ) {
     this.keychain = {};
-    if (credentials) this.add(credentials, forURL);
+    this.headers = {};
+
+    if (credentials) this.add(credentials, forURL, additionalHeaders);
   }
 
   /**
@@ -25,16 +32,27 @@ export class AuthProxyHandler implements IProxyHandler {
    * Such types would be implemented in {@link Auth.asHeader}.
    */
   public add(handler: AuthProxyHandler): void;
-  public add(credentials: ICredentialData, forURL?: string): void;
-  public add(credentialsOrHandler: ICredentialData | AuthProxyHandler, forURL?: string) {
-    if (credentialsOrHandler instanceof AuthProxyHandler)
+  public add(
+    credentials: ICredentialData,
+    forURL?: string,
+    additionalHeaders?: Record<string, string>
+  ): void;
+  public add(
+    credentialsOrHandler: ICredentialData | AuthProxyHandler,
+    forURL?: string,
+    additionalHeaders?: Record<string, string>
+  ) {
+    if (credentialsOrHandler instanceof AuthProxyHandler) {
       this.keychain = Object.assign(this.keychain, credentialsOrHandler.keychain);
-    else
+      this.headers = Object.assign(this.headers, credentialsOrHandler.headers);
+    } else
       try {
         const url = new URL(forURL);
         this.keychain[url.origin] = credentialsOrHandler;
+        this.headers[url.origin] = additionalHeaders;
       } catch (err) {
         this.keychain[""] = credentialsOrHandler;
+        this.headers[""] = additionalHeaders;
       }
   }
 
@@ -46,7 +64,10 @@ export class AuthProxyHandler implements IProxyHandler {
     return {
       init: {
         ...request.init,
-        headers: Auth.asHeader(this.keychain[origin] ?? this.keychain[""]),
+        headers: {
+          ...(this.headers[origin] ?? this.headers[""]),
+          ...Auth.asHeader(this.keychain[origin] ?? this.keychain[""]),
+        },
       },
       input: request.input,
     };

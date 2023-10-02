@@ -116,6 +116,7 @@
     }
   },
   "dependencies": {
+    "@comunica/logger-pretty": "^2.8.2",
     "@comunica/query-sparql": "^2.5.0",
     "@comunica/types": "^2.6.8",
     "@rdfjs/types": "^1.1.0",

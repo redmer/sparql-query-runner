@@ -7,7 +7,7 @@ import { PassThrough } from "stream";
 import { pipeline } from "stream/promises";
 import type { SerializationFormat } from "./rdf-extensions-mimetype.js";
 import { filteredStream } from "./rdf-stream-filter.js";
-import { MatchStreamReadable, SingleGraphStream } from "./rdf-stream-override.js";
+import { MatchStreamReadable, MergeGraphsStream } from "./rdf-stream-override.js";
 
 const DF = new DataFactory();
 
@@ -70,7 +70,7 @@ export function writeStream(stream: RDF.Stream, path: string, options: GraphToFi
   return pipeline(
     new MatchStreamReadable(stream),
     inTriples
-      ? new SingleGraphStream({ graph: DF.defaultGraph() })
+      ? new MergeGraphsStream({ intoGraph: DF.defaultGraph() })
       : new PassThrough({ objectMode: true }),
     new N3.StreamWriter(options),
     fs.createWriteStream(path, { encoding: "utf-8" })
@@ -88,7 +88,7 @@ export function serializeStreamingly(store: RDF.Store, path: string, options: Gr
   return pipeline(
     new MatchStreamReadable(store.match()),
     inTriples
-      ? new SingleGraphStream({ graph: DF.defaultGraph() })
+      ? new MergeGraphsStream({ intoGraph: DF.defaultGraph() })
       : new PassThrough({ objectMode: true }),
     streamWriter,
     fd
@@ -106,7 +106,7 @@ export function writeStreamPretty(stream: RDF.Stream, path: string, options: Gra
 
     const quadStream = new MatchStreamReadable(stream).pipe(
       inTriples
-        ? new SingleGraphStream({ graph: DF.defaultGraph() })
+        ? new MergeGraphsStream({ intoGraph: DF.defaultGraph() })
         : new PassThrough({ objectMode: true })
     );
 
@@ -131,7 +131,7 @@ export function serializePretty(store: RDF.Store, path: string, options?: GraphT
 
     const quadStream = new MatchStreamReadable(store.match()).pipe(
       inTriples
-        ? new SingleGraphStream({ graph: DF.defaultGraph() })
+        ? new MergeGraphsStream({ intoGraph: DF.defaultGraph() })
         : new PassThrough({ objectMode: true })
     );
 

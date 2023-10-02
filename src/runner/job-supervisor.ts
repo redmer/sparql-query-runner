@@ -1,3 +1,4 @@
+import { LoggerPretty } from "@comunica/logger-pretty";
 import { QueryEngine } from "@comunica/query-sparql";
 import type * as RDF from "@rdfjs/types";
 import { RdfStore } from "rdf-stores";
@@ -7,7 +8,7 @@ import {
   FilteredStream,
   ImportStream,
   MatchStreamReadable,
-  SingleGraphStream,
+  MergeGraphsStream,
 } from "../utils/rdf-stream-override.js";
 import * as Report from "../utils/report.js";
 import { tempdir } from "../utils/workflow-job-tempdir.js";
@@ -86,6 +87,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
       sources: [{ type: "rdfjsSource", value: quadStore }],
       httpProxyHandler,
       lenient: true,
+      log: new LoggerPretty({ level: "debug" }),
     };
 
     // Static properties can be gathered before execution
@@ -129,7 +131,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
         const streamOUT = new MatchStreamReadable(quadsOUT)
           .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }))
-          .pipe(new SingleGraphStream({ graph: data.with.intoGraph }));
+          .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
         await ImportStream(streamOUT, quadStore);
       });
@@ -150,7 +152,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
         if (!(quadsOUT instanceof Object)) return;
 
         const streamOUT = new MatchStreamReadable(quadsOUT).pipe(
-          new SingleGraphStream({ graph: data.with.intoGraph })
+          new MergeGraphsStream({ intoGraph: data.with.intoGraph })
         );
 
         await ImportStream(streamOUT, quadStore);
@@ -165,7 +167,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
         // Steps input quads are filtered with Only-Graphs
         const quadsIN = new MatchStreamReadable(quadStore.match())
           .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }))
-          .pipe(new SingleGraphStream({ graph: data.with.intoGraph }));
+          .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
         // Get output quad stream and check if it's not void
         await info.init(quadsIN, quadStore);

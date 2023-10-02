@@ -1,32 +1,17 @@
 import type * as RDF from "@rdfjs/types";
 import { DataFactory } from "rdf-data-factory";
-import { PassThrough, Readable, Transform, TransformCallback } from "stream";
+import { Readable, Transform, TransformCallback } from "stream";
 
 export interface OverrideGraphOptions {
   /** Override the context/graph of the quad into */
-  graph?: RDF.Quad_Graph;
+  intoGraph?: RDF.Quad_Graph;
 }
 
 export interface FilteredGraphOptions {
   graphs?: RDF.Quad_Graph[];
 }
 
-/**
- * @deprecated Replace with SingleGraphStream
- */
-export function overrideStream(stream: RDF.Stream, options: OverrideGraphOptions): RDF.Stream {
-  if (!options?.graph) return stream;
-  const out = new PassThrough({ objectMode: true });
-  const DF = new DataFactory();
-
-  stream.on("error", (error) => out.emit("error", error));
-  stream.on("data", (quad: RDF.Quad) =>
-    out.push(DF.quad(quad.subject, quad.predicate, quad.object, options.graph))
-  );
-  stream.on("end", () => out.push(null));
-  return out;
-}
-
+/** Consume an RDF.Stream as a Readable */
 export class MatchStreamReadable extends Readable implements RDF.Stream {
   stream: RDF.Stream<RDF.Quad>;
 
@@ -44,42 +29,45 @@ export class MatchStreamReadable extends Readable implements RDF.Stream {
   }
 }
 
-export class SingleGraphStream extends Transform implements RDF.Stream {
-  targetGraph: RDF.Quad_Graph;
-  DF: RDF.DataFactory;
+/** Merge all quads in an RDF.Stream into a single graph */
+export class MergeGraphsStream extends Transform implements RDF.Stream {
+  #targetGraph: RDF.Quad_Graph;
+  #DF: RDF.DataFactory;
 
   constructor(options: OverrideGraphOptions) {
     super({ objectMode: true });
-    this.targetGraph = options.graph;
-    this.DF = new DataFactory();
+    this.#targetGraph = options.intoGraph;
+    this.#DF = new DataFactory();
   }
 
   _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
     this.push(
-      this.DF.quad(quad.subject, quad.predicate, quad.object, this.targetGraph ?? quad.graph)
+      this.#DF.quad(quad.subject, quad.predicate, quad.object, this.#targetGraph ?? quad.graph)
     );
     callback();
   }
 }
 
+/** Filter out graphs in an RDF.Stream */
 export class FilteredStream extends Transform implements RDF.Stream {
-  graphs: RDF.Quad_Graph[];
-  DF: DataFactory<RDF.Quad>;
+  #onlyGraphs: RDF.Quad_Graph[];
+  #DF: DataFactory<RDF.Quad>;
 
   constructor(options: FilteredGraphOptions) {
     super({ objectMode: true });
-    this.graphs = options.graphs;
-    this.DF = new DataFactory();
+    this.#onlyGraphs = options.graphs;
+    this.#DF = new DataFactory();
   }
 
   _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
-    if (this.graphs && !this.graphs.includes(quad.graph)) return;
+    if (this.#onlyGraphs && !this.#onlyGraphs.includes(quad.graph)) callback();
 
-    this.push(this.DF.quad(quad.subject, quad.predicate, quad.object, quad.graph));
+    this.push(this.#DF.quad(quad.subject, quad.predicate, quad.object, quad.graph));
     callback();
   }
 }
 
+/** Import and consume an RDF.Stream into an RDF.Store asynchronously */
 export async function ImportStream(stream: RDF.Stream, store: RDF.Store) {
   return new Promise((resolve, reject) => {
     const emitter = store.import(stream);
