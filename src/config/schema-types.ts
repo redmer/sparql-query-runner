@@ -1,10 +1,10 @@
-export const JobSourceTypes = ["file", "sparql", "laces-hub", "triplydb"] as const;
-export const JobStepTypes = ["construct", "shacl", "shell", "update", "infer"] as const;
-export const JobTargetTypes = [
+export const PartShorthandSource = ["file", "sparql", "laces-hub", "triplydb"] as const;
+export const PartShorthandStep = ["construct", "shacl", "shell", "update", "infer"] as const;
+export const PartShorthandTarget = [
   "file",
   "laces-hub",
   "sparql-graph-store",
   "sparql-quad-store",
-  "sparql",
+  "sparql-update-endpoint",
   "triplydb",
 ] as const;

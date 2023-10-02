@@ -5,57 +5,58 @@ import {
   IJobStepData,
   IJobTargetData,
 } from "../config/types.js";
-import { ComunicaAutoSource } from "../parts/comunica-auto-datasource.js";
+import { Assert } from "../parts/ask-assert.js";
+import { ComunicaAutoSource } from "../parts/comunica-auto-source.js";
+import { LocalFile } from "../parts/file-local.js";
+import { InferReason } from "../parts/infer.js";
 import { LacesHubTarget } from "../parts/laces-hub.js";
 import { ShaclValidateLocal } from "../parts/shacl-validate-local.js";
-import type { WorkflowPart } from "../runner/types.js";
-import { LocalFileSource } from "../sources/file-local.js";
-import { ShellPart } from "../steps/shell.js";
-import { SparqlQuadQuery } from "../steps/sparql-construct.js";
-import { SparqlUpdate } from "../steps/sparql-update.js";
-import { LocalFileTarget } from "../targets/local-file.js";
-import { SPARQLGraphStoreTarget } from "../targets/sparql-graph-store.js";
-import { SPARQLQuadStoreTarget } from "../targets/sparql-quad-store.js";
-import { SPARQLTarget } from "../targets/sparql.js";
-import { TriplyDBTarget } from "../targets/triplydb.js";
+import { ShellPart } from "../parts/shell.js";
+import { SparqlQuadQuery } from "../parts/sparql-construct.js";
+import { SPARQLGraphStoreTarget } from "../parts/sparql-graph-store.js";
+import { SPARQLQuadStoreTarget } from "../parts/sparql-quad-store.js";
+import { SparqlUpdate } from "../parts/sparql-update.js";
+import { SPARQLTarget } from "../parts/sparql.js";
+import { TriplyDBTarget } from "../parts/triplydb.js";
+import type { WorkflowPartSource, WorkflowPartStep, WorkflowPartTarget } from "../runner/types.js";
 
 export class ModuleMatcherError extends Error {}
-export type RegisteredModule = WorkflowPart<IJobPhase>;
+export type RegisteredModule = WorkflowPartSource | WorkflowPartStep | WorkflowPartTarget;
 
 /**
  * These KNOWN_MODULES make pipeline part processing modules available,
  * ordered -- as multiple processors may match.
  */
 export const KNOWN_MODULES: RegisteredModule[] = [
-  new LocalFileSource(),
-  new ComunicaAutoSource(),
+  new LocalFile(),
   new ShaclValidateLocal(),
   new SparqlQuadQuery(),
   new SparqlUpdate(),
+  new Assert(),
+  new InferReason(),
   new ShellPart(),
   new SPARQLTarget(),
   new LacesHubTarget(),
   new TriplyDBTarget(),
-  new LocalFileTarget(),
+  new ComunicaAutoSource(),
   new SPARQLGraphStoreTarget(),
   new SPARQLQuadStoreTarget(),
 ];
 
-export type IExecutableModuleCtx<P extends IJobPhase> = {
-  module: WorkflowPart<P>;
-  data: P extends "sources"
-    ? IJobSourceData
-    : P extends "steps"
-    ? IJobStepData
-    : P extends "targets"
-    ? IJobTargetData
-    : never;
-};
-
+/** Struct that will enable execution of the workflow. */
 export type IExecutableJob = {
-  sources: IExecutableModuleCtx<"sources">[];
-  steps: IExecutableModuleCtx<"steps">[];
-  targets: IExecutableModuleCtx<"targets">[];
+  sources: {
+    module: WorkflowPartSource;
+    data: IJobSourceData;
+  }[];
+  steps: {
+    module: WorkflowPartStep;
+    data: IJobStepData;
+  }[];
+  targets: {
+    module: WorkflowPartTarget;
+    data: IJobTargetData;
+  }[];
 };
 
 export async function match(data: IJobData): Promise<IExecutableJob> {
@@ -76,7 +77,7 @@ async function matchModules(data: IJobData, modules: RegisteredModule[]): Promis
     for (const stepData of data[phase] ?? []) {
       const qModules = modules
         .filter((m) => m.names.includes(stepData.type))
-        .filter((m) => (m.qualifies && m.qualifies(stepData, phase)) || !m.qualifies);
+        .filter((m) => (m.isQualified && m.isQualified(stepData)) || !m.isQualified);
 
       if (qModules.length == 0)
         throw new ModuleMatcherError(
@@ -84,11 +85,8 @@ async function matchModules(data: IJobData, modules: RegisteredModule[]): Promis
         );
 
       // Note that multiple modules may qualify: we take the first, so the MODULES order is significant
-      result[phase].push({
-        module: qModules[0],
-        // @ts-ignore-next: This type can't be deduced, therefore ignore
-        data: stepData,
-      });
+      // @ts-ignore-next: Modules are incompatible, but we're sure to put them in the right basket
+      result[phase].push({ module: qModules[0], data: stepData });
     }
   }
   return result;

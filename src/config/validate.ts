@@ -6,7 +6,7 @@ import yaml from "yaml";
 import { ge1 } from "../utils/array.js";
 import { substitute } from "../utils/compile-envvars.js";
 import { context } from "./rdfa11-context.js";
-import { JobSourceTypes, JobStepTypes, JobTargetTypes } from "./schema-types.js";
+import { PartShorthandSource, PartShorthandStep, PartShorthandTarget } from "./schema-types.js";
 import {
   IAuthBasicData,
   IAuthBearerData,
@@ -105,7 +105,10 @@ function validateJob(
 
 /** Find keys that are well-known access types (sparql:, file:, etc.) */
 function knownTypeKeys(
-  shortHandTypes: typeof JobSourceTypes | typeof JobStepTypes | typeof JobTargetTypes,
+  shortHandTypes:
+    | typeof PartShorthandSource
+    | typeof PartShorthandStep
+    | typeof PartShorthandTarget,
   data: Map<any, any>
 ) {
   return [...data.keys()].filter((k: never) => shortHandTypes.includes(k));
@@ -116,7 +119,7 @@ function validateSource(
   data: Map<keyof IJobSourceData, any>,
   prefixes: Record<string, string>
 ): IJobSourceData {
-  const knownType = knownTypeKeys(JobSourceTypes, data) as IJobSourceKnownTypes[];
+  const knownType = knownTypeKeys(PartShorthandSource, data) as IJobSourceKnownTypes[];
   if (knownType.length != 1 && !data.has("type"))
     throw new ConfigurationError(
       `No single type for source (${JSON.stringify(data)}) found: ${JSON.stringify(knownType)}`
@@ -144,7 +147,7 @@ function validateStep(
   data: Map<keyof IJobStepData, any>,
   prefixes: Record<string, string>
 ): IJobStepData {
-  const knownType = knownTypeKeys(JobStepTypes, data) as IJobStepKnownTypes[];
+  const knownType = knownTypeKeys(PartShorthandStep, data) as IJobStepKnownTypes[];
   if (knownType.length != 1 && !data.has("type"))
     throw new ConfigurationError(
       `No single type for step (${JSON.stringify(data)}) found: ${JSON.stringify(knownType)}`
@@ -168,7 +171,7 @@ function validateTarget(
   data: Map<keyof IJobTargetData, any>,
   prefixes: Record<string, string>
 ): IJobTargetData {
-  const knownType = knownTypeKeys(JobTargetTypes, data) as IJobTargetKnownTypes[];
+  const knownType = knownTypeKeys(PartShorthandTarget, data) as IJobTargetKnownTypes[];
   if (knownType.length != 1 && !data.has("type"))
     throw new ConfigurationError(
       `No single type for target (${JSON.stringify(data)}) found: ${JSON.stringify(knownType)}`

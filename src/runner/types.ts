@@ -43,8 +43,6 @@ export interface JobRuntimeContext {
   queryContext: QueryContext;
   // /** Register query context proxy handlers for non-Basic authentication */
   // httpProxyHandler: AuthProxyHandler;
-  /** The quad store for in-mem CONSTRUCTed quads */
-  readonly quadStore: RDF.Store & RdfStore;
 
   /** Print an INFO level message */
   info(message: string): void;
@@ -58,15 +56,17 @@ export type WorkflowModuleExec<ReqK extends keyof WorkflowPartGetter> = (
   context: JobRuntimeContext
 ) => Promise<Pick<WorkflowPartGetter, ReqK>>;
 
+export type InMemQuadStore = RDF.Store & RdfStore;
+
 export interface WorkflowPartGetter {
   /** Supply a Comunica Data Source, for non-quad streams */
   comunicaDataSources(): [IDataSourceExpanded | IDataSourceSerialized];
   /** Return a stream of quads that are imported */
-  asSource(): Promise<RDF.Stream>;
+  asSource(quadStore: InMemQuadStore): Promise<RDF.Stream>;
   /** Execute a step */
-  asStep(): Promise<void>;
+  asStep(stream: RDF.Stream, quadStore: InMemQuadStore): Promise<RDF.Stream>;
   /** Export argument stream */
-  asTarget(stream: RDF.Stream): Promise<void>;
+  asTarget(stream: RDF.Stream, quadStore: InMemQuadStore): Promise<void>;
 }
 
 export interface WorkflowPartSource extends WorkflowPart {
@@ -87,7 +87,7 @@ export interface WorkflowPartTarget extends WorkflowPart {
 }
 
 /** A Source, Step or Target is a workflow part */
-interface WorkflowPart {
+export interface WorkflowPart {
   /** The canonical name of the workflow part */
   id(): string;
 
@@ -112,7 +112,7 @@ interface WorkflowPart {
    */
   staticAuthProxyHandler?(data: IJobSourceData | IJobTargetData): AuthProxyHandler;
 
-  exec(data: IJobModuleData): WorkflowModuleExec;
+  // exec(data: IJobModuleData): WorkflowModuleExec<infer>;
 }
 
 export interface Supervisor<T> {

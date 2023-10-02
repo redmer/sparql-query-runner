@@ -10,9 +10,9 @@ import { fileExistsLocally } from "../utils/local-remote-file.js";
  *
  * Update steps are either URLs or complete SPARQL Update queries.
  */
-export class SparqlUpdate implements WorkflowPartStep {
-  id = () => "steps/update";
-  names = ["steps/update"];
+export class Assert implements WorkflowPartStep {
+  id = () => "assert-with-sparql-ask";
+  names = ["steps/assert"];
 
   exec(data: IJobStepData): WorkflowModuleExec<"asStep"> {
     return async (context: JobRuntimeContext) => {
@@ -24,8 +24,13 @@ export class SparqlUpdate implements WorkflowPartStep {
 
       return {
         asStep: async () => {
-          context.info(`Executing query '${data.access.substring(0, 32)}'...`);
-          await context.engine.queryVoid(queryBody, <QueryStringContext>context.queryContext);
+          if (context.workflowContext.options.skipAssertions) return;
+
+          const result = await context.engine.queryBoolean(
+            queryBody,
+            <QueryStringContext>context.queryContext
+          );
+          if (!result) context.error(`${data?.with?.["message"]}`);
           return new PassThrough({ objectMode: true });
         },
       };

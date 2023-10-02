@@ -6,6 +6,9 @@ export interface FilteredGraphOptions {
   graphs?: RDF.Quad_Graph[];
 }
 
+/**
+ * @deprecated Replace with FilteredStream
+ */
 export function filteredStream(stream: RDF.Stream, options?: FilteredGraphOptions): RDF.Stream {
   if (!options?.graphs) return stream;
   const out = new PassThrough({ objectMode: true });

@@ -1,5 +1,5 @@
 import * as RDF from "@rdfjs/types";
-import { JobSourceTypes, JobStepTypes, JobTargetTypes } from "./schema-types.js";
+import { PartShorthandSource, PartShorthandStep, PartShorthandTarget } from "./schema-types.js";
 
 /** Represents a configuration file, that contains one or more {@link IPipeline}s. */
 export interface IWorkflowData {
@@ -18,11 +18,47 @@ export interface IJobData {
   targets?: IJobTargetData[];
 }
 
-export type IJobSourceKnownTypes = (typeof JobSourceTypes)[number];
-export type IJobSourceData = {
-  [key in IJobSourceKnownTypes]?: string;
+export type IJobSourceKnownTypes = (typeof PartShorthandSource)[number];
+// export type IJobSourceData = {
+//   [key in IJobSourceKnownTypes]?: string;
+// } & {
+//   readonly type: // `sources/${IJobSourceKnownTypes}`;
+//   access: string;
+//   with?: {
+//     credentials?: ICredentialData;
+//     onlyGraphs?: RDF.Quad_Graph[];
+//     targetGraph?: RDF.Quad_Graph;
+//   };
+// };
+
+export type IJobStepKnownTypes = (typeof PartShorthandStep)[number];
+// export type IJobStepData = {
+//   [key in IJobStepKnownTypes]?: string;
+// } & {
+//   readonly type: // `steps/${IJobStepKnownTypes}`;
+//   access: string;
+//   with?: {
+//     targetGraph?: RDF.Quad_Graph;
+//   };
+// };
+
+export type IJobTargetKnownTypes = (typeof PartShorthandTarget)[number];
+// export type IJobTargetData = {
+//   [key in IJobTargetKnownTypes]?: string;
+// } & {
+//   readonly type: // `targets/${IJobTargetKnownTypes}`;
+//   access: string;
+//   with?: {
+//     credentials?: ICredentialData;
+//     onlyGraphs?: RDF.Quad_Graph[];
+//     targetGraph?: RDF.Quad_Graph;
+//   };
+// };
+
+export type IJobModuleData = {
+  [key in IJobSourceKnownTypes | IJobStepKnownTypes | IJobTargetKnownTypes]?: string;
 } & {
-  readonly type: `sources/${IJobSourceKnownTypes}`;
+  type: string;
   access: string;
   with?: {
     credentials?: ICredentialData;
@@ -30,32 +66,10 @@ export type IJobSourceData = {
     targetGraph?: RDF.Quad_Graph;
   };
 };
+export type IJobSourceData = IJobModuleData;
+export type IJobStepData = IJobModuleData;
+export type IJobTargetData = IJobModuleData;
 
-export type IJobStepKnownTypes = (typeof JobStepTypes)[number];
-export type IJobStepData = {
-  [key in IJobStepKnownTypes]?: string;
-} & {
-  readonly type: `steps/${IJobStepKnownTypes}`;
-  access: string;
-  with?: {
-    targetGraph?: RDF.Quad_Graph;
-  };
-};
-
-export type IJobTargetKnownTypes = (typeof JobTargetTypes)[number];
-export type IJobTargetData = {
-  [key in IJobTargetKnownTypes]?: string;
-} & {
-  readonly type: `targets/${IJobTargetKnownTypes}`;
-  access: string;
-  with?: {
-    credentials?: ICredentialData;
-    onlyGraphs?: RDF.Quad_Graph[];
-    targetGraph?: RDF.Quad_Graph;
-  };
-};
-
-export type IJobModuleData = IJobSourceData | IJobStepData | IJobTargetData;
 export type IJobDataExecutable = Omit<IJobData, "name" | "independent" | "prefixes">;
 export type IJobPhase = keyof IJobDataExecutable;
 export type ICredentialData = IAuthBasicData | IAuthBearerData | IAuthHeaderData;

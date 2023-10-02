@@ -29,11 +29,13 @@ async function cli() {
       describe: `Run a workflow to generate quads or execute SPARQL queries`,
       handler: async (argv) =>
         await runPipelines(argv["config"] ?? (await glob(`*.${CONFIG_EXT}`)), {
-          cacheIntermediateResults: argv["cache"],
-          defaultPrefixes: !argv["no-default-prefixes"],
-          verbose: argv["verbose"],
-          warningsAsErrors: argv["warnings-as-errors"],
-          allowShellScripts: argv["exec-shell"],
+          cacheIntermediateResults: argv["cache"] ?? false,
+          defaultPrefixes: !argv["no-default-prefixes"] ?? false,
+          verbose: argv["verbose"] ?? false,
+          warningsAsErrors: argv["warnings-as-errors"] ?? false,
+          allowShellScripts: argv["exec-shell"] ?? false,
+          skipAssertions: argv["skip-assertions"] ?? false,
+          skipReasoning: argv["skip-reasoning"] ?? false,
         }),
       builder: {
         cache: {
@@ -58,6 +60,14 @@ async function cli() {
           alias: "e",
           type: "boolean",
           desc: "Terminate on warnings",
+        },
+        "skip-assertions": {
+          type: "boolean",
+          desc: "Skip assert job steps",
+        },
+        "skip-reasoning": {
+          type: "boolean",
+          desc: "Skip reasoning job steps",
         },
         "no-default-prefixes": {
           type: "boolean",
@@ -120,16 +130,7 @@ async function createNewPipelineFile(path: string) {
   console.info(`Created ${resolve(path)}`);
 }
 
-async function runPipelines(
-  configPaths: string[],
-  {
-    cacheIntermediateResults,
-    verbose,
-    warningsAsErrors,
-    defaultPrefixes,
-    allowShellScripts,
-  }: ICliOptions
-) {
+async function runPipelines(configPaths: string[], { defaultPrefixes, ...options }: ICliOptions) {
   try {
     // Gather all configurations
     const configs: IWorkflowData[] = [];
@@ -138,12 +139,7 @@ async function runPipelines(
     const config = mergeConfigurations(configs);
 
     // Run them all. The supervisor handles dependencies.
-    new WorkflowSupervisor(config).runAll({
-      cacheIntermediateResults,
-      verbose,
-      warningsAsErrors,
-      allowShellScripts,
-    });
+    new WorkflowSupervisor(config).runAll({ defaultPrefixes, ...options });
   } catch (error) {
     console.error(Report.ERROR + error.message ?? error);
     throw error;

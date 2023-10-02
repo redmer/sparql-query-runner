@@ -28,29 +28,9 @@ export class TriplyDBTarget implements WorkflowPartTarget, WorkflowPartSource {
       return {
         asSource: async () => {
           return await dataset.graphsToStream("rdf-js");
-
-          // const triplyStream = await dataset.graphsToStream("rdf-js");
-          // const quadStream = triplyStream
-          //   .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
-          //   .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
-
-          // const emitter = context.quadStore.import(quadStream);
-
-          // await new Promise((resolve, reject) => {
-          //   emitter.on("end", resolve);
-          //   emitter.on("error", reject);
-          // });
         },
 
         asTarget: async (stream: RDF.Stream) => {
-          // context.info(`Gathering ${data.with?.onlyGraphs ?? "all"} graphs for export...`);
-
-          // const dataStore: RDF.Store = data.with?.onlyGraphs?.length
-          //   ? await storeStream(
-          //       filteredStream(context.quadStore.match(), { graphs: data.with.onlyGraphs })
-          //     )
-          //   : context.quadStore;
-
           context.info(
             `Uploading ${data?.with?.onlyGraphs?.length ?? "all"} graphs to <${data.access}>...`
           );

@@ -11,6 +11,9 @@ export interface FilteredGraphOptions {
   graphs?: RDF.Quad_Graph[];
 }
 
+/**
+ * @deprecated Replace with SingleGraphStream
+ */
 export function overrideStream(stream: RDF.Stream, options: OverrideGraphOptions): RDF.Stream {
   if (!options?.graph) return stream;
   const out = new PassThrough({ objectMode: true });
@@ -24,7 +27,7 @@ export function overrideStream(stream: RDF.Stream, options: OverrideGraphOptions
   return out;
 }
 
-export class StoreStream extends Readable implements RDF.Stream {
+export class MatchStreamReadable extends Readable implements RDF.Stream {
   stream: RDF.Stream<RDF.Quad>;
 
   constructor(stream: RDF.Stream) {

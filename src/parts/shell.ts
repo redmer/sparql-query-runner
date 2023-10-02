@@ -1,9 +1,10 @@
 import commandExists from "command-exists";
 import { exec } from "node:child_process";
+import { PassThrough } from "stream";
 import { IJobStepData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowPart, WorkflowPartGetter } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowPartStep } from "../runner/types.js";
 
-export class ShellPart implements WorkflowPart<"sources" | "steps"> {
+export class ShellPart implements WorkflowPartStep {
   id = () => "steps/shell";
   names = ["steps/shell"];
 
@@ -11,28 +12,29 @@ export class ShellPart implements WorkflowPart<"sources" | "steps"> {
     return command.trim().split(" ", 2)[0];
   }
 
-  isQualifiedx(data: IJobStepData): boolean {
+  isQualified(data: IJobStepData): boolean {
     const command = this._commandName(data.access);
     return commandExists.sync(command);
   }
 
-  info(data: IJobStepData): (context: JobRuntimeContext) => Promise<WorkflowPartGetter> {
+  exec(data: IJobStepData) {
     return async (context: JobRuntimeContext) => {
       return {
-        start: async () => {
-          const command = this._commandName(data.access);
+        asStep: async () => {
+          const commandName = this._commandName(data.access);
 
           if (!context.workflowContext.options.allowShellScripts) {
-            context.warning(`shell scripts not allowed (${command})`);
+            context.warning(`shell scripts not allowed (${commandName})`);
             return;
           }
 
-          return new Promise((resolve, reject) => {
+          await new Promise((resolve, reject) => {
             exec(data.access, (error, stdout, stderr) => {
               if (error) reject(stderr);
               resolve(undefined);
             });
           });
+          return new PassThrough({ objectMode: true });
         },
       };
     };

@@ -13,7 +13,7 @@ import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js
  * Due to security concerns, `@comunica/query-sparql` does not support local file systems
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
-export class LocalFileSource implements WorkflowPartSource, WorkflowPartTarget {
+export class LocalFile implements WorkflowPartSource, WorkflowPartTarget {
   id = () => "local-file";
   names = ["sources/file", "targets/file"];
 
@@ -42,15 +42,6 @@ export class LocalFileSource implements WorkflowPartSource, WorkflowPartTarget {
             .pipe(new StreamParser({ format: mimetype }));
 
           return quadStream;
-          //   .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
-          //   .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
-
-          // const emitter = context.quadStore.import(quadStream);
-
-          // await new Promise((resolve, reject) => {
-          //   emitter.on("end", resolve);
-          //   emitter.on("error", reject);
-          // });
         },
         asTarget: async (stream: RDF.Stream) => {
           context.info(

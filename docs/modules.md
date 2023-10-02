@@ -11,7 +11,7 @@ And if so, which arguments may be supplied.
 | triplydb           | \*     |      | \*     | Always      | \*            | \*          |
 | assert             |        | \*   |        |             |               |             | Message    |
 | shacl              |        | \*   |        |             | Results-Graph | \*          |
-| reason             |        | \*   |        |             | Results-Graph | \*          | Entailment |
+| reason             |        | \*   |        |             | Results-Graph | \*          | Ruleset    |
 | shell              |        | \*   |
 | construct          |        | \*   |        |             | \*            |
 | update             |        | \*   |

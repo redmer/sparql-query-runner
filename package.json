@@ -123,6 +123,7 @@
     "chalk": "^5.1.2",
     "command-exists": "^1.2.9",
     "dotenv": "^16.0.3",
+    "hylar-core": "^1.2.0",
     "json-stable-stringify": "^1.0.2",
     "n3": "^1.10.0",
     "node-fetch": "^3.2.10",
@@ -130,6 +131,7 @@
     "rdf-store-stream": "^2.0.0",
     "rdf-stores": "^1.0.0",
     "rdf-validate-shacl": "^0.4.5",
+    "shacl-engine": "^0.1.0",
     "sparqljs": "^3.6.1",
     "yaml": "^2.1.3",
     "yargs": "^17.6.0"

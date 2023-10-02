@@ -1,13 +1,13 @@
 import { QueryEngine } from "@comunica/query-sparql";
+import type * as RDF from "@rdfjs/types";
 import { RdfStore } from "rdf-stores";
-import type {
-  IJobData,
-  IJobPhase,
-  IJobSourceData,
-  IJobStepData,
-  IJobTargetData,
-} from "../config/types.js";
+import type { IJobData, IJobPhase, IJobSourceData, IJobTargetData } from "../config/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
+import {
+  FilteredStream,
+  MatchStreamReadable,
+  SingleGraphStream,
+} from "../utils/rdf-stream-override.js";
 import * as Report from "../utils/report.js";
 import { tempdir } from "../utils/workflow-job-tempdir.js";
 import { match } from "./module.js";
@@ -70,10 +70,20 @@ export class JobSupervisor implements Supervisor<IJobData> {
     // Static properties can be gathered before execution
     modules.targets
       .filter((m) => m.module.staticQueryContext)
-      .forEach((m) => (queryContext = { ...queryContext, ...m.module.staticQueryContext(m.data) }));
+      .forEach(
+        (m) =>
+          (queryContext = {
+            ...queryContext,
+            ...m.module.staticQueryContext(<IJobTargetData>m.data),
+          })
+      );
     [...modules.sources, ...modules.targets]
       .filter((m) => m.module.staticAuthProxyHandler)
-      .forEach((m) => httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data)));
+      .forEach((m) =>
+        httpProxyHandler.add(
+          m.module.staticAuthProxyHandler(<IJobSourceData | IJobTargetData>m.data)
+        )
+      );
 
     const phases: IJobPhase[] = ["sources", "steps", "targets"];
     for (const phase of phases) {
@@ -85,22 +95,36 @@ export class JobSupervisor implements Supervisor<IJobData> {
           workflowContext: this.workflowCtx,
           jobData: jobData,
           engine,
-          quadStore,
           queryContext,
           tempdir: tempdir(jobData, m, data),
           ...Report.ctxMsgs(localname, 3, { fatal }),
         };
 
         await EnterModule(ctx, async () => {
-          let info: WorkflowPartGetter;
-          if (phase == "sources") info = await m.asSource(<IJobSourceData>data)(ctx);
-          else if (phase == "steps") info = await m.asStep(<IJobStepData>data)(ctx);
-          else if (phase == "targets") info = await m.asTarget(<IJobTargetData>data)(ctx);
-          else throw new JobSupervisionError(`Module phase logic error`);
+          const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
+          let outputStream: RDF.Stream;
+
+          const inputStream = new MatchStreamReadable(quadStore.match()).pipe(
+            new FilteredStream({ graphs: data?.with?.onlyGraphs })
+          );
 
           if (info.comunicaDataSources)
             queryContext.sources = queryContext.sources.concat(...info.comunicaDataSources());
-          if (info.start) await info.start();
+
+          if (info.asSource) outputStream = await info.asSource(quadStore);
+          else if (info.asStep) outputStream = await info.asStep(inputStream, quadStore);
+          else if (info.asTarget) await info.asTarget(inputStream, quadStore);
+
+          const stream = new MatchStreamReadable(outputStream)
+            .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
+            .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
+
+          await new Promise((resolve, reject) => {
+            const emitter = quadStore.import(stream);
+
+            emitter.once("end", resolve);
+            emitter.once("error", reject);
+          });
         });
       }
     }

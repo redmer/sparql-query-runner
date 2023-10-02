@@ -10,7 +10,7 @@ import * as Auth from "../utils/auth.js";
  */
 export class SPARQLTarget implements WorkflowPartTarget {
   id = () => "targets/sparql-update-endpoint";
-  names = ["targets/sparql", "targets/sparql-update-endpoint"];
+  names = ["targets/sparql-update-endpoint"];
 
   staticQueryContext(data: IJobTargetData) {
     return {
@@ -23,9 +23,13 @@ export class SPARQLTarget implements WorkflowPartTarget {
     return new AuthProxyHandler(data.with?.credentials, data.access);
   }
 
-  asTarget(_data: IJobTargetData): WorkflowModuleExec {
+  exec(_data: IJobTargetData): WorkflowModuleExec<"asTarget"> {
     return async (_context: JobRuntimeContext) => {
-      return {};
+      return {
+        asTarget: async () => {
+          // no-op: all done via staticQueryContext
+        },
+      };
     };
   }
 }

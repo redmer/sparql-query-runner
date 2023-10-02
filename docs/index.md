@@ -178,10 +178,11 @@ This step executes a SPARQL ASK query.
 The query should return `true` if all assertions are met and the workflow will continue.
 If the query returns `false`, the workflow will stop.
 
-| Configure | Notes                                      |
-| --------- | ------------------------------------------ |
-| `assert:` | <li> Path to an .rq file <li>Inline query. |
-| `with:`   | _No arguments supported._                  |
+| Configure               | Notes                                      |
+| ----------------------- | ------------------------------------------ |
+| `assert:`               | <li>Path to an .rq file <li>Inline query.  |
+| `with:`                 |
+| &nbsp;&nbsp; `message:` | Message for stderr if query returns false. |
 
 Supply `--skip-assertions` to skip this step.
 
@@ -224,12 +225,12 @@ Infer new statements using reasoning with RDFS or OWL2RL entailment regimes.
 | ---------------------------- | ----------------------------------------------------------------------------- |
 | `reason:`                    | Path to a file containing RDFS/OWL assertions. (Optional argument)            |
 | `with:`                      |                                                                               |
-| &nbsp;&nbsp; `entailment:`   | Infer using `rdfs` (default) or `owl2rl`.                                     |
+| &nbsp;&nbsp; `ruleset:`      | Infer using `rdfs` (default) or `owl2rl`.                                     |
 | &nbsp;&nbsp; `only-graphs:`  | Infer only over asserted triples from these graphs (default: all). (List)     |
 | &nbsp;&nbsp; `target-graph:` | Put inferred triples in this graph (default: `""`). Prevent output with `--`. |
 
 Provided ABox and TBox may be incongruent and cause the reasoner to emit a fatal error.
-This is best for most knowledge graph building usecases, but some automated workflows might prefer not to error-out: Supply `--skip-reason` to skip this step.
+This is best for most knowledge graph building usecases, but some automated workflows might prefer not to error-out: Supply `--skip-reasoning` to skip this step.
 
 Implemented by [`jeswr/hylar-core`](https://github.com/jeswr/hylar-core).
 TODO: Or use Comunica when it's on a SPARQL source.

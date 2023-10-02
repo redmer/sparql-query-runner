@@ -7,7 +7,7 @@ import { PassThrough } from "stream";
 import { pipeline } from "stream/promises";
 import type { SerializationFormat } from "./rdf-extensions-mimetype.js";
 import { filteredStream } from "./rdf-stream-filter.js";
-import { SingleGraphStream, StoreStream } from "./rdf-stream-override.js";
+import { MatchStreamReadable, SingleGraphStream } from "./rdf-stream-override.js";
 
 const DF = new DataFactory();
 
@@ -68,7 +68,7 @@ export function writeStream(stream: RDF.Stream, path: string, options?: GraphToF
   const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
 
   return pipeline(
-    new StoreStream(stream),
+    new MatchStreamReadable(stream),
     inTriples
       ? new SingleGraphStream({ graph: DF.defaultGraph() })
       : new PassThrough({ objectMode: true }),
@@ -86,7 +86,7 @@ export function serializeStreamingly(store: RDF.Store, path: string, options?: G
   const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
 
   return pipeline(
-    new StoreStream(store.match()),
+    new MatchStreamReadable(store.match()),
     inTriples
       ? new SingleGraphStream({ graph: DF.defaultGraph() })
       : new PassThrough({ objectMode: true }),
@@ -104,7 +104,7 @@ export function writeStreamPretty(stream: RDF.Stream, path: string, options?: Gr
 
     const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
 
-    const quadStream = new StoreStream(stream).pipe(
+    const quadStream = new MatchStreamReadable(stream).pipe(
       inTriples
         ? new SingleGraphStream({ graph: DF.defaultGraph() })
         : new PassThrough({ objectMode: true })
@@ -129,7 +129,7 @@ export function serializePretty(store: RDF.Store, path: string, options?: GraphT
 
     const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
 
-    const quadStream = new StoreStream(store.match()).pipe(
+    const quadStream = new MatchStreamReadable(store.match()).pipe(
       inTriples
         ? new SingleGraphStream({ graph: DF.defaultGraph() })
         : new PassThrough({ objectMode: true })

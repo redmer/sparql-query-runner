@@ -1,12 +1,17 @@
 export interface ICliOptions {
   /** Make workflow and job execution even more verbose */
-  verbose?: boolean;
+  verbose: boolean;
   /** Enable cache of each step results */
-  cacheIntermediateResults?: boolean;
-  /** Treat warnings as fatal */
-  warningsAsErrors?: boolean;
+  cacheIntermediateResults: boolean;
   /** Add RDFa Intitial Context prefixes to workflow and prefix definitions */
-  defaultPrefixes?: boolean;
+  defaultPrefixes: boolean;
+
   /** Allow the exuction of shell script steps */
-  allowShellScripts?: boolean;
+  allowShellScripts: boolean;
+  /** Treat warnings as fatal */
+  warningsAsErrors: boolean;
+  /** Skip assert steps */
+  skipAssertions: boolean;
+  /** Skip reasoning steps */
+  skipReasoning: boolean;
 }

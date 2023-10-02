@@ -6,7 +6,7 @@ import * as Auth from "./auth.js";
 export interface LacesHubRepositoryDesc {
   id: string;
   name: string;
-  fullPath: string;
+  path: string;
 }
 
 export interface LacesHubPublicationDesc {
@@ -31,10 +31,16 @@ export interface LacesHubPublicationPatch {
 }
 
 /** All accessible Laces repositories */
-export async function repositories(auth: ICredentialData): Promise<LacesHubRepositoryDesc[]> {
-  const endpoint = `https://hub.laces.tech/api/v3/repositories`;
+export async function repositories(
+  auth: ICredentialData,
+  repoName: string
+): Promise<LacesHubRepositoryDesc[]> {
+  const endpoint = `https://hub.laces.tech/api/v4/repositories?searchText=${encodeURIComponent(
+    repoName
+  )}`;
   const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
-  return (await resp.json()) as LacesHubRepositoryDesc[];
+  const answ = await resp.json();
+  return answ["contents"];
 }
 
 /** All accessible publications in a Laces repository. */
@@ -42,29 +48,30 @@ export async function publications(
   repositoryId: string,
   auth: ICredentialData
 ): Promise<LacesHubPublicationDesc[]> {
-  const endpoint = `https://hub.laces.tech/api/v3/repositories/${repositoryId}/publications`;
+  const endpoint = `https://hub.laces.tech/api/v4/publications?repositoryId=${repositoryId}`;
   const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
-  return (await resp.json()) as LacesHubPublicationDesc[];
+  const answ = await resp.json();
+  return answ["contents"];
 }
 
 /** Update a publication in a Laces repository. */
 export async function updatePublication(
   publicationId: string,
   contentPayloadPath: string,
-  metadataPayload: LacesHubPublicationPatch,
+  // metadataPayload: LacesHubPublicationPatch,
   auth: ICredentialData
 ): Promise<Response> {
-  const endpoint = `https://hub.laces.tech/api/v3/publications/${publicationId}`;
-  const metadata = { ...metadataPayload };
+  const endpoint = `https://hub.laces.tech/api/v4/publications/${publicationId}/statements/async`;
+  // const metadata = { ...metadataPayload };
 
   const form = new FormData();
   const stream = await fs.readFile(contentPayloadPath);
-  form.append("content", new Blob([stream]));
-  form.append("metadata", JSON.stringify(metadata));
+  form.append("file", new Blob([stream]));
+  form.append("publisher", "sparql-query-runner");
 
   const resp = await fetch(endpoint, {
     method: "PATCH",
-    headers: { ...Auth.asHeader(auth) },
+    headers: { ...Auth.asHeader(auth), "Content-Type": "application/n-triples" },
     body: form,
   });
   return resp;

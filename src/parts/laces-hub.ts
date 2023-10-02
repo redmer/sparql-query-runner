@@ -1,8 +1,15 @@
-import type { IJobTargetData } from "../config/types.js";
-import type { JobRuntimeContext, WorkflowPart, WorkflowPartGetter } from "../runner/types.js";
-import { serialize } from "../utils/graphs-to-file.js";
-import type { LacesHubPublicationDesc } from "../utils/laces.js";
+import type * as RDF from "@rdfjs/types";
+import type { IJobSourceData, IJobTargetData } from "../config/types.js";
+import type {
+  JobRuntimeContext,
+  WorkflowModuleExec,
+  WorkflowPartSource,
+  WorkflowPartTarget,
+} from "../runner/types.js";
+import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
+import { serializeStream } from "../utils/graphs-to-file.js";
 import * as Laces from "../utils/laces.js";
+import { InfoUploadingTo } from "../utils/uploading-message.js";
 
 /**
  * This step exports results to Laces Hub.
@@ -11,59 +18,56 @@ import * as Laces from "../utils/laces.js";
  * The publication needs to exist before it can be used as a destination.
  * Custom versioning mode is unsupported.
  */
-export class LacesHubTarget implements WorkflowPart<IJobTargetData> {
+export class LacesHubTarget implements WorkflowPartTarget, WorkflowPartSource {
   id = () => "targets/laces-hub";
+  names = ["targets/laces-hub", "sources/laces-hub"];
 
   isQualified(data: IJobTargetData): boolean {
     return data.access.match("^https?://hub.laces.tech/") !== null;
   }
 
-  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowPartGetter> {
+  staticAuthProxyHandler(data: IJobSourceData | IJobTargetData): AuthProxyHandler {
+    return new AuthProxyHandler(data.with.credentials, data.access);
+  }
+
+  exec(
+    data: IJobSourceData | IJobTargetData
+  ): WorkflowModuleExec<"comunicaDataSources" | "asTarget"> {
     return async (context: JobRuntimeContext) => {
       const [repoName, publName] = data.access.split("/").slice(-2);
       const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
       const publicationUri = new URL(data.access).pathname;
 
-      const tempFile = `${context.tempdir}/export.nt`;
-      let metadata: LacesHubPublicationDesc;
+      const auth = data?.with?.credentials;
+      if (auth === undefined) context.error(`Laces requires auth details`);
 
-      const auth = data.with.credentials;
-      if (auth === undefined)
-        context.error(`Laces requires auth details <${JSON.stringify(data)}>`);
+      // Check if repo and publication URL are correct
+      const repos = await Laces.repositories(auth, repoName);
+      const targetRepo = repos.find((r) => r.path == repoFullPath);
+      if (!targetRepo) context.error(`Laces repository '${repoName}' not found`);
+
+      const allPubls = await Laces.publications(targetRepo.id, auth);
+      const publ = allPubls.find((p) => p.uri.startsWith(publicationUri));
+
+      if (!publ) context.error(`Publication '${publName}' not found in repository '${repoName}'`);
+      if (publ.versioningMode !== "NONE")
+        context.error(
+          `Unsupported versioning mode '${publ.versioningMode}' for publicaion '${publName}'`
+        );
 
       return {
-        start: async () => {
-          // Check if repo and publication URL are correct
-          const repos = await Laces.repositories(auth);
-          const targetRepo = repos.find((r) => r.fullPath == repoFullPath);
-          if (!targetRepo) context.error(`Laces repository '${repoName}' not found`);
+        comunicaDataSources: () => {
+          return [{ type: "sparql", value: data.access + `/sparql` }];
+        },
+        asTarget: async (stream: RDF.Stream) => {
+          InfoUploadingTo(context.info, data?.with?.onlyGraphs, data.access);
 
-          const publs = await Laces.publications(targetRepo.id, auth);
-          metadata = publs.find((p) => p.uri.startsWith(publicationUri));
-          if (!metadata)
-            context.error(`Publication '${publName}' not found in repository '${repoName}'`);
-          if (metadata.versioningMode === "CUSTOM")
-            context.error(`Publication '${publName}' versioning mode (CUSTOM) is not supported`);
+          // Save graphs to temp file, as we need to serialize to text/n-triples
+          const tempFile = `${context.tempdir}/export.nt`;
+          await serializeStream(stream, tempFile, { format: "application/n-triples" });
 
-          // Save graphs to temp file, as we need to serialize to text/turtle
-          context.info(`Gathering ${data.with?.onlyGraphs ?? "all"} graphs for export...`);
-          await serialize(context.quadStore, tempFile, {
-            format: "application/n-triples",
-            graphs: data.with?.onlyGraphs,
-          });
-
-          context.info(`Uploading to <${data.access}>...`);
           // Update Laces publication with contents of temp file
-          const response = await Laces.updatePublication(
-            metadata.id,
-            tempFile,
-            {
-              owner: metadata.owner,
-              publisher: metadata.publisher,
-              schemaURIs: metadata.schemaURIs,
-            },
-            auth
-          );
+          const response = await Laces.updatePublication(publ.id, tempFile, auth);
 
           if (!response.ok)
             context.error(

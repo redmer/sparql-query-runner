@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { stderr } from "process";
+import { stderr, stdout } from "process";
 
 export const DONE = chalk.bgGreen(` DONE `);
 export const INFO = chalk.bgBlue(` INFO `) + " ";
@@ -39,14 +39,16 @@ export function consoleMessage(type: MessageLevels, caller: string, depth = 0, f
       : ``;
 
   // const which = type == "warning" ? "warn" : type;
+  const which = type == "info" ? stdout : stderr;
+
   /*
 · jobs/my-db - Starting job
 ·· steps/shell - WARNING: shell scripts not allowed (curl)
 ·· steps/shell - ERROR: shell scripts not allowed (curl)
 */
   return (message: string) => {
-    if (message) stderr.write(`${indent}${caller} - ${flag}${message}\n`);
-    else stderr.write(`${indent}${caller}\r`);
+    if (message) which.write(`${indent}${caller} - ${flag}${message}\n`);
+    else which.write(`${indent}${caller}\r`);
     if (fatal) process.exit(-1);
   };
 }
