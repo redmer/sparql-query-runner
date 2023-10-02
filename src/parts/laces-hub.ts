@@ -1,4 +1,6 @@
 import type * as RDF from "@rdfjs/types";
+import N3 from "n3";
+import { Readable } from "stream";
 import type { IJobSourceData, IJobTargetData } from "../config/types.js";
 import type {
   JobRuntimeContext,
@@ -17,7 +19,7 @@ class LacesHubCommon {
     const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
     const publicationUri = new URL(data.access).pathname;
 
-    const auth = data?.with?.credentials;
+    const auth = data.with.credentials;
     if (auth === undefined) context.error(`Laces requires auth details`);
 
     // Check if repo and publication URL are correct
@@ -30,21 +32,16 @@ class LacesHubCommon {
 
     if (!publication)
       context.error(`Publication '${publName}' not found in repository '${repoName}'`);
-    if (publication.versioningMode !== "NONE")
-      context.error(
-        `Unsupported versioning mode '${publication.versioningMode}' for publicaion '${publName}'`
-      );
 
     return publication;
   }
 }
 
 /**
- * This step exports results to Laces Hub.
+ * This step imports a Laces Hub dataset.
  *
- * The URL needs to be <https://hub.laces.tech/.../{repo}/{publication}>.
- * The publication needs to exist before it can be used as a destination.
- * Custom versioning mode is unsupported.
+ * The URL needs to be <https://hub.laces.tech/.../{repository}/{publication}>.
+ * Due to query limitation, this source downloads the entire publication.
  */
 export class LacesHubSource extends LacesHubCommon implements WorkflowPartSource {
   id = () => "laces-hub-source";
@@ -59,21 +56,12 @@ export class LacesHubSource extends LacesHubCommon implements WorkflowPartSource
       const publ = await this.publ(data, context);
 
       return {
-        init: async (stream: RDF.Stream) => {
-          InfoUploadingTo(context.info, data?.with?.onlyGraphs, data.access);
+        init: async (): Promise<RDF.Stream> => {
+          const contents = Laces.getPublicationContents(publ.id, data.with.credentials);
 
-          // Save graphs to temp file, as we need to serialize to text/n-triples
-          const tempFile = `${context.tempdir}/export.nt`;
-          await serializeStream(stream, tempFile, { format: "application/n-triples" });
-
-          // Update Laces publication with contents of temp file
-          const response = await Laces.updatePublication(publ.id, tempFile, data.with.credentials);
-
-          if (!response.ok)
-            context.error(
-              `Publication '${publ.name}': upload ${response.status} (${response.statusText}):\n` +
-                JSON.stringify(await response.text(), undefined, 2)
-            );
+          return Readable.from([contents]).pipe(
+            new N3.StreamParser({ format: "application/n-triples" })
+          );
         },
       };
     };
@@ -88,15 +76,32 @@ export class LacesHubTarget extends LacesHubCommon implements WorkflowPartTarget
     return data.access.match("^https?://hub.laces.tech/") !== null;
   }
 
-  staticAuthProxyHandler(data: IJobSourceData | IJobTargetData): AuthProxyHandler {
+  staticAuthProxyHandler(data: IJobTargetData): AuthProxyHandler {
     return new AuthProxyHandler(data.with.credentials, data.access);
   }
 
-  exec(data: IJobSourceData | IJobTargetData): WorkflowModuleExec {
-    return async (_context: JobRuntimeContext) => {
+  exec(data: IJobTargetData): WorkflowModuleExec {
+    return async (context: JobRuntimeContext) => {
+      const publ = await this.publ(data, context);
+
+      if (publ.versioningMode !== "NONE")
+        context.error(`Unsupported versioning mode '${publ.versioningMode}' ('${publ.name}')`);
+
       return {
-        comunicaDataSources: () => {
-          return [{ type: "sparql", value: data.access + `/sparql` }];
+        init: async (stream: RDF.Stream) => {
+          InfoUploadingTo(context.info, data.with.onlyGraphs, data.access);
+
+          // Save graphs to temp file, as we need to serialize to text/n-triples
+          const tempFile = `${context.tempdir}/export.nt`;
+          await serializeStream(stream, tempFile, { format: "application/n-triples" });
+
+          // Update Laces publication with contents of temp file
+          const response = await Laces.updatePublication(publ.id, tempFile, data.with.credentials);
+
+          if (!response.ok)
+            context.error(
+              `While publishing '${publ.name}' ${response.status}:\n` + (await response.text())
+            );
         },
       };
     };

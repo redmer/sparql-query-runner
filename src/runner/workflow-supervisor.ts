@@ -23,7 +23,7 @@ export class WorkflowSupervisor {
 
   /** Run all jobs, parallelizing independent ones and dependent ones in the right order. */
   async runAll(options: ICliOptions) {
-    const wfInfo = Report.infoMsg(`jobs`, 0);
+    const wfInfo = Report.infoMsg(`sparql-query-runner`, 0);
     const context: WorkflowRuntimeContext = {
       data: this.data,
       options,

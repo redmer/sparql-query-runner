@@ -14,9 +14,6 @@ export class ShaclValidateLocal implements WorkflowPartStep {
 
   exec(data: IJobStepData) {
     return async (context: JobRuntimeContext) => {
-      if (data.with.targetGraph)
-        context.warning(`Target-Graph ignored: Only shapes in the default graph are used`);
-
       return {
         init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
           let shapes: RDF.DatasetCore;

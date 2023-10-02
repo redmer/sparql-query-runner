@@ -8,14 +8,11 @@ import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js
 
 export class InferReason implements WorkflowPartStep {
   id = () => "entailment-with-hylar-core";
-  names = ["steps/reason"];
+  names = ["steps/infer"];
 
   exec(data: IJobStepData) {
     return async (context: JobRuntimeContext) => {
-      if (data.with.targetGraph)
-        context.warning(`Target-Graph ignored: Only shapes in the default graph are used`);
-
-      const ruleset = data.with?.["ruleset"] == "owl2rl" ? owl2rl : rdfs;
+      const ruleset = data.with["ruleset"] == "owl2rl" ? owl2rl : rdfs;
 
       return {
         init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
@@ -60,7 +57,7 @@ export class InferReason implements WorkflowPartStep {
           datasetImplicit.addQuads(factsToQuads(additions).implicit);
           datasetImplicit.removeQuads(factsToQuads(deletions).implicit);
 
-          if (data?.with?.targetGraph && data.with.targetGraph.value !== "--")
+          if (data.with.intoGraph && data.with.intoGraph.value !== "--")
             return datasetImplicit.match();
         },
       };

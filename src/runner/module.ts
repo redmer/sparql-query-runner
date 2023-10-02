@@ -7,9 +7,9 @@ import {
 } from "../config/types.js";
 import { AskAssertStep } from "../parts/ask-assert.js";
 import { ComunicaAutoSource } from "../parts/comunica-auto-source.js";
-import { LocalFile } from "../parts/file-local.js";
+import { LocalFileSource, LocalFileTarget } from "../parts/file-local.js";
 import { InferReason } from "../parts/infer-reason.js";
-import { LacesHub } from "../parts/laces-hub.js";
+import { LacesHubSource, LacesHubTarget } from "../parts/laces-hub.js";
 import { ShaclValidateLocal } from "../parts/shacl-validate-local.js";
 import { ShellCommandStep } from "../parts/shell.js";
 import { SparqlConstructQuery } from "../parts/sparql-construct.js";
@@ -17,7 +17,7 @@ import { GraphStoreTarget } from "../parts/sparql-graph-store.js";
 import { QuadStoreTarget } from "../parts/sparql-quad-store.js";
 import { SparqlUpdateQuery } from "../parts/sparql-update.js";
 import { SparqlUpdateEndpointTarget } from "../parts/sparql.js";
-import { TriplyDB } from "../parts/triplydb.js";
+import { TriplyDBSource, TriplyDBTarget } from "../parts/triplydb.js";
 import type { WorkflowPartSource, WorkflowPartStep, WorkflowPartTarget } from "../runner/types.js";
 
 export class ModuleMatcherError extends Error {}
@@ -28,7 +28,7 @@ export type RegisteredModule = WorkflowPartSource | WorkflowPartStep | WorkflowP
  * ordered -- as multiple processors may match.
  */
 export const KNOWN_MODULES: RegisteredModule[] = [
-  new LocalFile(),
+  new LocalFileSource(),
   new ShaclValidateLocal(),
   new SparqlConstructQuery(),
   new SparqlUpdateQuery(),
@@ -36,8 +36,11 @@ export const KNOWN_MODULES: RegisteredModule[] = [
   new InferReason(),
   new ShellCommandStep(),
   new SparqlUpdateEndpointTarget(),
-  new LacesHub(),
-  new TriplyDB(),
+  new LocalFileTarget(),
+  new LacesHubSource(),
+  new LacesHubTarget(),
+  new TriplyDBSource(),
+  new TriplyDBTarget(),
   new ComunicaAutoSource(),
   new GraphStoreTarget(),
   new QuadStoreTarget(),

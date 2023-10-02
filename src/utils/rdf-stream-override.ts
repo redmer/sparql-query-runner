@@ -79,3 +79,11 @@ export class FilteredStream extends Transform implements RDF.Stream {
     callback();
   }
 }
+
+export async function ImportStream(stream: RDF.Stream, store: RDF.Store) {
+  return new Promise((resolve, reject) => {
+    const emitter = store.import(stream);
+    emitter.once("end", resolve);
+    emitter.once("error", reject);
+  });
+}

@@ -21,7 +21,6 @@ export class SparqlConstructQuery implements WorkflowPartStep {
 
       return {
         init: async (_stream: RDF.Stream): Promise<RDF.Stream> => {
-          context.info(`Executing query '${data.access.substring(0, 32)}'...`);
           return await context.engine.queryQuads(
             queryBody,
             <QueryStringContext>context.queryContext

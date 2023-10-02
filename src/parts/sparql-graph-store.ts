@@ -28,7 +28,7 @@ export class GraphStoreTarget implements WorkflowPartTarget {
       return {
         init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
           const ntriples = getRDFMediaTypeFromFilename(".nt");
-          const graphs = data.with?.onlyGraphs ?? (await getGraphs(quadStore));
+          const graphs = data.with.onlyGraphs ?? (await getGraphs(quadStore));
           const stepTempDir = `${context.tempdir}/sparql-graph-destination-${Date.now()}`;
 
           for (const [i, graph] of graphs.entries()) {
@@ -48,7 +48,7 @@ export class GraphStoreTarget implements WorkflowPartTarget {
               graph.value == "" ? `default` : `graph=${encodeURIComponent(graph.value)}`;
 
             const response = await fetch(destination.href, {
-              headers: { ...Auth.asHeader(data.with?.credentials), "Content-Type": ntriples },
+              headers: { ...Auth.asHeader(data.with.credentials), "Content-Type": ntriples },
               method: "PUT", // Drop and replace, not: update and merge (which is POST)
               body: contents,
             });

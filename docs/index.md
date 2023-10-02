@@ -48,7 +48,7 @@ Disable these default prefixes with the CLI option `--no-default-prefixes`.
 The prefixes are used in three places:
 
 - When exporting quads to abbreviated serialization formats, like Turtle or Trig.
-- To expand CURIEs of `with: only-graphs:` and `with: target-graph:` arguments if those use known prefixes.
+- To expand CURIEs of `with: only-graphs:` and `with: into-graph:` arguments if those use known prefixes.
 - To add prefix definitions with _inline_ SPARQL Update and Construct queries.
   If an inline query has a line starting with `PREFIX`, no prefixes are inserted.
   Queries loaded from a file need to supply their own prefix definitions.
@@ -110,18 +110,28 @@ Found environment variables are substituted.
 A backslash escapes this substitution, in the example with the password.
 Variables that are not found, keep the syntax as-is.
 
-## Limit and override graphs with `only-graphs:` and `target-graph:`
+## Limit and override graphs with `only-graphs:` and `into-graph:`
 
 Sources may have more graphs than required, targets may be limited to certain graphs and some sources need to have their graph info overwritten.
 
 - `only-graphs`: filter out other graphs.
   Its value is a list of URIs or CURIEs. Refer to the default graphs as `""`.
   Blank node labelled graphs cannot be referred to.
-- `target-graph`: override the (named) graph of the quads.
+- `into-graph`: override the (named) graph of the quads.
   Its value is a single URI or CURIE. Refer to the default graph as `""`.
   Blank node labelled graphs cannot be used as target.
 
 The latter is especially useful for SPARQL Construct queries that may not (according to SPARQL 1.1) have a `GRAPH {}` clause.
+
+- For a **Source**:
+  - `only-graphs:` filters the source's _output_ quads
+  - `into-graph:` merges the source's _output_ quads
+- For a **Step**:
+  - `only-graphs:` filters the step's _input_ quads
+  - `into-graph:` merges the step's _output_ quads
+- For a **Target**:
+  - `only-graphs:` filters the target's _input_ quads
+  - `into-graph:` merges the target's _input_ quads
 
 # Sources
 
@@ -130,43 +140,50 @@ The latter is especially useful for SPARQL Construct queries that may not (accor
 Load a local or remote RDF file with `file`.
 Save a remote endpoint for query steps with `sparql`.
 
+| Configure                   | Notes                                    |
+| --------------------------- | ---------------------------------------- |
+| `sparql:`                   | Path to a remote SPARQL endpoint.        |
+| `with:`                     |                                          |
+| &nbsp;&nbsp; `credentials:` | Credentials to access the endpoint.      |
+| &nbsp;&nbsp; `source-type:` | A [Comunica source type][c-source-type]. |
+
+If the SPARQL endpoint supports Update queries, [`update:`](#update-rdf-data-with-update) steps _will_ update the endpoint.
+If you want to redirect all updates, provide a [`sparql-update-endpoint`](#execute-sparql-update-queries-on-a-different-remote-sparql-store-with-sparql-update-endpoint).
+
+[c-source-type]: https://comunica.dev/docs/query/advanced/source_types/#supported-source-types
+
 | Configure                   | Notes                               |
 | --------------------------- | ----------------------------------- |
-| `sparql:`                   | Path to a remote SPARQL endpoint.   |
-| `with:`                     |                                     |
-| &nbsp;&nbsp; `credentials:` | Credentials to access the endpoint. |
+| `file:`                     | Path to a local or remote RDF file. |
+| `with:`                     |
+| &nbsp;&nbsp; `only-graphs:` | Limit imported graphs. (List)       |
+| &nbsp;&nbsp; `into-graph:`  | Override imported quads' graph.     |
 
-| Configure                    | Notes                               |
-| ---------------------------- | ----------------------------------- |
-| `file:`                      | Path to a local or remote RDF file. |
-| `with:`                      |
-| &nbsp;&nbsp; `only-graphs:`  | Limit imported graphs. (List)       |
-| &nbsp;&nbsp; `target-graph:` | Override imported quads' graph.     |
-
-Local file sources or modified remote files are implemented by `sources/file`.
+Local file sources or modified remote files are implemented by `local-file-source`.
 Other remote files as well as SPARQL endpoints are implemented by Comunica.
 
 ## Get datasets from Laces Hub or TriplyDB with `laces-hub` or `triplydb`
 
 Get a dataset from a Laces Hub publication or a TriplyDB dataset.
 
-| Configure                    | Notes                                     |
-| ---------------------------- | ----------------------------------------- |
-| `laces-hub:`                 | URL to a single publication on Laces Hub. |
-| `with:`                      |
-| &nbsp;&nbsp; `credentials:`  | Credentials to fetch the resource.        |
-| &nbsp;&nbsp; `target-graph:` | Override imported quads' graph.           |
+| Configure                   | Notes                                     |
+| --------------------------- | ----------------------------------------- |
+| `laces-hub:`                | URL to a single publication on Laces Hub. |
+| `with:`                     |
+| &nbsp;&nbsp; `credentials:` | Credentials to fetch the resource.        |
+| &nbsp;&nbsp; `into-graph:`  | Override imported quads' graph.           |
 
-| Configure                    | Notes                              |
-| ---------------------------- | ---------------------------------- |
-| `triplydb:`                  | URL to a TriplyDB dataset.         |
-| `with:`                      |
-| &nbsp;&nbsp; `credentials:`  | Credentials to fetch the resource. |
-| &nbsp;&nbsp; `only-graphs:`  | Limit exported graphs. (List)      |
-| &nbsp;&nbsp; `target-graph:` | Override exported quads' graph.    |
+| Configure                   | Notes                              |
+| --------------------------- | ---------------------------------- |
+| `triplydb:`                 | URL to a TriplyDB dataset.         |
+| `with:`                     |
+| &nbsp;&nbsp; `credentials:` | Credentials to fetch the resource. |
+| &nbsp;&nbsp; `only-graphs:` | Limit exported graphs. (List)      |
+| &nbsp;&nbsp; `into-graph:`  | Override exported quads' graph.    |
 
 Laces Hub publications contain a single graph.
 The implementation downloads it as an RDF file and saves it to query on.
+
 TriplyDB may or may not have a SPARQL service configured.
 Instead, the implementation accesses the always available Triple Fragments service.
 
@@ -186,16 +203,18 @@ If the query returns `false`, the workflow will stop.
 
 Supply `--skip-assertions` to skip this step.
 
+Implemented by Comunica.
+
 ## Validate RDF data using SHACL with `shacl`
 
 This step validates the local and imported RDF data with SHACL.
 
-| Configure                    | Notes                                                                                           |
-| ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| `shacl:`                     | Path to an RDF file containing SHACL shapes. (Optional)                                         |
-| `with:`                      |
-| &nbsp;&nbsp; `only-graphs:`  | Validate only over asserted triples from these graphs (default: only the default graph). (List) |
-| &nbsp;&nbsp; `target-graph:` | Put SHACL result set in this graph. Prevent output with `--`. (Default: `--`)                   |
+| Configure                   | Notes                                                                                           |
+| --------------------------- | ----------------------------------------------------------------------------------------------- |
+| `shacl:`                    | Path to an RDF file containing SHACL shapes. (Optional)                                         |
+| `with:`                     |
+| &nbsp;&nbsp; `only-graphs:` | Validate only over asserted triples from these graphs (default: only the default graph). (List) |
+| &nbsp;&nbsp; `into-graph:`  | Put SHACL result set in this graph. Prevent output with `--`. (Default: `--`)                   |
 
 If you provide a path to an RDF file containing SHACL shapes, it validates using the shapes its default graph.
 These shapes are not added to the local dataset.
@@ -203,10 +222,8 @@ If the value is kept empty, it validates using the shapes in the dataset's defau
 
 That means that the following are not validated:
 
-- remote files (without `only-graphs` or `target-graph`)
+- remote files (without `only-graphs` or `into-graph`)
 - remote SPARQL endpoints
-
-TODO: Can this be modified using `rdf-store-sparql`?
 
 ```yaml
 steps:
@@ -214,26 +231,31 @@ steps:
   - shacl: "" # validates using shapes in job dataset
 ```
 
-The implementation is provided by `rdf-validate-shacl`.
-TODO: Change to `shacl-engine`.
+The implementation is provided by `rdf-validate-shacl` and `shacl-engine`.
 
-## Infer new statements with `reason`
+## Infer new statements with `infer`
 
 Infer new statements using reasoning with RDFS or OWL2RL entailment regimes.
 
-| Configure                    | Notes                                                                         |
-| ---------------------------- | ----------------------------------------------------------------------------- |
-| `reason:`                    | Path to a file containing RDFS/OWL assertions. (Optional argument)            |
-| `with:`                      |                                                                               |
-| &nbsp;&nbsp; `ruleset:`      | Infer using `rdfs` (default) or `owl2rl`.                                     |
-| &nbsp;&nbsp; `only-graphs:`  | Infer only over asserted triples from these graphs (default: all). (List)     |
-| &nbsp;&nbsp; `target-graph:` | Put inferred triples in this graph (default: `""`). Prevent output with `--`. |
+| Configure                   | Notes                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| `infer:`                    | Path to a file containing RDFS/OWL assertions. (Optional argument)            |
+| `with:`                     |                                                                               |
+| &nbsp;&nbsp; `ruleset:`     | Infer using `rdfs` (default) or `owl2rl`.                                     |
+| &nbsp;&nbsp; `only-graphs:` | Infer only over asserted triples from these graphs (default: all). (List)     |
+| &nbsp;&nbsp; `into-graph:`  | Put inferred triples in this graph (default: `""`). Prevent output with `--`. |
 
 Provided ABox and TBox may be incongruent and cause the reasoner to emit a fatal error.
-This is best for most knowledge graph building usecases, but some automated workflows might prefer not to error-out: Supply `--skip-reasoning` to skip this step.
+This is best for most knowledge graph building usecases, but some automated workflows might prefer not to error-out:
+supply `--skip-reasoning` to skip this step.
+
+Only locally constructed and loaded triples are subject to reasoning.
+That excludes the following:
+
+- remote files (without `only-graphs` or `into-graph`)
+- remote SPARQL endpoints
 
 Implemented by [`jeswr/hylar-core`](https://github.com/jeswr/hylar-core).
-TODO: Or use Comunica when it's on a SPARQL source.
 
 ## Execute shell commands with `shell`
 
@@ -258,15 +280,15 @@ Command output on _stdout_ is not saved.
 Use this step to issue SPARQL Construct (or Describe) queries.
 It is issued against the job dataset and online sources.
 
-| Configure                    | Notes                                             |
-| ---------------------------- | ------------------------------------------------- |
-| `construct:`                 | <li> Path to an .rq file <li>Inline query.        |
-| `with:`                      |
-| &nbsp;&nbsp; `target-graph:` | Insert constructed triples into a specific graph. |
+| Configure                  | Notes                                             |
+| -------------------------- | ------------------------------------------------- |
+| `construct:`               | <li> Path to an .rq file <li>Inline query.        |
+| `with:`                    |
+| &nbsp;&nbsp; `into-graph:` | Insert constructed triples into a specific graph. |
 
 Provide either a reference to a `.rq` file or a complete query.
 Construct queries (as-of RDF 1.1) cannot provide graph (quad) info:
-provide `with: target-graph:` to insert it into a specific graph.
+provide `with: into-graph:` to insert it into a specific graph.
 
 ```yaml
 steps:
@@ -274,8 +296,10 @@ steps:
       CONSTRUCT { ?s a ?c . } WHERE { ?s ?p ?o . ?o a ?c . }
   - construct: get-classes.rq
     with:
-      target-graph: https://example.org/data#
+      into-graph: https://example.org/data#
 ```
+
+Implemented by Comunica.
 
 ## Update RDF data with `update`
 
@@ -297,18 +321,22 @@ steps:
   - update: website-data.ru
 ```
 
+Implemented by Comunica.
+
 # Targets
 
 ## Export a job dataset to a local file with `file`
 
 Export the job-local dataset to a local file with `file:`.
 
-| Configure                    | Notes                               |
-| ---------------------------- | ----------------------------------- |
-| `file:`                      | Path to a local or remote RDF file. |
-| `with:`                      |
-| &nbsp;&nbsp; `only-graphs:`  | Limit exported graphs. (List)       |
-| &nbsp;&nbsp; `target-graph:` | Override exported quads' graph.     |
+| Configure                   | Notes                               |
+| --------------------------- | ----------------------------------- |
+| `file:`                     | Path to a local or remote RDF file. |
+| `with:`                     |
+| &nbsp;&nbsp; `only-graphs:` | Limit exported graphs. (List)       |
+| &nbsp;&nbsp; `into-graph:`  | Override exported quads' graph.     |
+
+Serializers by N3.
 
 ## Export to a SPARQL graph store or SPARQL quad store with `sparql-graph-store` and `sparql-quad-store`
 
@@ -320,16 +348,16 @@ targets:
   - sparql-quad-store: https://example.org/repositories/datastore
 ```
 
-| Configure                    | Notes                               |
-| ---------------------------- | ----------------------------------- |
-| `sparql-graph-store:`        | URL to a remote SPARQL Graph Store. |
-| `sparql-quad-store:`         | URL to a remote SPARQL Quad Store.  |
-| `with:`                      |
-| &nbsp;&nbsp; `only-graphs:`  | Limit exported graphs. (List)       |
-| &nbsp;&nbsp; `target-graph:` | Override exported quads' graph.     |
-| &nbsp;&nbsp; `credentials:`  | Credentials to update the resource. |
+| Configure                   | Notes                               |
+| --------------------------- | ----------------------------------- |
+| `sparql-graph-store:`       | URL to a remote SPARQL Graph Store. |
+| `sparql-quad-store:`        | URL to a remote SPARQL Quad Store.  |
+| `with:`                     |
+| &nbsp;&nbsp; `only-graphs:` | Limit exported graphs. (List)       |
+| &nbsp;&nbsp; `into-graph:`  | Override exported quads' graph.     |
+| &nbsp;&nbsp; `credentials:` | Credentials to update the resource. |
 
-## Execute SPARQL update queries on a different remote SPARQL store with `sparql`
+## Execute SPARQL update queries on a different remote SPARQL store with `sparql-update-endpoint`
 
 By default, Comunica executes SPARQL update queries on all updatable sources.
 If you supply a `sparql:` target, this re-targets the Update query to the provided endpoint.
@@ -337,7 +365,7 @@ Only one single `sparql:` target is allowed.
 
 | Configure                   | Notes                                   |
 | --------------------------- | --------------------------------------- |
-| `sparql:`                   | URL to a remote SPARQL update endpoint. |
+| `sparql-update-endpoint:`   | URL to a remote SPARQL update endpoint. |
 | `with:`                     |
 | &nbsp;&nbsp; `credentials:` | Credentials to update the resource.     |
 
@@ -345,22 +373,26 @@ Only one single `sparql:` target is allowed.
 steps:
   - update: my-query.ru
 targets:
-  - sparql: https://example.org/sparql-update
+  - sparql-update-endpoint: https://example.org/sparql-update
     with:
       credentials:
         token: hE7LoWh01Sp4tR1Ck
 ```
 
+Implemented by Comunica.
+
 ## Upload to Laces Hub or TriplyDB with `laces-hub` or `triplydb`
 
-| Configure                    | Notes                                           |
-| ---------------------------- | ----------------------------------------------- |
-| `laces-hub:`                 | URL to a publication on Laces Hub.              |
-| `triplydb:`                  | URL to a TriplyDB dataset.                      |
-| `with:`                      |
-| &nbsp;&nbsp; `credentials:`  | Credentials to update the resource.             |
-| &nbsp;&nbsp; `only-graphs:`  | Limit exported graphs. (List)                   |
-| &nbsp;&nbsp; `target-graph:` | Override exported quads' graph. (Only TriplyDB) |
+| Configure                   | Notes                                           |
+| --------------------------- | ----------------------------------------------- |
+| `laces-hub:`                | URL to a publication on Laces Hub.              |
+| `triplydb:`                 | URL to a TriplyDB dataset.                      |
+| `with:`                     |
+| &nbsp;&nbsp; `credentials:` | Credentials to update the resource.             |
+| &nbsp;&nbsp; `only-graphs:` | Limit exported graphs. (List)                   |
+| &nbsp;&nbsp; `into-graph:`  | Override exported quads' graph. (Only TriplyDB) |
+
+The TriplyDB integration is by Triply.
 
 ---
 

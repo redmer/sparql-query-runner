@@ -1,6 +1,5 @@
 import { QueryStringContext } from "@comunica/types";
 import fs from "fs/promises";
-import { PassThrough } from "stream";
 import { IJobStepData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowModuleExec, WorkflowPartStep } from "../runner/types.js";
 import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
@@ -30,7 +29,7 @@ export class AskAssertStep implements WorkflowPartStep {
             queryBody,
             <QueryStringContext>context.queryContext
           );
-          if (!result) context.error(`${data?.with?.["message"]}`);
+          if (!result) context.error(`${data.with["message"]}`);
         },
       };
     };

@@ -81,7 +81,7 @@
           "properties": {
             "credentials": { "$ref": "#/$defs/Options/Credentials" },
             "only-graphs": { "$ref": "#/$defs/Options/OnlyGraphs" },
-            "target-graph": { "$ref": "#/$defs/Options/TargetGraph" }
+            "into-graph": { "$ref": "#/$defs/Options/IntoGraph" }
           }
         }
       },
@@ -100,11 +100,13 @@
         "shacl": { "$ref": "#/$defs/Parts/Step/Shacl" },
         "shell": { "$ref": "#/$defs/Parts/Step/Shell" },
         "update": { "$ref": "#/$defs/Parts/Step/Update" },
+        "infer": { "$ref": "#/$defs/Parts/Step/Infer" },
         "with": {
           "type": "object",
-          "description": "Optional arguments update data from this step.",
+          "description": "Optional arguments to modify data from this step.",
           "properties": {
-            "target-graph": { "$ref": "#/$defs/Options/TargetGraph" }
+            "only-graphs": { "$ref": "#/$defs/Options/OnlyGraphs" },
+            "into-graph": { "$ref": "#/$defs/Options/IntoGraph" }
           }
         }
       },
@@ -112,7 +114,8 @@
         { "required": ["construct"] },
         { "required": ["shacl"] },
         { "required": ["shell"] },
-        { "required": ["update"] }
+        { "required": ["update"] },
+        { "required": ["infer"] }
       ]
     },
     "JobTarget": {
@@ -122,14 +125,15 @@
         "laces-hub": { "$ref": "#/$defs/Parts/Target/LacesHub" },
         "sparql-graph-store": { "$ref": "#/$defs/Parts/Target/SparqlGraphStore" },
         "sparql-quad-store": { "$ref": "#/$defs/Parts/Target/SparqlQuadStore" },
-        "sparql": { "$ref": "#/$defs/Parts/Target/Sparql" },
+        "sparql-update-endpoint": { "$ref": "#/$defs/Parts/Target/SparqlUpdateEndpoint" },
         "triplydb": { "$ref": "#/$defs/Parts/Target/Triplydb" },
         "with": {
           "type": "object",
-          "description": "Optional arguments to export data of this job.",
+          "description": "Optional arguments to export data to this target.",
           "properties": {
             "credentials": { "$ref": "#/$defs/Options/Credentials" },
-            "only-graphs": { "$ref": "#/$defs/Options/OnlyGraphs" }
+            "only-graphs": { "$ref": "#/$defs/Options/OnlyGraphs" },
+            "into-graph": { "$ref": "#/$defs/Options/IntoGraph" }
           }
         }
       },
@@ -144,11 +148,11 @@
     },
 
     "Options": {
-      "TargetGraph": { "type": "string", "description": "(Option) Override the quads' graph." },
+      "IntoGraph": { "type": "string", "description": "(Option) Override the quads' graph." },
       "OnlyGraphs": {
         "type": "array",
         "items": { "type": "string" },
-        "description": "(Option) Limit import or output to only these graphs"
+        "description": "(Option) Limit import (source, step) or output (target) to only these graphs"
       },
       "CredentialsAnyHeader": {
         "type": "object",
@@ -225,6 +229,10 @@
         "Update": {
           "type": "string",
           "description": "A SPARQL Update query or path or URL to a .ru file"
+        },
+        "Infer": {
+          "type": "string",
+          "description": "Infer new statements with RDFS or OWL2RL reasoning"
         }
       },
       "Target": {
@@ -232,7 +240,10 @@
         "LacesHub": { "type": "string", "description": "URL to a Laces dataset to replace" },
         "SparqlGraphStore": { "type": "string", "description": "URL to a SPARQL Graph Store" },
         "SparqlQuadStore": { "type": "string", "description": "URL to a SPARQL Quad Store" },
-        "Sparql": { "type": "string", "description": "URL to a SPARQL Update endpoint" },
+        "SparqlUpdateEndpoint": {
+          "type": "string",
+          "description": "URL to a SPARQL Update endpoint seperate from all sources"
+        },
         "Triplydb": { "type": "string", "description": "URL to a TriplyDB dataset" }
       }
     }

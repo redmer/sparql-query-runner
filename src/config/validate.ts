@@ -11,6 +11,8 @@ import {
   IAuthBasicData,
   IAuthBearerData,
   IAuthHeaderData,
+  IJobModuleData,
+  IJobPhase,
   type ICredentialData,
   type IJobData,
   type IJobSourceData,
@@ -88,9 +90,9 @@ function validateJob(
     workflowPrefixes,
     data.has("prefixes") ? Object.fromEntries(data.get("prefixes").entries) : {}
   );
-  const sources = data.get("sources")?.map((data) => validateSource(data, prefixes));
-  const steps = data.get("steps")?.map((data) => validateStep(data, prefixes));
-  const targets = data.get("targets")?.map((data) => validateTarget(data, prefixes));
+  const sources = data.get("sources")?.map((data) => validateModule("sources", data, prefixes));
+  const steps = data.get("steps")?.map((data) => validateModule("steps", data, prefixes));
+  const targets = data.get("targets")?.map((data) => validateModule("targets", data, prefixes));
 
   return {
     ...Object.fromEntries(data.entries()),
@@ -114,20 +116,24 @@ function knownTypeKeys(
   return [...data.keys()].filter((k: never) => shortHandTypes.includes(k));
 }
 
-/** Validate the known values of a source, returning the full object */
-function validateSource(
-  data: Map<keyof IJobSourceData, any>,
+function validateModule(
+  phase: IJobPhase,
+  data: Map<keyof IJobSourceData | IJobStepData | IJobTargetData, any>,
   prefixes: Record<string, string>
-): IJobSourceData {
-  const knownType = knownTypeKeys(PartShorthandSource, data) as IJobSourceKnownTypes[];
+): IJobModuleData {
+  let knownType;
+  if (phase == "sources")
+    knownType = knownTypeKeys(PartShorthandSource, data) as IJobSourceKnownTypes[];
+  if (phase == "steps") knownType = knownTypeKeys(PartShorthandStep, data) as IJobStepKnownTypes[];
+  if (phase == "targets")
+    knownType = knownTypeKeys(PartShorthandTarget, data) as IJobTargetKnownTypes[];
+
   if (knownType.length != 1 && !data.has("type"))
-    throw new ConfigurationError(
-      `No single type for source (${JSON.stringify(data)}) found: ${JSON.stringify(knownType)}`
-    );
+    throw new ConfigurationError(`${phase}: ${JSON.stringify([...data.keys()])} lack type key`);
 
   return {
     ...Object.fromEntries(data.entries()),
-    type: data.get("type") ?? `sources/${knownType[0]}`,
+    type: data.get("type") ?? `${phase}/${knownType[0]}`,
     access: data.get("access") ?? data.get(knownType[0]),
     with: {
       ...Object.fromEntries(data.get("with")?.entries() ?? []),
@@ -135,58 +141,9 @@ function validateSource(
       onlyGraphs: ge1(data.get("with")?.get("only-graphs"))
         ?.map((g) => expandCURIE(g, prefixes))
         ?.map((g) => stringToGraph(g)),
-      targetGraph: ge1(data.get("with")?.get("target-graph"))
+      intoGraph: ge1(data.get("with")?.get("into-graph"))
         ?.map((g) => expandCURIE(g, prefixes))
-        ?.map((g) => stringToGraph(g))[0],
-    },
-  };
-}
-
-/** Validate the known values of a step, returning the full object */
-function validateStep(
-  data: Map<keyof IJobStepData, any>,
-  prefixes: Record<string, string>
-): IJobStepData {
-  const knownType = knownTypeKeys(PartShorthandStep, data) as IJobStepKnownTypes[];
-  if (knownType.length != 1 && !data.has("type"))
-    throw new ConfigurationError(
-      `No single type for step (${JSON.stringify(data)}) found: ${JSON.stringify(knownType)}`
-    );
-
-  return {
-    ...Object.fromEntries(data.entries()),
-    type: data.get("type") ?? `steps/${knownType[0]}`,
-    access: data.get("access") ?? data.get(knownType[0]),
-    with: {
-      ...Object.fromEntries(data.get("with")?.entries() ?? []),
-      targetGraph: ge1(data.get("with")?.get("target-graph"))
-        ?.map((g) => expandCURIE(g, prefixes))
-        ?.map((g) => stringToGraph(g))[0],
-    },
-  };
-}
-
-/** Check the known values of a target, returning the full object */
-function validateTarget(
-  data: Map<keyof IJobTargetData, any>,
-  prefixes: Record<string, string>
-): IJobTargetData {
-  const knownType = knownTypeKeys(PartShorthandTarget, data) as IJobTargetKnownTypes[];
-  if (knownType.length != 1 && !data.has("type"))
-    throw new ConfigurationError(
-      `No single type for target (${JSON.stringify(data)}) found: ${JSON.stringify(knownType)}`
-    );
-
-  return {
-    ...Object.fromEntries(data.entries()),
-    type: data.get("type") ?? `targets/${knownType[0]}`,
-    access: data.get("access") ?? data.get(knownType[0]),
-    with: {
-      ...Object.fromEntries(data.get("with")?.entries() ?? []),
-      credentials: validateAuthentication(data.get("with")?.get("credentials")),
-      onlyGraphs: ge1(data.get("with")?.get("only-graphs"))
-        ?.map((g) => expandCURIE(g, prefixes))
-        ?.map((g) => stringToGraph(g)),
+        ?.map((g) => stringToGraph(g))?.[0],
     },
   };
 }

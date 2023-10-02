@@ -51,7 +51,7 @@ export function* quadsForQuery(
 }
 
 export async function* quadsForStep(step: IJobStepData, i: number): AsyncGenerator<RDF.Quad> {
-  const targetClass = step?.with?.["target-class"];
+  const targetClass = step.with["target-class"];
   if (!targetClass) return;
 
   for (const url of step.access) {
@@ -80,7 +80,7 @@ export async function start(data: IWorkflowData, out: NodeJS.WritableStream) {
   for (const name of Object.keys(data.jobs)) {
     const job: IJobData = data.jobs[name];
     const constructSteps = job.steps.filter((s) => s.type == "steps/construct");
-    const constructStepsWithTargetClass = constructSteps.filter((s) => s?.with?.["target-class"]);
+    const constructStepsWithTargetClass = constructSteps.filter((s) => s.with["target-class"]);
 
     for (const [i, step] of constructStepsWithTargetClass.entries()) {
       for await (const quad of quadsForStep(step, i)) writer.addQuad(quad);

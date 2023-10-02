@@ -54,6 +54,18 @@ export async function publications(
   return answ["contents"];
 }
 
+export async function getPublicationContents(
+  publicationId: string,
+  auth: ICredentialData
+): Promise<string> {
+  const endpoint = `https://hub.laces.tech/api/v4/publications/${publicationId}/statements`;
+  const resp = await fetch(endpoint, {
+    headers: { ...Auth.asHeader(auth), Accept: "application/n-triples" },
+  });
+  const answ = await resp.text();
+  return answ;
+}
+
 /** Update a publication in a Laces repository. */
 export async function updatePublication(
   publicationId: string,
@@ -62,16 +74,15 @@ export async function updatePublication(
   auth: ICredentialData
 ): Promise<Response> {
   const endpoint = `https://hub.laces.tech/api/v4/publications/${publicationId}/statements/async`;
-  // const metadata = { ...metadataPayload };
 
   const form = new FormData();
   const stream = await fs.readFile(contentPayloadPath);
-  form.append("file", new Blob([stream]));
   form.append("publisher", "sparql-query-runner");
+  form.append("content", new Blob([stream], { type: "application/n-triples" }), "export.nt");
 
   const resp = await fetch(endpoint, {
     method: "PATCH",
-    headers: { ...Auth.asHeader(auth), "Content-Type": "application/n-triples" },
+    headers: { ...Auth.asHeader(auth) },
     body: form,
   });
   return resp;

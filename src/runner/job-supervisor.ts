@@ -1,10 +1,11 @@
 import { QueryEngine } from "@comunica/query-sparql";
 import type * as RDF from "@rdfjs/types";
 import { RdfStore } from "rdf-stores";
-import type { IJobData, IJobPhase, IJobSourceData, IJobTargetData } from "../config/types.js";
+import type { IJobData, IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 import {
   FilteredStream,
+  ImportStream,
   MatchStreamReadable,
   SingleGraphStream,
 } from "../utils/rdf-stream-override.js";
@@ -15,6 +16,7 @@ import type {
   JobRuntimeContext,
   QueryContext,
   Supervisor,
+  WorkflowPart,
   WorkflowPartGetter,
   WorkflowRuntimeContext,
 } from "./types.js";
@@ -23,10 +25,30 @@ export const TEMPDIR = `.cache/sparql-query-runner`;
 
 export class JobSupervisionError extends Error {}
 
-async function EnterModule(ctx: JobRuntimeContext, closure: () => Promise<void>) {
-  ctx.info(``);
-  await closure();
-  ctx.info(Report.DONE);
+/** Report entering a module, and  */
+async function EnterModule(
+  ctx: Partial<JobRuntimeContext>,
+  data: IJobModuleData,
+  module: WorkflowPart,
+  jobData: IJobData,
+  workflowCtx: WorkflowRuntimeContext,
+  closure: (ctx: JobRuntimeContext) => Promise<void>
+) {
+  const localname = data.type.split("/", 2)[1];
+
+  const context: JobRuntimeContext = {
+    ...(<JobRuntimeContext>ctx),
+    tempdir: tempdir(jobData, module, data),
+    ...Report.ctxMsgs(`- ${localname}`, 3, { fatal: workflowCtx.options.warningsAsErrors }),
+  };
+
+  context.info(``);
+  try {
+    await closure(context);
+  } catch (err) {
+    context.error(`inside ${module.id()}. Cause: ${err.message}` + err);
+  }
+  context.info(Report.DONE);
 }
 
 export class JobSupervisor implements Supervisor<IJobData> {
@@ -41,7 +63,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
   async start(jobData: IJobData) {
     // A job must process the data `sources`, `steps`, `targets`.
     // `prefixes`, `independent` are already processed.
-    Report.infoMsg(this.#name, 1)(` `);
+    Report.infoMsg(this.#name + `:`, 1)(`\n`);
 
     const engine = new QueryEngine();
     const quadStore = RdfStore.createDefault();
@@ -65,7 +87,6 @@ export class JobSupervisor implements Supervisor<IJobData> {
       httpProxyHandler,
       lenient: true,
     };
-    const fatal = this.workflowCtx.options.warningsAsErrors;
 
     // Static properties can be gathered before execution
     modules.targets
@@ -85,51 +106,72 @@ export class JobSupervisor implements Supervisor<IJobData> {
         )
       );
 
-    const phases: IJobPhase[] = ["sources", "steps", "targets"];
-    for (const phase of phases) {
-      Report.infoMsg(phase, 2)(` `); // Entering sources
-      for (const { data, module: m } of modules[phase] ?? []) {
-        const localname = data.type.split("/", 2)[1];
+    const staticCtx: Partial<JobRuntimeContext> = {
+      workflowContext: this.workflowCtx,
+      jobData: jobData,
+      engine,
+      queryContext,
+    };
 
-        const ctx: JobRuntimeContext = {
-          workflowContext: this.workflowCtx,
-          jobData: jobData,
-          engine,
-          queryContext,
-          tempdir: tempdir(jobData, m, data),
-          ...Report.ctxMsgs(localname, 3, { fatal }),
-        };
+    Report.infoMsg(`sources:`, 2)(`\n`);
+    for (const { data, module: m } of modules.sources) {
+      await EnterModule(staticCtx, data, m, jobData, this.workflowCtx, async (ctx) => {
+        const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
+        let quadsOUT: RDF.Stream | void;
 
-        await EnterModule(ctx, async () => {
-          const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
-          let outputStream: RDF.Stream | void;
+        // Sources are independent, so no input stream is provided.
+        if (info.comunicaDataSources)
+          queryContext.sources = queryContext.sources.concat(...info.comunicaDataSources());
+        if (info.init) quadsOUT = await info.init(undefined, quadStore);
 
-          const inputStream = new MatchStreamReadable(quadStore.match()).pipe(
-            new FilteredStream({ graphs: data?.with?.onlyGraphs })
-          );
+        // Output quad stream is optionally void, therefore check if it's there
+        if (!(quadsOUT instanceof Object)) return;
 
-          if (info.comunicaDataSources)
-            queryContext.sources = queryContext.sources.concat(...info.comunicaDataSources());
-          if (info.init) outputStream = await info.init(inputStream, quadStore);
+        const streamOUT = new MatchStreamReadable(quadsOUT)
+          .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }))
+          .pipe(new SingleGraphStream({ graph: data.with.intoGraph }));
 
-          // Output
-          if (outputStream instanceof Object) {
-            const stream = new MatchStreamReadable(outputStream)
-              .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
-              .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
-
-            await new Promise((resolve, reject) => {
-              const emitter = quadStore.import(stream);
-
-              emitter.once("end", resolve);
-              emitter.once("error", reject);
-            });
-          }
-        });
-      }
+        await ImportStream(streamOUT, quadStore);
+      });
     }
 
-    // TODO: Filtering, override graphs
+    Report.infoMsg(`steps:`, 2)(`\n`);
+    for (const { data, module: m } of modules.steps) {
+      await EnterModule(staticCtx, data, m, jobData, this.workflowCtx, async (ctx) => {
+        const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
+
+        // Steps input quads are filtered with Only-Graphs
+        const quadsIN = new MatchStreamReadable(quadStore.match()).pipe(
+          new FilteredStream({ graphs: data.with.onlyGraphs })
+        );
+
+        // Get output quad stream and check if it's not void
+        const quadsOUT = await info.init(quadsIN, quadStore);
+        if (!(quadsOUT instanceof Object)) return;
+
+        const streamOUT = new MatchStreamReadable(quadsOUT).pipe(
+          new SingleGraphStream({ graph: data.with.intoGraph })
+        );
+
+        await ImportStream(streamOUT, quadStore);
+      });
+    }
+
+    Report.infoMsg(`targets:`, 2)(`\n`);
+    for (const { data, module: m } of modules.targets) {
+      await EnterModule(staticCtx, data, m, jobData, this.workflowCtx, async (ctx) => {
+        const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
+
+        // Steps input quads are filtered with Only-Graphs
+        const quadsIN = new MatchStreamReadable(quadStore.match())
+          .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }))
+          .pipe(new SingleGraphStream({ graph: data.with.intoGraph }));
+
+        // Get output quad stream and check if it's not void
+        await info.init(quadsIN, quadStore);
+      });
+    }
+
     // TODO: Write state to cache (.nq.gz and .head-n-20.nq) if not --in-mem
     // TODO: Automatically GZip
   }

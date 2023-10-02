@@ -20,13 +20,13 @@ export class QuadStoreTarget implements WorkflowPartTarget {
 
       return {
         init: async (stream: RDF.Stream) => {
-          InfoUploadingTo(context.info, data?.with?.onlyGraphs, data.access);
+          InfoUploadingTo(context.info, data.with.onlyGraphs, data.access);
 
           await serializeStream(stream, stepTempFile, { format: mimetype });
           const contents = await fs.readFile(stepTempFile, { encoding: "utf-8" });
 
           const response = await fetch(data.access, {
-            headers: { ...Auth.asHeader(data?.with?.credentials), "Content-Type": mimetype },
+            headers: { ...Auth.asHeader(data.with.credentials), "Content-Type": mimetype },
             method: "POST",
             body: contents,
           });

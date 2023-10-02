@@ -58,13 +58,13 @@ export async function serializeStream(
   options?: GraphToFileOptions
 ) {
   // If a pretty serialization isn't required, use streaming serializer
-  if (STREAMABLE_FORMATS.includes(options.format)) writeStream(stream, path);
+  if (STREAMABLE_FORMATS.includes(options.format)) writeStream(stream, path, options);
 
   return await writeStreamPretty(stream, path, options);
 }
 
 /** Serialize an RDF.Stream to a path formatted as NQ / NT */
-export function writeStream(stream: RDF.Stream, path: string, options?: GraphToFileOptions) {
+export function writeStream(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
   const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
 
   return pipeline(
@@ -78,7 +78,7 @@ export function writeStream(stream: RDF.Stream, path: string, options?: GraphToF
 }
 
 /** Serialize a RDF.Store to a path formatted as NQ / NT */
-export function serializeStreamingly(store: RDF.Store, path: string, options?: GraphToFileOptions) {
+export function serializeStreamingly(store: RDF.Store, path: string, options: GraphToFileOptions) {
   // Output sinks
   const fd = fs.createWriteStream(path, { encoding: "utf-8" });
   const streamWriter = new N3.StreamWriter(options);
@@ -96,7 +96,7 @@ export function serializeStreamingly(store: RDF.Store, path: string, options?: G
 }
 
 /** Serialize an RDF.Stream to a path with a blocking, pretty formatter */
-export function writeStreamPretty(stream: RDF.Stream, path: string, options?: GraphToFileOptions) {
+export function writeStreamPretty(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
   return new Promise((resolve, reject) => {
     // fs.mkdirSync(dirname(path), { recursive: true });
     const fd = fs.createWriteStream(path, { encoding: "utf-8" });

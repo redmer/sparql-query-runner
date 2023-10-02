@@ -9,18 +9,18 @@ import * as Auth from "../utils/auth.js";
  * Does not support limitation of exported `graphs`.
  */
 export class SparqlUpdateEndpointTarget implements WorkflowPartTarget {
-  id = () => "targets/sparql-update-endpoint";
+  id = () => "sparql-update-endpoint";
   names = ["targets/sparql-update-endpoint"];
 
   staticQueryContext(data: IJobTargetData) {
     return {
       destination: { type: "sparql", value: data.access },
-      httpAuth: Auth.httpSyntax(data.with?.credentials),
+      httpAuth: Auth.httpSyntax(data.with.credentials),
     };
   }
 
   staticAuthProxyHandler(data: IJobTargetData): AuthProxyHandler {
-    return new AuthProxyHandler(data.with?.credentials, data.access);
+    return new AuthProxyHandler(data.with.credentials, data.access);
   }
 
   exec(_data: IJobTargetData): WorkflowModuleExec {

@@ -19,53 +19,20 @@ export interface IJobData {
 }
 
 export type IJobSourceKnownTypes = (typeof PartShorthandSource)[number];
-// export type IJobSourceData = {
-//   [key in IJobSourceKnownTypes]?: string;
-// } & {
-//   readonly type: // `sources/${IJobSourceKnownTypes}`;
-//   access: string;
-//   with?: {
-//     credentials?: ICredentialData;
-//     onlyGraphs?: RDF.Quad_Graph[];
-//     targetGraph?: RDF.Quad_Graph;
-//   };
-// };
-
 export type IJobStepKnownTypes = (typeof PartShorthandStep)[number];
-// export type IJobStepData = {
-//   [key in IJobStepKnownTypes]?: string;
-// } & {
-//   readonly type: // `steps/${IJobStepKnownTypes}`;
-//   access: string;
-//   with?: {
-//     targetGraph?: RDF.Quad_Graph;
-//   };
-// };
-
 export type IJobTargetKnownTypes = (typeof PartShorthandTarget)[number];
-// export type IJobTargetData = {
-//   [key in IJobTargetKnownTypes]?: string;
-// } & {
-//   readonly type: // `targets/${IJobTargetKnownTypes}`;
-//   access: string;
-//   with?: {
-//     credentials?: ICredentialData;
-//     onlyGraphs?: RDF.Quad_Graph[];
-//     targetGraph?: RDF.Quad_Graph;
-//   };
-// };
-
 export type IJobModuleData = {
   [key in IJobSourceKnownTypes | IJobStepKnownTypes | IJobTargetKnownTypes]?: string;
 } & {
   type: string;
   access: string;
-  with?: {
-    credentials?: ICredentialData;
-    onlyGraphs?: RDF.Quad_Graph[];
-    targetGraph?: RDF.Quad_Graph;
+  with: {
+    credentials: ICredentialData | undefined;
+    onlyGraphs: RDF.Quad_Graph[];
+    intoGraph: RDF.Quad_Graph | undefined;
   };
 };
+
 export type IJobSourceData = IJobModuleData;
 export type IJobStepData = IJobModuleData;
 export type IJobTargetData = IJobModuleData;

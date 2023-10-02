@@ -22,8 +22,8 @@ export class LocalFileSource implements WorkflowPartSource {
     // Local files are not supported by the `auto` Comunica source.
     if (!data.access.startsWith("http")) return true;
     // Filtered graphs aren't supported by the `auto` Comunica source
-    if (data.access.startsWith("http") && data?.with?.onlyGraphs) return true;
-    if (data.access.startsWith("http") && data?.with?.targetGraph) return true;
+    if (data.access.startsWith("http") && data.with.onlyGraphs) return true;
+    if (data.access.startsWith("http") && data.with.intoGraph) return true;
     return false;
   }
 
@@ -59,7 +59,7 @@ export class LocalFileTarget implements WorkflowPartTarget {
       return {
         init: async (stream: RDF.Stream) => {
           context.info(
-            `Exporting ${data?.with?.onlyGraphs?.length ?? "all"} graphs to ${data.access}...`
+            `Exporting ${data.with.onlyGraphs?.length ?? "all"} graphs to ${data.access}...`
           );
 
           await serializeStream(stream, data.access, {

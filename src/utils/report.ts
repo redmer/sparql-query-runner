@@ -47,8 +47,8 @@ export function consoleMessage(type: MessageLevels, caller: string, depth = 0, f
 ·· steps/shell - ERROR: shell scripts not allowed (curl)
 */
   return (message: string) => {
-    if (message) which.write(`${indent}${caller} - ${flag}${message}\n`);
-    else which.write(`${indent}${caller}\r`);
+    if (message.trim().length) which.write(`${indent}${caller} - ${flag}${message}\n`);
+    else which.write(`${indent}${caller}${message}\r`);
     if (fatal) process.exit(-1);
   };
 }
