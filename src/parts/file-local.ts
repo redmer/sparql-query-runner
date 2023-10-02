@@ -1,9 +1,10 @@
+import type * as RDF from "@rdfjs/types";
 import fs from "fs";
 import { StreamParser } from "n3";
-import { IJobSourceData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowModuleExec, WorkflowPart } from "../runner/types.js";
+import { IJobSourceData, IJobTargetData } from "../config/types.js";
+import { JobRuntimeContext, WorkflowPartSource, WorkflowPartTarget } from "../runner/types.js";
+import { serializeStream } from "../utils/graphs-to-file.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
-import { FilteredStream, SingleGraphStream } from "../utils/rdf-stream-override.js";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
@@ -12,9 +13,9 @@ import { FilteredStream, SingleGraphStream } from "../utils/rdf-stream-override.
  * Due to security concerns, `@comunica/query-sparql` does not support local file systems
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
-export class LocalFileSource implements WorkflowPart<"sources"> {
-  id = () => "local-file-source";
-  names = ["sources/file"];
+export class LocalFileSource implements WorkflowPartSource, WorkflowPartTarget {
+  id = () => "local-file";
+  names = ["sources/file", "targets/file"];
 
   isQualified(data: IJobSourceData): boolean {
     // please try to keep in sync with <./comunica-auto-datasource.ts>
@@ -30,24 +31,38 @@ export class LocalFileSource implements WorkflowPart<"sources"> {
     return true;
   }
 
-  asSource(data: IJobSourceData): WorkflowModuleExec {
+  exec(data: IJobSourceData | IJobTargetData) {
     return async (context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(data.access);
 
-      const quadStream = fs
-        .createReadStream(data.access)
-        .pipe(new StreamParser({ format: mimetype }))
-        .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
-        .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
+      return {
+        asSource: async () => {
+          const quadStream = fs
+            .createReadStream(data.access)
+            .pipe(new StreamParser({ format: mimetype }));
 
-      const emitter = context.quadStore.import(quadStream);
+          return quadStream;
+          //   .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
+          //   .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
 
-      await new Promise((resolve, reject) => {
-        emitter.on("end", resolve);
-        emitter.on("error", reject);
-      });
+          // const emitter = context.quadStore.import(quadStream);
 
-      return {};
+          // await new Promise((resolve, reject) => {
+          //   emitter.on("end", resolve);
+          //   emitter.on("error", reject);
+          // });
+        },
+        asTarget: async (stream: RDF.Stream) => {
+          context.info(
+            `Exporting ${data?.with?.onlyGraphs?.length ?? "all"} graphs to ${data.access}...`
+          );
+
+          await serializeStream(stream, data.access, {
+            format: mimetype,
+            prefixes: context.jobData.prefixes,
+          });
+        },
+      };
     };
   }
 }

@@ -52,6 +52,31 @@ export async function serialize(
   return await serializePretty(filteredStore, path, options);
 }
 
+export async function serializeStream(
+  stream: RDF.Stream,
+  path: string,
+  options?: GraphToFileOptions
+) {
+  // If a pretty serialization isn't required, use streaming serializer
+  if (STREAMABLE_FORMATS.includes(options.format)) writeStream(stream, path);
+
+  return await writeStreamPretty(stream, path, options);
+}
+
+/** Serialize an RDF.Stream to a path formatted as NQ / NT */
+export function writeStream(stream: RDF.Stream, path: string, options?: GraphToFileOptions) {
+  const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
+
+  return pipeline(
+    new StoreStream(stream),
+    inTriples
+      ? new SingleGraphStream({ graph: DF.defaultGraph() })
+      : new PassThrough({ objectMode: true }),
+    new N3.StreamWriter(options),
+    fs.createWriteStream(path, { encoding: "utf-8" })
+  );
+}
+
 /** Serialize a RDF.Store to a path formatted as NQ / NT */
 export function serializeStreamingly(store: RDF.Store, path: string, options?: GraphToFileOptions) {
   // Output sinks
@@ -68,6 +93,31 @@ export function serializeStreamingly(store: RDF.Store, path: string, options?: G
     streamWriter,
     fd
   );
+}
+
+/** Serialize an RDF.Stream to a path with a blocking, pretty formatter */
+export function writeStreamPretty(stream: RDF.Stream, path: string, options?: GraphToFileOptions) {
+  return new Promise((resolve, reject) => {
+    // fs.mkdirSync(dirname(path), { recursive: true });
+    const fd = fs.createWriteStream(path, { encoding: "utf-8" });
+    const plainWriter = new N3.Writer(fd, options);
+
+    const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
+
+    const quadStream = new StoreStream(stream).pipe(
+      inTriples
+        ? new SingleGraphStream({ graph: DF.defaultGraph() })
+        : new PassThrough({ objectMode: true })
+    );
+
+    quadStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
+    quadStream.on("end", () =>
+      plainWriter.end((error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      })
+    );
+  });
 }
 
 /** Serialize a RDF.Store to a path with a blocking, pretty formatter */

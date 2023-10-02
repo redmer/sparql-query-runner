@@ -5,7 +5,7 @@ import {
   IJobStepData,
   IJobTargetData,
 } from "../config/types.js";
-import { AutoSource } from "../parts/comunica-auto-datasource.js";
+import { ComunicaAutoSource } from "../parts/comunica-auto-datasource.js";
 import { LacesHubTarget } from "../parts/laces-hub.js";
 import { ShaclValidateLocal } from "../parts/shacl-validate-local.js";
 import type { WorkflowPart } from "../runner/types.js";
@@ -28,7 +28,7 @@ export type RegisteredModule = WorkflowPart<IJobPhase>;
  */
 export const KNOWN_MODULES: RegisteredModule[] = [
   new LocalFileSource(),
-  new AutoSource(),
+  new ComunicaAutoSource(),
   new ShaclValidateLocal(),
   new SparqlQuadQuery(),
   new SparqlUpdate(),
