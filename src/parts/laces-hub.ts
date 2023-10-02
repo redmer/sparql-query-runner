@@ -18,7 +18,7 @@ import { InfoUploadingTo } from "../utils/uploading-message.js";
  * The publication needs to exist before it can be used as a destination.
  * Custom versioning mode is unsupported.
  */
-export class LacesHubTarget implements WorkflowPartTarget, WorkflowPartSource {
+export class LacesHub implements WorkflowPartTarget, WorkflowPartSource {
   id = () => "targets/laces-hub";
   names = ["targets/laces-hub", "sources/laces-hub"];
 

@@ -10,7 +10,7 @@ import { fileExistsLocally } from "../utils/local-remote-file.js";
  *
  * Update steps are either URLs or complete SPARQL Update queries.
  */
-export class SparqlUpdate implements WorkflowPartStep {
+export class SparqlUpdateQuery implements WorkflowPartStep {
   id = () => "steps/update";
   names = ["steps/update"];
 

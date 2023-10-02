@@ -8,7 +8,7 @@ import * as Auth from "../utils/auth.js";
  *
  * Does not support limitation of exported `graphs`.
  */
-export class SPARQLTarget implements WorkflowPartTarget {
+export class SparqlUpdateEndpointTarget implements WorkflowPartTarget {
   id = () => "targets/sparql-update-endpoint";
   names = ["targets/sparql-update-endpoint"];
 

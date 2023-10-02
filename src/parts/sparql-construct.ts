@@ -7,7 +7,7 @@ import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
 import { fileExistsLocally } from "../utils/local-remote-file.js";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) -- always locally */
-export class SparqlQuadQuery implements WorkflowPartStep {
+export class SparqlConstructQuery implements WorkflowPartStep {
   id = () => "steps/construct";
   names = ["steps/construct"];
 

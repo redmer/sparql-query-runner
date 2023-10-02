@@ -9,7 +9,7 @@ import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js
 import { InfoUploadingTo } from "../utils/uploading-message.js";
 
 /** Upload NQuads to a SPARQL Quad Store (non-standard) */
-export class SPARQLQuadStoreTarget implements WorkflowPartTarget {
+export class QuadStoreTarget implements WorkflowPartTarget {
   id = () => "sparql-quad-store-target";
   names = ["targets/sparql-quad-store"];
 

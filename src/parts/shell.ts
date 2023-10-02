@@ -4,8 +4,8 @@ import { PassThrough } from "stream";
 import { IJobStepData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowPartStep } from "../runner/types.js";
 
-export class ShellPart implements WorkflowPartStep {
-  id = () => "steps/shell";
+export class ShellCommandStep implements WorkflowPartStep {
+  id = () => "shell-step";
   names = ["steps/shell"];
 
   _commandName(command: string) {

@@ -10,7 +10,7 @@ import { fileExistsLocally } from "../utils/local-remote-file.js";
  *
  * Update steps are either URLs or complete SPARQL Update queries.
  */
-export class Assert implements WorkflowPartStep {
+export class AskAssertStep implements WorkflowPartStep {
   id = () => "assert-with-sparql-ask";
   names = ["steps/assert"];
 

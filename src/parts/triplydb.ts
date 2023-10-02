@@ -5,7 +5,7 @@ import { storeStream } from "rdf-store-stream";
 import type { IJobSourceData, IJobTargetData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowPartSource, WorkflowPartTarget } from "../runner/types.js";
 
-export class TriplyDBTarget implements WorkflowPartTarget, WorkflowPartSource {
+export class TriplyDB implements WorkflowPartTarget, WorkflowPartSource {
   // Export a(ll) graph(s) to Laces
   id = () => "targets/triplydb";
   names = ["targets/tripldb", "sources/triplydb"];

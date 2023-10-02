@@ -14,7 +14,7 @@ import { getGraphs } from "../utils/quads.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 /** Export a(ll) graph(s) to a SPARQL Graph Store (Not a Quad Store™) */
-export class SPARQLGraphStoreTarget implements WorkflowPartTarget {
+export class GraphStoreTarget implements WorkflowPartTarget {
   id = () => "sparql-graph-store-target";
   names = ["targets/sparql-graph-store"];
 

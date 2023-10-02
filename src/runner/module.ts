@@ -5,19 +5,19 @@ import {
   IJobStepData,
   IJobTargetData,
 } from "../config/types.js";
-import { Assert } from "../parts/ask-assert.js";
+import { AskAssertStep } from "../parts/ask-assert.js";
 import { ComunicaAutoSource } from "../parts/comunica-auto-source.js";
 import { LocalFile } from "../parts/file-local.js";
-import { InferReason } from "../parts/infer.js";
-import { LacesHubTarget } from "../parts/laces-hub.js";
+import { InferReason } from "../parts/infer-reason.js";
+import { LacesHub } from "../parts/laces-hub.js";
 import { ShaclValidateLocal } from "../parts/shacl-validate-local.js";
-import { ShellPart } from "../parts/shell.js";
-import { SparqlQuadQuery } from "../parts/sparql-construct.js";
-import { SPARQLGraphStoreTarget } from "../parts/sparql-graph-store.js";
-import { SPARQLQuadStoreTarget } from "../parts/sparql-quad-store.js";
-import { SparqlUpdate } from "../parts/sparql-update.js";
-import { SPARQLTarget } from "../parts/sparql.js";
-import { TriplyDBTarget } from "../parts/triplydb.js";
+import { ShellCommandStep } from "../parts/shell.js";
+import { SparqlConstructQuery } from "../parts/sparql-construct.js";
+import { GraphStoreTarget } from "../parts/sparql-graph-store.js";
+import { QuadStoreTarget } from "../parts/sparql-quad-store.js";
+import { SparqlUpdateQuery } from "../parts/sparql-update.js";
+import { SparqlUpdateEndpointTarget } from "../parts/sparql.js";
+import { TriplyDB } from "../parts/triplydb.js";
 import type { WorkflowPartSource, WorkflowPartStep, WorkflowPartTarget } from "../runner/types.js";
 
 export class ModuleMatcherError extends Error {}
@@ -30,17 +30,17 @@ export type RegisteredModule = WorkflowPartSource | WorkflowPartStep | WorkflowP
 export const KNOWN_MODULES: RegisteredModule[] = [
   new LocalFile(),
   new ShaclValidateLocal(),
-  new SparqlQuadQuery(),
-  new SparqlUpdate(),
-  new Assert(),
+  new SparqlConstructQuery(),
+  new SparqlUpdateQuery(),
+  new AskAssertStep(),
   new InferReason(),
-  new ShellPart(),
-  new SPARQLTarget(),
-  new LacesHubTarget(),
-  new TriplyDBTarget(),
+  new ShellCommandStep(),
+  new SparqlUpdateEndpointTarget(),
+  new LacesHub(),
+  new TriplyDB(),
   new ComunicaAutoSource(),
-  new SPARQLGraphStoreTarget(),
-  new SPARQLQuadStoreTarget(),
+  new GraphStoreTarget(),
+  new QuadStoreTarget(),
 ];
 
 /** Struct that will enable execution of the workflow. */
