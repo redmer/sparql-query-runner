@@ -1,5 +1,5 @@
 import type { IJobTargetData } from "../config/types.js";
-import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import type { JobRuntimeContext, WorkflowPart, WorkflowPartGetter } from "../runner/types.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
@@ -11,7 +11,7 @@ export class LocalFileTarget implements WorkflowPart<IJobTargetData> {
     return data.access.match(/^https?:/) === null;
   }
 
-  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowPartGetter> {
     return async (context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(data.access);
       return {

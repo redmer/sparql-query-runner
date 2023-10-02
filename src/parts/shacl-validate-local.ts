@@ -4,13 +4,14 @@ import N3 from "n3";
 import { RdfStore } from "rdf-stores";
 import SHACLValidator from "rdf-validate-shacl";
 import type { IJobStepData } from "../config/types.js";
-import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import type { JobRuntimeContext, WorkflowModuleExec, WorkflowPartStep } from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
-export class ShaclValidateLocal implements WorkflowPart<IJobStepData> {
+export class ShaclValidateLocal implements WorkflowPartStep {
   id = () => "steps/shacl";
+  names = ["steps/shacl"];
 
-  info(data: IJobStepData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  exec(data: IJobStepData): WorkflowModuleExec<"steps"> {
     return async (context: JobRuntimeContext) => {
       if (data.with.targetGraph)
         context.warning(`Target-Graph ignored: Only shapes in the default graph are used`);
@@ -37,7 +38,7 @@ export class ShaclValidateLocal implements WorkflowPart<IJobStepData> {
       else shapes = context.quadStore.asDataset();
 
       return {
-        start: async () => {
+        asStep: async () => {
           const validator = new SHACLValidator(shapes, {});
           const report = validator.validate(context.quadStore.asDataset());
 

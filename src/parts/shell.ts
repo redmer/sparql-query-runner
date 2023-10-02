@@ -1,7 +1,7 @@
 import commandExists from "command-exists";
 import { exec } from "node:child_process";
 import { IJobStepData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowPart, WorkflowPartGetter } from "../runner/types.js";
 
 export class ShellPart implements WorkflowPart<"sources" | "steps"> {
   id = () => "steps/shell";
@@ -16,7 +16,7 @@ export class ShellPart implements WorkflowPart<"sources" | "steps"> {
     return commandExists.sync(command);
   }
 
-  info(data: IJobStepData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  info(data: IJobStepData): (context: JobRuntimeContext) => Promise<WorkflowPartGetter> {
     return async (context: JobRuntimeContext) => {
       return {
         start: async () => {

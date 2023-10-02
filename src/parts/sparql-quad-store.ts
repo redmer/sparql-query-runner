@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import fetch from "node-fetch";
 import { IJobTargetData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowPart, WorkflowPartGetter } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
@@ -11,7 +11,7 @@ export class SPARQLQuadStoreTarget implements WorkflowPart<IJobTargetData> {
   // Export a(ll) graph(s) to a file
   id = () => "targets/sparql-quad-store";
 
-  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowPartGetter> {
     return async (context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(".nq");
       const stepTempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;

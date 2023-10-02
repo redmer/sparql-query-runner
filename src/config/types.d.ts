@@ -51,6 +51,7 @@ export type IJobTargetData = {
   with?: {
     credentials?: ICredentialData;
     onlyGraphs?: RDF.Quad_Graph[];
+    targetGraph?: RDF.Quad_Graph;
   };
 };
 

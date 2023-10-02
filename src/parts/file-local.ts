@@ -1,7 +1,7 @@
 import fs from "fs";
 import { StreamParser } from "n3";
 import { IJobSourceData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowModuleInfo, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowModuleExec, WorkflowPart } from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import { FilteredStream, SingleGraphStream } from "../utils/rdf-stream-override.js";
 
@@ -30,7 +30,7 @@ export class LocalFileSource implements WorkflowPart<"sources"> {
     return true;
   }
 
-  asSource(data: IJobSourceData): WorkflowModuleInfo {
+  asSource(data: IJobSourceData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(data.access);
 

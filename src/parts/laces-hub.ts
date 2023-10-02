@@ -1,5 +1,5 @@
 import type { IJobTargetData } from "../config/types.js";
-import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import type { JobRuntimeContext, WorkflowPart, WorkflowPartGetter } from "../runner/types.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import type { LacesHubPublicationDesc } from "../utils/laces.js";
 import * as Laces from "../utils/laces.js";
@@ -18,7 +18,7 @@ export class LacesHubTarget implements WorkflowPart<IJobTargetData> {
     return data.access.match("^https?://hub.laces.tech/") !== null;
   }
 
-  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowPartGetter> {
     return async (context: JobRuntimeContext) => {
       const [repoName, publName] = data.access.split("/").slice(-2);
       const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");

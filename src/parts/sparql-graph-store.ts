@@ -1,7 +1,7 @@
 import fs from "fs/promises";
 import fetch from "node-fetch";
 import { IJobTargetData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowPart, WorkflowPartGetter } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import { getGraphs } from "../utils/quads.js";
@@ -12,7 +12,7 @@ import * as Report from "../utils/report.js";
 export class SPARQLGraphStoreTarget implements WorkflowPart<IJobTargetData> {
   id = () => "targets/sparql-graph-store";
 
-  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowPartGetter> {
     return async (context: JobRuntimeContext) => {
       // The issue here is that SPARQL 1.1 GRaph Store HTTP Protocol only supports
       // triples and not quads.

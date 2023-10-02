@@ -15,7 +15,7 @@ import type {
   JobRuntimeContext,
   QueryContext,
   Supervisor,
-  WorkflowGetter,
+  WorkflowPartGetter,
   WorkflowRuntimeContext,
 } from "./types.js";
 
@@ -92,14 +92,14 @@ export class JobSupervisor implements Supervisor<IJobData> {
         };
 
         await EnterModule(ctx, async () => {
-          let info: WorkflowGetter;
+          let info: WorkflowPartGetter;
           if (phase == "sources") info = await m.asSource(<IJobSourceData>data)(ctx);
           else if (phase == "steps") info = await m.asStep(<IJobStepData>data)(ctx);
           else if (phase == "targets") info = await m.asTarget(<IJobTargetData>data)(ctx);
           else throw new JobSupervisionError(`Module phase logic error`);
 
-          if (info.dataSources)
-            queryContext.sources = queryContext.sources.concat(...info.dataSources());
+          if (info.comunicaDataSources)
+            queryContext.sources = queryContext.sources.concat(...info.comunicaDataSources());
           if (info.start) await info.start();
         });
       }

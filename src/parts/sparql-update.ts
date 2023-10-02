@@ -1,6 +1,7 @@
+import { QueryStringContext } from "@comunica/types";
 import fs from "fs/promises";
 import { IJobStepData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowModuleExec, WorkflowPartStep } from "../runner/types.js";
 import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
 import { fileExistsLocally } from "../utils/local-remote-file.js";
 
@@ -8,10 +9,11 @@ import { fileExistsLocally } from "../utils/local-remote-file.js";
  *
  * Update steps are either URLs or complete SPARQL Update queries.
  */
-export class SparqlUpdate implements WorkflowPart<IJobStepData> {
+export class SparqlUpdate implements WorkflowPartStep {
   id = () => "steps/update";
+  names = ["steps/update"];
 
-  info(data: IJobStepData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
+  asStep(data: IJobStepData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       let queryBody: string;
 
@@ -22,7 +24,7 @@ export class SparqlUpdate implements WorkflowPart<IJobStepData> {
       return {
         start: async () => {
           context.info(`Executing query '${data.access}'...`);
-          await context.engine.queryVoid(queryBody, context.queryContext);
+          await context.engine.queryVoid(queryBody, <QueryStringContext>context.queryContext);
         },
       };
     };

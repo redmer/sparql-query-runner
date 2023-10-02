@@ -1,5 +1,5 @@
 import { IJobSourceData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowModuleInfo, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowModuleExec, WorkflowPart } from "../runner/types.js";
 
 export class PreviousJobSource implements WorkflowPart<"sources"> {
   id = () => "previous-job-source";
@@ -9,7 +9,7 @@ export class PreviousJobSource implements WorkflowPart<"sources"> {
     return true; // We can't check the whole workflow :(
   }
 
-  asSource(data: IJobSourceData): WorkflowModuleInfo {
+  asSource(data: IJobSourceData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       const jobname = data.access;
       if (context.workflowContext.data.jobs[jobname] === undefined)

@@ -11,7 +11,6 @@ import type { ICliOptions } from "../cli/cli-options.js";
 import type {
   IJobData,
   IJobModuleData,
-  IJobPhase,
   IJobSourceData,
   IJobStepData,
   IJobTargetData,
@@ -55,25 +54,40 @@ export interface JobRuntimeContext {
   error(message: string): never;
 }
 
-export type WorkflowModuleInfo = (context: JobRuntimeContext) => Promise<WorkflowGetter>;
+export type WorkflowModuleExec<ReqK extends keyof WorkflowPartGetter> = (
+  context: JobRuntimeContext
+) => Promise<Pick<WorkflowPartGetter, ReqK>>;
 
-interface WorkflowSourcePart {
+export interface WorkflowPartGetter {
+  /** Supply a Comunica Data Source, for non-quad streams */
+  comunicaDataSources(): [IDataSourceExpanded | IDataSourceSerialized];
+  /** Return a stream of quads that are imported */
+  asSource(): Promise<RDF.Stream>;
+  /** Execute a step */
+  asStep(): Promise<void>;
+  /** Export argument stream */
+  asTarget(stream: RDF.Stream): Promise<void>;
+}
+
+export interface WorkflowPartSource extends WorkflowPart {
   /** Return the awaitable workflow source module executable */
-  asSource(data: IJobSourceData): WorkflowModuleInfo;
+  exec(
+    data: IJobSourceData
+  ): WorkflowModuleExec<"asSource"> | WorkflowModuleExec<"comunicaDataSources">;
 }
 
-interface WorkflowStepPart {
+export interface WorkflowPartStep extends WorkflowPart {
   /** Return the awaitable workflow step module executable */
-  asStep(data: IJobStepData): P extends "steps" ? WorkflowModuleInfo : never;
+  exec(data: IJobStepData): WorkflowModuleExec<"asStep">;
 }
 
-interface WorkflowTargetPart {
+export interface WorkflowPartTarget extends WorkflowPart {
   /** Return the awaitable workflow target module executable */
-  asTarget(data: IJobTargetData): P extends "targets" ? WorkflowModuleInfo : never;
+  exec(data: IJobTargetData): WorkflowModuleExec<"asTarget">;
 }
 
 /** A Source, Step or Target is a workflow part */
-interface WFP {
+interface WorkflowPart {
   /** The canonical name of the workflow part */
   id(): string;
 
@@ -97,22 +111,8 @@ interface WFP {
    * can only be based on static information in the module's data.
    */
   staticAuthProxyHandler?(data: IJobSourceData | IJobTargetData): AuthProxyHandler;
-}
 
-export type WorkflowPart<P extends IJobPhase> = P extends "sources"
-  ? WFP & WorkflowSourcePart
-  : P extends "steps"
-  ? WFP & WorkflowStepPart
-  : P extends "targets"
-  ? WFP & WorkflowTargetPart
-  : never;
-
-export interface WorkflowGetter {
-  /** Return an RDFJS Store or a Comunica Source */
-  dataSources?(): [IDataSourceExpanded | IDataSourceSerialized];
-
-  /** Do something when the query is done */
-  start?(): Promise<void>;
+  exec(data: IJobModuleData): WorkflowModuleExec;
 }
 
 export interface Supervisor<T> {

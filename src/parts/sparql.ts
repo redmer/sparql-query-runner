@@ -1,5 +1,5 @@
 import type { IJobTargetData } from "../config/types.js";
-import type { JobRuntimeContext, WorkflowGetter, WorkflowPart } from "../runner/types.js";
+import type { JobRuntimeContext, WorkflowModuleExec, WorkflowPartTarget } from "../runner/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 import * as Auth from "../utils/auth.js";
 
@@ -8,8 +8,9 @@ import * as Auth from "../utils/auth.js";
  *
  * Does not support limitation of exported `graphs`.
  */
-export class SPARQLTarget implements WorkflowPart<IJobTargetData> {
-  id = () => "targets/sparql";
+export class SPARQLTarget implements WorkflowPartTarget {
+  id = () => "targets/sparql-update-endpoint";
+  names = ["targets/sparql", "targets/sparql-update-endpoint"];
 
   staticQueryContext(data: IJobTargetData) {
     return {
@@ -22,8 +23,8 @@ export class SPARQLTarget implements WorkflowPart<IJobTargetData> {
     return new AuthProxyHandler(data.with?.credentials, data.access);
   }
 
-  info(data: IJobTargetData): (context: JobRuntimeContext) => Promise<WorkflowGetter> {
-    return async (context: JobRuntimeContext) => {
+  asTarget(_data: IJobTargetData): WorkflowModuleExec {
+    return async (_context: JobRuntimeContext) => {
       return {};
     };
   }

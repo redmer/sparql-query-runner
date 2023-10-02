@@ -1,5 +1,5 @@
 import { IJobSourceData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowModuleInfo, WorkflowPart } from "../runner/types.js";
+import { JobRuntimeContext, WorkflowModuleExec, WorkflowPart } from "../runner/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 /**
@@ -29,7 +29,7 @@ export class AutoSource implements WorkflowPart<"sources"> {
     return new AuthProxyHandler(data?.with?.credentials, data.access);
   }
 
-  asSource(data: IJobSourceData): WorkflowModuleInfo {
+  asSource(data: IJobSourceData): WorkflowModuleExec {
     return async (_context: JobRuntimeContext) => {
       const sourceType = data?.with?.["source-type"] ?? data.type.split("/").at(-1);
       return {
