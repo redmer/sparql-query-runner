@@ -1,6 +1,5 @@
 import commandExists from "command-exists";
 import { exec } from "node:child_process";
-import { PassThrough } from "stream";
 import { IJobStepData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowPartStep } from "../runner/types.js";
 
@@ -20,7 +19,7 @@ export class ShellCommandStep implements WorkflowPartStep {
   exec(data: IJobStepData) {
     return async (context: JobRuntimeContext) => {
       return {
-        asStep: async () => {
+        init: async () => {
           const commandName = this._commandName(data.access);
 
           if (!context.workflowContext.options.allowShellScripts) {
@@ -34,7 +33,6 @@ export class ShellCommandStep implements WorkflowPartStep {
               resolve(undefined);
             });
           });
-          return new PassThrough({ objectMode: true });
         },
       };
     };

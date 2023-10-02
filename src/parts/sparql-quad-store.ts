@@ -13,13 +13,13 @@ export class QuadStoreTarget implements WorkflowPartTarget {
   id = () => "sparql-quad-store-target";
   names = ["targets/sparql-quad-store"];
 
-  exec(data: IJobTargetData): WorkflowModuleExec<"asTarget"> {
+  exec(data: IJobTargetData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(".nq");
       const stepTempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;
 
       return {
-        asTarget: async (stream: RDF.Stream) => {
+        init: async (stream: RDF.Stream) => {
           InfoUploadingTo(context.info, data?.with?.onlyGraphs, data.access);
 
           await serializeStream(stream, stepTempFile, { format: mimetype });

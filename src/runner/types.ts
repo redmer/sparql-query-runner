@@ -52,38 +52,30 @@ export interface JobRuntimeContext {
   error(message: string): never;
 }
 
-export type WorkflowModuleExec<ReqK extends keyof WorkflowPartGetter> = (
-  context: JobRuntimeContext
-) => Promise<Pick<WorkflowPartGetter, ReqK>>;
+export type WorkflowModuleExec = (context: JobRuntimeContext) => Promise<WorkflowPartGetter>;
 
 export type InMemQuadStore = RDF.Store & RdfStore;
 
 export interface WorkflowPartGetter {
   /** Supply a Comunica Data Source, for non-quad streams */
-  comunicaDataSources(): [IDataSourceExpanded | IDataSourceSerialized];
-  /** Return a stream of quads that are imported */
-  asSource(quadStore: InMemQuadStore): Promise<RDF.Stream>;
+  comunicaDataSources?(): [IDataSourceExpanded | IDataSourceSerialized];
   /** Execute a step */
-  asStep(stream: RDF.Stream, quadStore: InMemQuadStore): Promise<RDF.Stream>;
-  /** Export argument stream */
-  asTarget(stream: RDF.Stream, quadStore: InMemQuadStore): Promise<void>;
+  init?(stream: RDF.Stream, quadStore: InMemQuadStore): Promise<RDF.Stream | void>;
 }
 
 export interface WorkflowPartSource extends WorkflowPart {
   /** Return the awaitable workflow source module executable */
-  exec(
-    data: IJobSourceData
-  ): WorkflowModuleExec<"asSource"> | WorkflowModuleExec<"comunicaDataSources">;
+  exec(data: IJobSourceData): WorkflowModuleExec;
 }
 
 export interface WorkflowPartStep extends WorkflowPart {
   /** Return the awaitable workflow step module executable */
-  exec(data: IJobStepData): WorkflowModuleExec<"asStep">;
+  exec(data: IJobStepData): WorkflowModuleExec;
 }
 
 export interface WorkflowPartTarget extends WorkflowPart {
   /** Return the awaitable workflow target module executable */
-  exec(data: IJobTargetData): WorkflowModuleExec<"asTarget">;
+  exec(data: IJobTargetData): WorkflowModuleExec;
 }
 
 /** A Source, Step or Target is a workflow part */
@@ -111,8 +103,6 @@ export interface WorkflowPart {
    * can only be based on static information in the module's data.
    */
   staticAuthProxyHandler?(data: IJobSourceData | IJobTargetData): AuthProxyHandler;
-
-  // exec(data: IJobModuleData): WorkflowModuleExec<infer>;
 }
 
 export interface Supervisor<T> {

@@ -11,7 +11,7 @@ export class SparqlConstructQuery implements WorkflowPartStep {
   id = () => "steps/construct";
   names = ["steps/construct"];
 
-  exec(data: IJobStepData): WorkflowModuleExec<"asStep"> {
+  exec(data: IJobStepData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       let queryBody: string;
 
@@ -20,7 +20,7 @@ export class SparqlConstructQuery implements WorkflowPartStep {
       else queryBody = addPrefixesToQuery(data.access, context.jobData.prefixes);
 
       return {
-        asStep: async (_stream: RDF.Stream): Promise<RDF.Stream> => {
+        init: async (_stream: RDF.Stream): Promise<RDF.Stream> => {
           context.info(`Executing query '${data.access.substring(0, 32)}'...`);
           return await context.engine.queryQuads(
             queryBody,

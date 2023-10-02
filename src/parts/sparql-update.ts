@@ -1,6 +1,5 @@
 import { QueryStringContext } from "@comunica/types";
 import fs from "fs/promises";
-import { PassThrough } from "stream";
 import { IJobStepData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowModuleExec, WorkflowPartStep } from "../runner/types.js";
 import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
@@ -14,7 +13,7 @@ export class SparqlUpdateQuery implements WorkflowPartStep {
   id = () => "steps/update";
   names = ["steps/update"];
 
-  exec(data: IJobStepData): WorkflowModuleExec<"asStep"> {
+  exec(data: IJobStepData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       let queryBody: string;
 
@@ -23,10 +22,9 @@ export class SparqlUpdateQuery implements WorkflowPartStep {
       else queryBody = addPrefixesToQuery(data.access, context.jobData.prefixes);
 
       return {
-        asStep: async () => {
+        init: async () => {
           context.info(`Executing query '${data.access.substring(0, 32)}'...`);
           await context.engine.queryVoid(queryBody, <QueryStringContext>context.queryContext);
-          return new PassThrough({ objectMode: true });
         },
       };
     };

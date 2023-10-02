@@ -13,9 +13,9 @@ import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js
  * Due to security concerns, `@comunica/query-sparql` does not support local file systems
  * as sources. This class loads the file into a `rdfjsSource`, which _is_ supported.
  */
-export class LocalFile implements WorkflowPartSource, WorkflowPartTarget {
-  id = () => "local-file";
-  names = ["sources/file", "targets/file"];
+export class LocalFileSource implements WorkflowPartSource {
+  id = () => "local-file-source";
+  names = ["sources/file"];
 
   isQualified(data: IJobSourceData): boolean {
     // please try to keep in sync with <./comunica-auto-datasource.ts>
@@ -32,18 +32,32 @@ export class LocalFile implements WorkflowPartSource, WorkflowPartTarget {
   }
 
   exec(data: IJobSourceData | IJobTargetData) {
-    return async (context: JobRuntimeContext) => {
+    return async (_context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(data.access);
 
       return {
-        asSource: async () => {
+        init: async () => {
           const quadStream = fs
             .createReadStream(data.access)
             .pipe(new StreamParser({ format: mimetype }));
 
           return quadStream;
         },
-        asTarget: async (stream: RDF.Stream) => {
+      };
+    };
+  }
+}
+
+export class LocalFileTarget implements WorkflowPartTarget {
+  id = () => "local-file-target";
+  names = ["targets/file"];
+
+  exec(data: IJobTargetData) {
+    return async (context: JobRuntimeContext) => {
+      const mimetype = getRDFMediaTypeFromFilename(data.access);
+
+      return {
+        init: async (stream: RDF.Stream) => {
           context.info(
             `Exporting ${data?.with?.onlyGraphs?.length ?? "all"} graphs to ${data.access}...`
           );

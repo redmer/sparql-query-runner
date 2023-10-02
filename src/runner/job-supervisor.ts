@@ -87,9 +87,9 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
     const phases: IJobPhase[] = ["sources", "steps", "targets"];
     for (const phase of phases) {
-      Report.infoMsg("sources", 2)(` `); // Entering sources
+      Report.infoMsg(phase, 2)(` `); // Entering sources
       for (const { data, module: m } of modules[phase] ?? []) {
-        const localname = data.type.split("/", 1)[1];
+        const localname = data.type.split("/", 2)[1];
 
         const ctx: JobRuntimeContext = {
           workflowContext: this.workflowCtx,
@@ -102,7 +102,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
         await EnterModule(ctx, async () => {
           const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
-          let outputStream: RDF.Stream;
+          let outputStream: RDF.Stream | void;
 
           const inputStream = new MatchStreamReadable(quadStore.match()).pipe(
             new FilteredStream({ graphs: data?.with?.onlyGraphs })
@@ -110,21 +110,21 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
           if (info.comunicaDataSources)
             queryContext.sources = queryContext.sources.concat(...info.comunicaDataSources());
+          if (info.init) outputStream = await info.init(inputStream, quadStore);
 
-          if (info.asSource) outputStream = await info.asSource(quadStore);
-          else if (info.asStep) outputStream = await info.asStep(inputStream, quadStore);
-          else if (info.asTarget) await info.asTarget(inputStream, quadStore);
+          // Output
+          if (outputStream instanceof Object) {
+            const stream = new MatchStreamReadable(outputStream)
+              .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
+              .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
 
-          const stream = new MatchStreamReadable(outputStream)
-            .pipe(new FilteredStream({ graphs: data?.with?.onlyGraphs }))
-            .pipe(new SingleGraphStream({ graph: data?.with?.targetGraph }));
+            await new Promise((resolve, reject) => {
+              const emitter = quadStore.import(stream);
 
-          await new Promise((resolve, reject) => {
-            const emitter = quadStore.import(stream);
-
-            emitter.once("end", resolve);
-            emitter.once("error", reject);
-          });
+              emitter.once("end", resolve);
+              emitter.once("error", reject);
+            });
+          }
         });
       }
     }

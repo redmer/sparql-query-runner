@@ -2,40 +2,57 @@ import * as RDF from "@rdfjs/types";
 import App from "@triply/triplydb";
 import { Store } from "n3";
 import { storeStream } from "rdf-store-stream";
-import type { IJobSourceData, IJobTargetData } from "../config/types.js";
+import type { IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowPartSource, WorkflowPartTarget } from "../runner/types.js";
+import { InfoUploadingTo } from "../utils/uploading-message.js";
 
-export class TriplyDB implements WorkflowPartTarget, WorkflowPartSource {
+class TriplyDBCommon {
+  async dataset(data: IJobModuleData, context: JobRuntimeContext) {
+    const [accountName, datasetName] = data.access.split("/").slice(-2);
+
+    const auth = data.with?.credentials;
+    if (auth === undefined) context.error(`TriplyDB requires auth details <${data.access}>`);
+    if (auth.type !== "Bearer") context.error(`TriplyDB requires auth with "token:" `);
+
+    const Triply = App.default.get({ token: auth.token });
+    const account = await Triply.getAccount(accountName);
+    const dataset = await account.ensureDataset(datasetName, {
+      prefixes: context.jobData.prefixes,
+    });
+    return dataset;
+  }
+}
+
+export class TriplyDBSource extends TriplyDBCommon implements WorkflowPartSource {
   // Export a(ll) graph(s) to Laces
-  id = () => "targets/triplydb";
-  names = ["targets/tripldb", "sources/triplydb"];
+  id = () => "triplydb-source";
+  names = ["sources/triplydb"];
 
   exec(data: IJobSourceData | IJobTargetData) {
     return async (context: JobRuntimeContext) => {
-      // Get account name and dataset name from access URL
-      const [accountName, datasetName] = data.access.split("/").slice(-2);
-
-      const auth = data.with?.credentials;
-      if (auth === undefined) context.error(`TriplyDB requires auth details <${data.access}>`);
-      if (auth.type !== "Bearer") context.error(`TriplyDB requires auth with "token:" `);
-
-      const Triply = App.default.get({ token: auth.token });
-      const account = await Triply.getAccount(accountName);
-      const dataset = await account.ensureDataset(datasetName, {
-        prefixes: context.jobData.prefixes,
-      });
-
+      const dataset = await this.dataset(data, context);
       return {
-        asSource: async () => {
+        init: async () => {
           return await dataset.graphsToStream("rdf-js");
         },
+      };
+    };
+  }
+}
 
-        asTarget: async (stream: RDF.Stream) => {
-          context.info(
-            `Uploading ${data?.with?.onlyGraphs?.length ?? "all"} graphs to <${data.access}>...`
-          );
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          // await dataset.importFromStore(dataStore as any, { overwriteAll: true });
+export class TriplyDBTarget extends TriplyDBCommon implements WorkflowPartTarget {
+  // Export a(ll) graph(s) to Laces
+  id = () => "triplydb-target";
+  names = ["targets/triplydb"];
+
+  exec(data: IJobSourceData | IJobTargetData) {
+    return async (context: JobRuntimeContext) => {
+      const dataset = await this.dataset(data, context);
+
+      return {
+        init: async (stream: RDF.Stream) => {
+          InfoUploadingTo(context.info, data?.with?.onlyGraphs, data.access);
+
           const store = await storeStream(stream);
           await dataset.importFromStore(<Store>store, { overwriteAll: true, mergeGraphs: false });
 

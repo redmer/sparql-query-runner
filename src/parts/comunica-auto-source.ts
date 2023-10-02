@@ -29,7 +29,7 @@ export class ComunicaAutoSource implements WorkflowPartSource {
     return new AuthProxyHandler(data?.with?.credentials, data.access);
   }
 
-  exec(data: IJobSourceData): WorkflowModuleExec<"comunicaDataSources"> {
+  exec(data: IJobSourceData): WorkflowModuleExec {
     return async (_context: JobRuntimeContext) => {
       const sourceType = data?.with?.["source-type"] ?? data.type.split("/").at(-1);
       return {

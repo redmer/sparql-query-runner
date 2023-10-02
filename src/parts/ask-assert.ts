@@ -14,7 +14,7 @@ export class AskAssertStep implements WorkflowPartStep {
   id = () => "assert-with-sparql-ask";
   names = ["steps/assert"];
 
-  exec(data: IJobStepData): WorkflowModuleExec<"asStep"> {
+  exec(data: IJobStepData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       let queryBody: string;
 
@@ -23,7 +23,7 @@ export class AskAssertStep implements WorkflowPartStep {
       else queryBody = addPrefixesToQuery(data.access, context.jobData.prefixes);
 
       return {
-        asStep: async () => {
+        init: async () => {
           if (context.workflowContext.options.skipAssertions) return;
 
           const result = await context.engine.queryBoolean(
@@ -31,7 +31,6 @@ export class AskAssertStep implements WorkflowPartStep {
             <QueryStringContext>context.queryContext
           );
           if (!result) context.error(`${data?.with?.["message"]}`);
-          return new PassThrough({ objectMode: true });
         },
       };
     };

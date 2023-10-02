@@ -4,7 +4,6 @@ import N3 from "n3";
 import { RdfStore } from "rdf-stores";
 import SHACLValidator from "rdf-validate-shacl";
 import { Validator } from "shacl-engine";
-import { PassThrough } from "stream";
 import type { IJobStepData } from "../config/types.js";
 import type { InMemQuadStore, JobRuntimeContext, WorkflowPartStep } from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
@@ -19,7 +18,7 @@ export class ShaclValidateLocal implements WorkflowPartStep {
         context.warning(`Target-Graph ignored: Only shapes in the default graph are used`);
 
       return {
-        asStep: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
+        init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
           let shapes: RDF.DatasetCore;
           if (data.access.length > 0) {
             const shapesStore = RdfStore.createDefault();
@@ -53,7 +52,7 @@ export class ShaclValidateLocal implements WorkflowPartStep {
           // If the report conforms, the data is OK
           if (report.conforms && report2.conforms) {
             context.info(`OK: data conforms to shapes`);
-            return new PassThrough({ objectMode: true });
+            return;
           }
 
           const warnings: string[] = [];
@@ -81,8 +80,6 @@ source: ${r.shape} / ${r.constraintComponent}`);
               "\n" +
               warnings2.join("")
           );
-
-          return new PassThrough({ objectMode: true });
         },
       };
     };

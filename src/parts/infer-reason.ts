@@ -18,7 +18,7 @@ export class InferReason implements WorkflowPartStep {
       const ruleset = data.with?.["ruleset"] == "owl2rl" ? owl2rl : rdfs;
 
       return {
-        asStep: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
+        init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
           if (context.workflowContext.options.skipReasoning) return;
 
           // const explicit = new N3.Store();

@@ -18,7 +18,7 @@ export class GraphStoreTarget implements WorkflowPartTarget {
   id = () => "sparql-graph-store-target";
   names = ["targets/sparql-graph-store"];
 
-  exec(data: IJobTargetData): WorkflowModuleExec<"asTarget"> {
+  exec(data: IJobTargetData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       // The issue here is that SPARQL 1.1 GRaph Store HTTP Protocol only supports
       // triples and not quads.
@@ -26,7 +26,7 @@ export class GraphStoreTarget implements WorkflowPartTarget {
       // Therefore, we export to n-triples and loop over graphs in data.quadStore
 
       return {
-        asTarget: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
+        init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
           const ntriples = getRDFMediaTypeFromFilename(".nt");
           const graphs = data.with?.onlyGraphs ?? (await getGraphs(quadStore));
           const stepTempDir = `${context.tempdir}/sparql-graph-destination-${Date.now()}`;

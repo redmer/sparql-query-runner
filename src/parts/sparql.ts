@@ -23,10 +23,10 @@ export class SparqlUpdateEndpointTarget implements WorkflowPartTarget {
     return new AuthProxyHandler(data.with?.credentials, data.access);
   }
 
-  exec(_data: IJobTargetData): WorkflowModuleExec<"asTarget"> {
+  exec(_data: IJobTargetData): WorkflowModuleExec {
     return async (_context: JobRuntimeContext) => {
       return {
-        asTarget: async () => {
+        init: async () => {
           // no-op: all done via staticQueryContext
         },
       };

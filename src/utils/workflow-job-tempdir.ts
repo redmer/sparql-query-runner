@@ -19,9 +19,9 @@ function jobTempDirName(job: IJobData) {
 }
 
 function moduleTempDirName(module: WorkflowPart, moduleData: IJobModuleData): string[] {
-  const [category, lname] = module.id().split("/");
+  const category = moduleData.type.split("/")[0];
   const hash = digest(stringify(moduleData));
-  return [category, `${lname}-${hash.slice(0, 7)}`];
+  return [category, `${module.id()}-${hash.slice(0, 7)}`];
 }
 
 export function tempdir(job: IJobData, module: WorkflowPart, data: IJobModuleData) {
