@@ -12,11 +12,11 @@ import { InferReason } from "../parts/infer-reason.js";
 import { LacesHubSource, LacesHubTarget } from "../parts/laces-hub.js";
 import { ShaclValidateLocal } from "../parts/shacl-validate-local.js";
 import { ShellCommandStep } from "../parts/shell.js";
-import { SparqlConstructQuery } from "../parts/sparql-construct.js";
+import { SparqlConstructQuery } from "../parts/sparql-construct-query.js";
 import { GraphStoreTarget } from "../parts/sparql-graph-store.js";
 import { QuadStoreTarget } from "../parts/sparql-quad-store.js";
-import { SparqlUpdateQuery } from "../parts/sparql-update.js";
-import { SparqlUpdateEndpointTarget } from "../parts/sparql.js";
+import { SparqlUpdateEndpointTarget } from "../parts/sparql-update-endpoint.js";
+import { SparqlUpdateQuery } from "../parts/sparql-update-query.js";
 import { TriplyDBSource, TriplyDBTarget } from "../parts/triplydb.js";
 import type { WorkflowPartSource, WorkflowPartStep, WorkflowPartTarget } from "../runner/types.js";
 
