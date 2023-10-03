@@ -7,7 +7,7 @@ import type { InMemQuadStore, JobRuntimeContext, WorkflowPartStep } from "../run
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 export class InferReason implements WorkflowPartStep {
-  id = () => "entailment-with-hylar-core";
+  id = () => "hylar-entailment-step";
   names = ["steps/infer"];
 
   exec(data: IJobStepData) {

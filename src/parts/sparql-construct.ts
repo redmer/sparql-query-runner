@@ -8,7 +8,7 @@ import { fileExistsLocally } from "../utils/local-remote-file.js";
 
 /** Run a SPARQL query (CONSTRUCT or DESCRIBE) -- always locally */
 export class SparqlConstructQuery implements WorkflowPartStep {
-  id = () => "steps/construct";
+  id = () => "sparql-construct-query-step";
   names = ["steps/construct"];
 
   exec(data: IJobStepData): WorkflowModuleExec {

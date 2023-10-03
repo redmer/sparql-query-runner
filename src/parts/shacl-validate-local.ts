@@ -9,7 +9,7 @@ import type { InMemQuadStore, JobRuntimeContext, WorkflowPartStep } from "../run
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 export class ShaclValidateLocal implements WorkflowPartStep {
-  id = () => "shacl-validate-local";
+  id = () => "shacl-validate-local-step";
   names = ["steps/shacl"];
 
   exec(data: IJobStepData) {
