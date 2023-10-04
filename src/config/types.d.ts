@@ -5,7 +5,7 @@ import { PartShorthandSource, PartShorthandStep, PartShorthandTarget } from "./s
 export interface IWorkflowData {
   version: string;
   prefixes?: Record<string, string>;
-  jobs: Map<string, IJobData>;
+  jobs: IJobData[];
 }
 
 /** A consecutively executed part of a workflow */

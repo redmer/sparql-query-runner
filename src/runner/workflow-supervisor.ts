@@ -12,13 +12,13 @@ export class WorkflowSupervisor {
   }
 
   /** Find all independent jobs */
-  independentJobs(): [string, IJobData][] {
-    return [...this.data.jobs].filter(([_name, job]) => job.independent);
+  independentJobs(): IJobData[] {
+    return [...this.data.jobs].filter((job) => job.independent);
   }
 
   /** Find all non-independent jobs */
-  dependentJobs(): [string, IJobData][] {
-    return [...this.data.jobs].filter(([_name, job]) => !job.independent);
+  dependentJobs(): IJobData[] {
+    return [...this.data.jobs].filter((job) => !job.independent);
   }
 
   /** Run all jobs, parallelizing independent ones and dependent ones in the right order. */
@@ -37,16 +37,16 @@ export class WorkflowSupervisor {
 
     // Independent jobs can run parallel
     await Promise.all(
-      indep.map(([name, j]) => {
-        return new JobSupervisor(name, context).start(j);
+      indep.map((j) => {
+        return new JobSupervisor(j.name, context).start(j);
       })
     );
 
     if (indep.length && dep.length) wfInfo(`Starting dependent jobs...`);
 
     // Dependent jobs must run consecutive: await them each
-    for (const [name, j] of dep) {
-      await new JobSupervisor(name, context).start(j);
+    for (const j of dep) {
+      await new JobSupervisor(j.name, context).start(j);
     }
 
     wfInfo(Report.DONE);

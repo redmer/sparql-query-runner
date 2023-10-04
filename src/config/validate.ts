@@ -70,9 +70,9 @@ function validateConfiguration(
 
   // validate the jobs individually
   if (!data.has("jobs")) throw new ConfigurationError(`Jobs are not correctly defined`);
-  const jobs = new Map();
+  const jobs: IJobData[] = [];
   for (const [name, job] of (data.get("jobs") as Map<keyof IJobData, any>).entries())
-    jobs.set(name, validateJob(name, job, prefixes));
+    jobs.push(validateJob(name, job, prefixes));
 
   // return the original data, but override version, prefixes, jobs
 

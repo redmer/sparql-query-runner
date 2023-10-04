@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 import { glob } from "glob";
 import fs from "node:fs/promises";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { stdout } from "node:process";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { mergeConfigurations } from "../config/merge.js";
@@ -12,7 +12,7 @@ import { IWorkflowData } from "../config/types.js";
 import { CONFIG_EXT, CONFIG_FILENAME_YAML, configFromPath } from "../config/validate.js";
 import { TEMPDIR } from "../runner/job-supervisor.js";
 import { newPipelineTemplate } from "../runner/new-pipeline.js";
-import * as RulesWorker from "../runner/shacl-rules-worker.js";
+import { ShaclRulesWorker } from "../runner/shacl-rules-worker.js";
 import { WorkflowSupervisor } from "../runner/workflow-supervisor.js";
 import { ge1 } from "../utils/array.js";
 import * as Report from "../utils/report.js";
@@ -27,8 +27,14 @@ async function cli() {
     .command({
       command: "run",
       describe: `Run a workflow to generate quads or execute SPARQL queries`,
-      handler: async (argv) =>
-        await runPipelines(argv["config"] ?? (await glob(`*.${CONFIG_EXT}`)), {
+      handler: async (argv) => {
+        // Get passed config files or glob them in pwd
+        let configFiles = argv["config"];
+        if (!configFiles) configFiles = (await glob(`*.${CONFIG_EXT}`)).sort();
+        if (configFiles.length == 0)
+          console.error(Report.ERROR + `Found 0 *.sqr.yaml workflows to run`);
+
+        await runPipelines(configFiles, {
           cacheIntermediateResults: argv["cache"] ?? false,
           defaultPrefixes: !argv["no-default-prefixes"] ?? false,
           verbose: argv["verbose"] ?? false,
@@ -36,7 +42,8 @@ async function cli() {
           allowShellScripts: argv["exec-shell"] ?? false,
           skipAssertions: argv["skip-assertions"] ?? false,
           skipReasoning: argv["skip-reasoning"] ?? false,
-        }),
+        });
+      },
       builder: {
         cache: {
           type: "boolean",
@@ -151,16 +158,14 @@ async function createShaclRules(configPaths: string[]) {
     const configs = [];
     for (const path of ge1(configPaths))
       configs.push(await configFromPath(path, { secrets: process.env, defaultPrefixes: false }));
-    const config = mergeConfigurations(configs);
 
-    Object.entries(config.jobs).forEach(async ([_name, p]) => {
-      // TODO: Alternative destinations for `sh:SPARQLRule`s
-      await RulesWorker.start(p, process.stdout);
-    });
+    const config = mergeConfigurations(configs);
+    new ShaclRulesWorker(stdout).start(config);
+    // await RulesWorker.start(config, process.stdout);
   } catch (error) {
     console.error(Report.ERROR + error.message ?? error);
     throw error;
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1]).href) void cli();
+void cli();

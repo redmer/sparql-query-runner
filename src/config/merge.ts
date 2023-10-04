@@ -1,27 +1,27 @@
-import { type IWorkflowData } from "./types.js";
+import { IJobData, type IWorkflowData } from "./types.js";
 import { ConfigurationError } from "./validate.js";
 
 /** Merge configuration files: throws if job names aren't unique */
 export function mergeConfigurations(configs: IWorkflowData[]): IWorkflowData {
   // Try to merge compatible prefixes
   const prefixes = mergePrefixes(configs.map((c) => c.prefixes));
-  const jobs = new Map();
+  const jobs: Map<string, IJobData> = new Map();
 
   for (const c of configs) {
-    for (const [name, sep_job] of c.jobs) {
+    for (const sep_job of c.jobs) {
       // The merge won't do namespacing of jobs. They simply have to be unique
-      if (jobs.has(name))
+      if (jobs.has(sep_job.name))
         throw new ConfigurationError(
           `Could not merge configurations: multiple seperate jobs named '${name}'`
         );
-      jobs.set(name, sep_job);
+      jobs.set(sep_job.name, sep_job);
     }
   }
 
   return {
     version: "v5.compiled",
     prefixes,
-    jobs,
+    jobs: [...jobs.values()],
   };
 }
 
