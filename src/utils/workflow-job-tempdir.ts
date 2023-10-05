@@ -18,14 +18,22 @@ function jobTempDirName(job: IJobData) {
   return `job-${job.name}`;
 }
 
-function moduleTempDirName(module: WorkflowPart, moduleData: IJobModuleData): string[] {
+function moduleTempDirName(
+  module: WorkflowPart,
+  moduleData: IJobModuleData,
+  iterN: number
+): string[] {
   const category = moduleData.type.split("/")[0];
   const hash = digest(stringify(moduleData));
-  return [category, `${module.id()}-${hash.slice(0, 7)}`];
+  return [category, `${iterN}-${module.id()}-${hash.slice(0, 7)}`];
 }
 
-export function tempdir(job: IJobData, module: WorkflowPart, data: IJobModuleData) {
-  const fullPath = path.join(TEMPDIR, jobTempDirName(job), ...moduleTempDirName(module, data));
+export function tempdir(job: IJobData, module: WorkflowPart, data: IJobModuleData, iterN = 0) {
+  const fullPath = path.join(
+    TEMPDIR,
+    jobTempDirName(job),
+    ...moduleTempDirName(module, data, iterN)
+  );
   mkdir(fullPath, { recursive: true });
   return fullPath;
 }

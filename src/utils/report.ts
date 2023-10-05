@@ -64,3 +64,9 @@ export const ctxMsgs = (caller: string, depth = 0, { fatal }: { fatal: boolean }
     warning: warningMsg(caller, depth, { fatal }),
   };
 };
+
+export const Bye = (message: string) => {
+  stdout.write(ERROR + message + "\n");
+  process.exit(1);
+};
+export const Done = (message: string) => stdout.write(DONE + message + "\n");

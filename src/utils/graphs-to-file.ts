@@ -110,13 +110,13 @@ export function writeStreamPretty(stream: RDF.Stream, path: string, options: Gra
         : new PassThrough({ objectMode: true })
     );
 
-    quadStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
     quadStream.on("end", () =>
       plainWriter.end((error, result) => {
         if (error) return reject(error);
         resolve(result);
       })
     );
+    quadStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
   });
 }
 
@@ -140,12 +140,12 @@ export function serializePretty(store: RDF.Store, path: string, options?: GraphT
     //   resolve(result);
     // });
 
-    quadStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
     quadStream.on("end", () =>
       plainWriter.end((error, result) => {
         if (error) return reject(error);
         resolve(result);
       })
     );
+    quadStream.on("data", (quad: RDF.Quad) => plainWriter.addQuads([quad]));
   });
 }

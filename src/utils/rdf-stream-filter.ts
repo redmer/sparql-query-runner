@@ -16,11 +16,11 @@ export function filteredStream(stream: RDF.Stream, options?: FilteredGraphOption
   const DF = new DataFactory();
 
   stream.on("error", (error) => out.emit("error", error));
+  stream.on("end", () => out.push(null));
   stream.on("data", (quad: RDF.Quad) => {
     if (options.graphs.includes(quad.graph))
       out.push(DF.quad(quad.subject, quad.predicate, quad.object, quad.graph));
   });
-  stream.on("end", () => out.push(null));
 
   return out;
 }
@@ -34,9 +34,9 @@ export function overrideStream(stream: RDF.Stream, options: OverrideGraphOptions
   const DF = new DataFactory();
 
   stream.on("error", (error) => out.emit("error", error));
+  stream.on("end", () => out.push(null));
   stream.on("data", (quad: RDF.Quad) =>
     out.push(DF.quad(quad.subject, quad.predicate, quad.object, options.intoGraph))
   );
-  stream.on("end", () => out.push(null));
   return out;
 }

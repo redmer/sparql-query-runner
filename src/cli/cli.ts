@@ -15,7 +15,7 @@ import { newPipelineTemplate } from "../runner/new-pipeline.js";
 import { ShaclRulesWorker } from "../runner/shacl-rules-worker.js";
 import { WorkflowSupervisor } from "../runner/workflow-supervisor.js";
 import { ge1 } from "../utils/array.js";
-import * as Report from "../utils/report.js";
+import { Bye, Done } from "../utils/report.js";
 import { ICliOptions } from "./cli-options.js";
 
 dotenv.config();
@@ -31,9 +31,9 @@ async function cli() {
         // Get passed config files or glob them in pwd
         let configFiles = argv["config"];
         if (!configFiles) configFiles = (await glob(`*.${CONFIG_EXT}`)).sort();
-        if (configFiles.length == 0)
-          console.error(Report.ERROR + `Found 0 *.sqr.yaml workflows to run`);
+        if (configFiles.length == 0) Bye(`Found 0 *.sqr.yaml workflows to run`);
 
+        // Then pass them on to the executor
         await runPipelines(configFiles, {
           cacheIntermediateResults: argv["cache"] ?? false,
           defaultPrefixes: !argv["no-default-prefixes"] ?? false,
@@ -126,15 +126,22 @@ async function cli() {
 }
 
 async function clearCache({ force }: { force: boolean }) {
-  await fs.rm(TEMPDIR, { recursive: true, force: force });
-  console.info(`Cache dir ${TEMPDIR} cleaned` + Report.DONE);
-  return;
+  try {
+    await fs.rm(TEMPDIR, { recursive: true, force: force });
+    Done(`cleaned cache dir <${TEMPDIR}>`);
+  } catch (error) {
+    Bye(`when clearing cache:` + error);
+  }
 }
 
 async function createNewPipelineFile(path: string) {
-  const contents = newPipelineTemplate();
-  await fs.writeFile(path, contents);
-  console.info(`Created ${resolve(path)}`);
+  try {
+    const contents = newPipelineTemplate();
+    await fs.writeFile(path, contents);
+    Done(`created <${resolve(path)}>`);
+  } catch (error) {
+    Bye(`when creating a new pipeline:` + error);
+  }
 }
 
 async function runPipelines(configPaths: string[], { defaultPrefixes, ...options }: ICliOptions) {
@@ -148,8 +155,7 @@ async function runPipelines(configPaths: string[], { defaultPrefixes, ...options
     // Run them all. The supervisor handles dependencies.
     new WorkflowSupervisor(config).runAll({ defaultPrefixes, ...options });
   } catch (error) {
-    console.error(Report.ERROR + error.message ?? error);
-    throw error;
+    Bye(`during workflow execution:` + error);
   }
 }
 
@@ -163,8 +169,7 @@ async function createShaclRules(configPaths: string[]) {
     new ShaclRulesWorker(stdout).start(config);
     // await RulesWorker.start(config, process.stdout);
   } catch (error) {
-    console.error(Report.ERROR + error.message ?? error);
-    throw error;
+    Bye(`during SHACL rule creation:` + error);
   }
 }
 

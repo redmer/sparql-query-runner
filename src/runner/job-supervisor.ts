@@ -1,18 +1,23 @@
 import { LoggerPretty } from "@comunica/logger-pretty";
 import { QueryEngine } from "@comunica/query-sparql";
 import type * as RDF from "@rdfjs/types";
+import { createWriteStream } from "fs";
+import N3 from "n3";
 import { RdfStore } from "rdf-stores";
-import type { IJobData, IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
+import { createGzip } from "zlib";
+import type { IJobData, IJobModuleData, IJobTargetData } from "../config/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 import {
   FilteredStream,
+  First_NQuadsStream,
   ImportStream,
   MatchStreamReadable,
   MergeGraphsStream,
+  RdfStoresImportStream,
 } from "../utils/rdf-stream-override.js";
 import * as Report from "../utils/report.js";
 import { tempdir } from "../utils/workflow-job-tempdir.js";
-import { match } from "./module.js";
+import { IExecutableJob, match } from "./module.js";
 import type {
   JobRuntimeContext,
   QueryContext,
@@ -33,6 +38,7 @@ async function EnterModule(
   module: WorkflowPart,
   jobData: IJobData,
   workflowCtx: WorkflowRuntimeContext,
+  iterN: number,
   closure: (ctx: JobRuntimeContext) => Promise<void>
 ) {
   const localname = data.type.split("/", 2)[1];
@@ -100,13 +106,15 @@ export class JobSupervisor implements Supervisor<IJobData> {
             ...m.module.staticQueryContext(<IJobTargetData>m.data),
           })
       );
-    [...modules.sources, ...modules.targets]
-      .filter((m) => m.module.staticAuthProxyHandler)
-      .forEach((m) =>
-        httpProxyHandler.add(
-          m.module.staticAuthProxyHandler(<IJobSourceData | IJobTargetData>m.data)
-        )
-      );
+
+    /**
+     * Register staticHttpProxyHandler`s
+     * @param modules Modules from which staticAuthProxyHandler`s should be gotten
+     */
+    const addHttpProxyHandlers = (modules: IExecutableJob["sources"] | IExecutableJob["targets"]) =>
+      modules
+        .filter((m) => m.module.staticAuthProxyHandler)
+        .forEach((m) => httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data)));
 
     const staticCtx: Partial<JobRuntimeContext> = {
       workflowContext: this.workflowCtx,
@@ -116,8 +124,9 @@ export class JobSupervisor implements Supervisor<IJobData> {
     };
 
     Report.infoMsg(`sources:`, 2)(`\n`);
-    for (const { data, module: m } of modules.sources) {
-      await EnterModule(staticCtx, data, m, jobData, this.workflowCtx, async (ctx) => {
+    addHttpProxyHandlers(modules.sources);
+    for (const [i, { data, module: m }] of modules.sources.entries()) {
+      await EnterModule(staticCtx, data, m, jobData, this.workflowCtx, i, async (ctx) => {
         const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
         let quadsOUT: RDF.Stream | void;
 
@@ -133,7 +142,15 @@ export class JobSupervisor implements Supervisor<IJobData> {
           .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }))
           .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
-        await ImportStream(streamOUT, quadStore);
+        streamOUT.pipe(new RdfStoresImportStream(quadStore));
+        streamOUT
+          .pipe(new N3.StreamWriter({ format: "application/n-quads" }))
+          .pipe(createGzip())
+          .pipe(createWriteStream(ctx.tempdir + `stream-quads-out.nq.gz`));
+        streamOUT
+          .pipe(new First_NQuadsStream(30))
+          .pipe(new N3.StreamWriter({ format: "application/n-quads" }))
+          .pipe(createWriteStream(ctx.tempdir + `stream-quads-out--head30.nq`));
       });
     }
 
@@ -160,6 +177,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
     }
 
     Report.infoMsg(`targets:`, 2)(`\n`);
+    addHttpProxyHandlers(modules.targets);
     for (const { data, module: m } of modules.targets) {
       await EnterModule(staticCtx, data, m, jobData, this.workflowCtx, async (ctx) => {
         const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);

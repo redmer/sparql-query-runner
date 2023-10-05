@@ -1,5 +1,6 @@
-import type * as RDF from "@rdfjs/types";
+import * as RDF from "@rdfjs/types";
 import { DataFactory } from "rdf-data-factory";
+import { RdfStore } from "rdf-stores";
 import { Readable, Transform, TransformCallback } from "stream";
 
 export interface OverrideGraphOptions {
@@ -8,13 +9,14 @@ export interface OverrideGraphOptions {
 }
 
 export interface FilteredGraphOptions {
+  /** Only output these specified graphs */
   graphs?: RDF.Quad_Graph[];
 }
 
-/** Consume an RDF.Stream as a Readable */
 export class MatchStreamReadable extends Readable implements RDF.Stream {
   stream: RDF.Stream<RDF.Quad>;
 
+  /** Consume an RDF.Stream as a Readable */
   constructor(stream: RDF.Stream) {
     super({ objectMode: true });
     this.stream = stream;
@@ -29,13 +31,13 @@ export class MatchStreamReadable extends Readable implements RDF.Stream {
   }
 }
 
-/** Merge all quads in an RDF.Stream into a single graph */
 export class MergeGraphsStream extends Transform implements RDF.Stream {
   #targetGraph: RDF.Quad_Graph;
   #DF: RDF.DataFactory;
 
+  /** Merge all quads in an RDF.Stream into a single graph */
   constructor(options: OverrideGraphOptions) {
-    super({ objectMode: true });
+    super({ readableObjectMode: true, writableObjectMode: true });
     this.#targetGraph = options.intoGraph;
     this.#DF = new DataFactory();
   }
@@ -48,13 +50,13 @@ export class MergeGraphsStream extends Transform implements RDF.Stream {
   }
 }
 
-/** Filter out graphs in an RDF.Stream */
 export class FilteredStream extends Transform implements RDF.Stream {
   #onlyGraphs: RDF.Quad_Graph[];
   #DF: DataFactory<RDF.Quad>;
 
+  /** Filter out graphs in an RDF.Stream */
   constructor(options: FilteredGraphOptions) {
-    super({ objectMode: true });
+    super({ readableObjectMode: true, writableObjectMode: true });
     this.#onlyGraphs = options.graphs;
     this.#DF = new DataFactory();
   }
@@ -74,4 +76,42 @@ export async function ImportStream(stream: RDF.Stream, store: RDF.Store) {
     emitter.once("end", resolve);
     emitter.once("error", reject);
   });
+}
+
+export class RdfStoresImportStream extends Transform implements RDF.Stream {
+  store: RdfStore;
+
+  /** Import an RDF.Stream into a RDF.Store */
+  constructor(store: RdfStore) {
+    super({ readableObjectMode: true, writableObjectMode: true });
+    this.store = store;
+  }
+
+  _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
+    this.store.addQuad(quad);
+    this.push(quad, encoding);
+    callback();
+  }
+}
+
+export class First_NQuadsStream extends Transform implements RDF.Stream {
+  maxN: number;
+  currentN: number;
+
+  /**
+   * Limit the amount of output `RDF.Quad`s. Useful for a gist of
+   *
+   * @param maxN Quad count limit
+   */
+  constructor(maxN = 29) {
+    super({ readableObjectMode: true, writableObjectMode: true });
+    this.maxN = maxN; //
+    this.currentN = 0;
+  }
+
+  _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
+    if (this.currentN > this.maxN) this.end();
+    this.currentN += 1;
+    callback(null, quad);
+  }
 }
