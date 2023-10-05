@@ -1,125 +1,109 @@
-/* eslint-disable @typescript-eslint/no-empty-interface */
 import type { QueryEngine } from "@comunica/query-sparql";
-import type { QueryStringContext } from "@comunica/types/lib";
+import type {
+  IDataSourceExpanded,
+  IDataSourceSerialized,
+  QueryStringContext,
+  SourceType,
+} from "@comunica/types/lib";
 import type * as RDF from "@rdfjs/types";
-import N3 from "n3";
-import type { IPipeline } from "../config/types";
-import type { ICliOptions } from "../config/validate";
+import { RdfStore } from "rdf-stores";
+import type { ICliOptions } from "../cli/cli-options.js";
+import type {
+  IJobData,
+  IJobModuleData,
+  IJobSourceData,
+  IJobStepData,
+  IJobTargetData,
+  IWorkflowData,
+} from "../config/types.js";
+import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
-/** A PipelinePart is a Source, Endpoint, Destination or Step.
- *
- * Endpoint: a remote or local SPARQL 1.1 endpoint
- * Source: a source of RDF quads, as a remote or local file or via plugins
- * Destination: an RDF file that is exporter, remote or local
- * Step: a SPARQL update query, a construct query or a SHACL validation request
- */
-export interface PipelinePartInfo {
-  /** Called before running the pipeline, use to initialize the pipeline part. */
-  prepare?: () => Promise<void>;
+export type QueryContext = Omit<QueryStringContext, "sources"> & {
+  sources: SourceType[]; // There should be at least 1 sources at execution time
+};
 
-  /** Runs the pipeline part, in defined order. */
-  start?: () => Promise<Iterable<RDF.Quad> | void>;
-
-  /** Called after running the pipeline, to clean up artifacts. */
-  cleanup?: () => Promise<void>;
-
-  /** Query context for Comunica query */
-  getQueryContext?: Partial<QueryContext>;
-
-  /** Local file paths that are used by this PipelinePart */
-  filepaths?: () => Promise<string[]>;
+/** Workflow context of the full configuration at runtime */
+export interface WorkflowRuntimeContext {
+  readonly data: IWorkflowData;
+  /** The top-level CLI options */
+  readonly options: Partial<ICliOptions>;
 }
 
-export type QueryContext = QueryStringContext; // & { source?: IDataSource | SourceType };
-// export type QueryContext = { sources?: IDataSource[] } & IQueryContextCommon & QueryStringContext;
-
-export interface QueryContextInfo {}
-
-export interface CacheableInfo {}
-
-// Specific PipelinePartInfo's
-export interface EndpointPartInfo extends PipelinePartInfo, QueryContextInfo {}
-export interface SourcePartInfo extends PipelinePartInfo, QueryContextInfo, CacheableInfo {}
-export interface DestinationPartInfo extends PipelinePartInfo {}
-export interface StepPartInfo extends PipelinePartInfo, CacheableInfo {}
-
-// Maximal pipeline context at runtime
-export interface RuntimeCtx {
-  readonly pipeline: IPipeline;
-  readonly options: Partial<ICliOptions>;
-
+/** Workflow context of the present Job at runtime */
+export interface JobRuntimeContext {
+  /** Find the context of the full workflow */
+  readonly workflowContext: WorkflowRuntimeContext;
+  /** The data of the Job */
+  readonly jobData: IJobData;
   /** The path to a temporary directory. */
   readonly tempdir: string;
-
-  /** Invalidate the cache of subsequent steps (or also preceding steps) */
-  invalidateCache?(preceding: boolean): void;
-}
-
-export interface StepCache {
-  readonly stepName: string;
-
-  readonly payloadHash: string;
-  readonly urlETag: string;
-  readonly urlLastUpdated: string;
-
-  readonly state: unknown;
-
-  /** A deterministic hash of the step */
-  readonly stepHash: string;
-}
-
-export interface WorkflowLevelCache {
-  readonly sources: unknown;
-  readonly prefixes: unknown;
-  readonly endpoint: unknown;
-  readonly destinations: unknown;
-  readonly steps: StepCache[];
-
-  /** A deterministic hash of the workflow */
-  readonly workflowHash: string;
-}
-
-export interface ConfigLevelCache {
-  readonly workflows: WorkflowLevelCache[];
-
-  /** A deterministic hash of the configuration */
-  readonly configHash: string;
-
-  readonly configETag: string;
-  readonly configLastUpdated: string;
-}
-
-export interface UpdateRuntimeCtx extends RuntimeCtx {
-  readonly endpoint: string;
-}
-export interface ConstructRuntimeCtx extends RuntimeCtx {
-  /** The quad store for CONSTRUCTed quads */
-  readonly quadStore: N3.Store;
-
   /** Query engine */
   readonly engine: QueryEngine;
-
   /** Query context for Comunica query */
   queryContext: QueryContext;
+  // /** Register query context proxy handlers for non-Basic authentication */
+
+  /** Print an INFO level message */
+  info(message: string): void;
+  /** Print a WARNING level message */
+  warning(message: string): void | never;
+  /** Print an ERROR level message */
+  error(message: string): never;
 }
 
-// Base
-export type PipelinePartGetter = (
-  context: Readonly<ConstructRuntimeCtx>,
-  i?: number
-) => Promise<PipelinePartInfo>;
+export type WorkflowModuleExec = (context: JobRuntimeContext) => Promise<WorkflowPartGetter>;
 
-export interface PipelinePart<T> {
-  /** Return true if the PipelinePart can handle this data. */
-  qualifies(data: T): boolean;
+export type InMemQuadStore = RDF.Store & RdfStore;
 
-  /** A reference name for the PipelinePart */
-  name(): string;
-
-  /** Return runtime info for the PipelinePart */
-  info(data: T): Promise<PipelinePartGetter>;
+export interface WorkflowPartGetter {
+  /** Supply a Comunica Data Source, for non-quad streams */
+  comunicaDataSources?(): [IDataSourceExpanded | IDataSourceSerialized];
+  /** Execute a step */
+  init?(stream: RDF.Stream, quadStore: InMemQuadStore): Promise<RDF.Stream | void>;
 }
 
-export interface Worker {
-  start: (data: IPipeline, options?: Partial<ICliOptions>) => Promise<void>;
+export interface WorkflowPartSource extends WorkflowPart {
+  /** Return the awaitable workflow source module executable */
+  exec(data: IJobSourceData): WorkflowModuleExec;
+}
+
+export interface WorkflowPartStep extends WorkflowPart {
+  /** Return the awaitable workflow step module executable */
+  exec(data: IJobStepData): WorkflowModuleExec;
+}
+
+export interface WorkflowPartTarget extends WorkflowPart {
+  /** Return the awaitable workflow target module executable */
+  exec(data: IJobTargetData): WorkflowModuleExec;
+}
+
+/** A Source, Step or Target is a workflow part */
+export interface WorkflowPart {
+  /** The canonical name of the workflow part */
+  id(): string;
+
+  /** The names this workflow module can occur. (e.g., `targets/sparql-update`, `source/sparql`) */
+  names: string[];
+
+  /** True if this module can handle this data */
+  isQualified?(data: IJobModuleData): boolean;
+
+  /** True if the workflow supervisor must download an external file */
+  shouldCacheAccess?(data: IJobSourceData | IJobStepData): boolean;
+
+  /**
+   * Set the Comuncia engine's query context. This is called before info()
+   * and can only be based on static information in the module's data.
+   */
+  staticQueryContext?(data: IJobTargetData): Partial<JobRuntimeContext["queryContext"]>;
+
+  /**
+   * Set the AuthProxyHandler details. This is called before info() and
+   * can only be based on static information in the module's data.
+   */
+  staticAuthProxyHandler?(data: IJobSourceData | IJobTargetData): AuthProxyHandler;
+}
+
+export interface Supervisor<T> {
+  start(data: T): Promise<void>;
 }

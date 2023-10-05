@@ -9,11 +9,6 @@ export function ge1<T>(items: T | T[] | undefined): T[] | undefined {
   return ([] as T[]).concat(items).filter((item) => item);
 }
 
-/** Strict check not empty */
-export function notEmpty<TValue>(value: TValue | null | undefined): value is TValue {
-  return value !== null && value !== undefined;
-}
-
 /** Exhaust a generator */
 export async function arrayFromGenerator<T>(generator: AsyncIterable<T>): Promise<T[]> {
   const out: T[] = [];

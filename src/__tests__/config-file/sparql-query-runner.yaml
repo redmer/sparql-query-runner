@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://rdmr.eu/sparql-query-runner/schema.json
+version: v4
+pipelines:
+  type: construct-quads
+  steps:
+    - construct: >
+        BASE <https://example.org/>
+        CONSTRUCT { <#s> <#p> <#o> } WHERE { }
+  targets:
+    - construct-quads.ttl
+    - construct-quads.nq

@@ -1,4 +1,4 @@
-const MIMETYPE_MAP: Record<string, string[]> = {
+export const MIMETYPE_MAP = {
   "application/trig": [".trig"],
   "application/n-quads": [".nq", ".nquads"],
   "text/turtle": [".ttl", ".turtle"],
@@ -8,10 +8,16 @@ const MIMETYPE_MAP: Record<string, string[]> = {
   "application/rdf+xml": [".rdf", ".rdfxml", ".owl"],
   "text/html": [".html", ".htm", ".xhtml", ".xht"],
   "image/svg+xml": [".xml", ".svg", ".svgz"],
-};
+} as const;
 
-const key = (ext: string): string | undefined =>
-  Object.keys(MIMETYPE_MAP).find((k) => MIMETYPE_MAP[k].includes(ext));
+import pathlib from "path";
+export type SerializationFormat = keyof typeof MIMETYPE_MAP;
+
+function mimetypeForExtension(ext: string): SerializationFormat | undefined {
+  return Object.keys(MIMETYPE_MAP).find((k) =>
+    MIMETYPE_MAP[k].includes(ext)
+  ) as SerializationFormat;
+}
 
 /**
  * Get the media type based on the extension of the given path,
@@ -19,8 +25,7 @@ const key = (ext: string): string | undefined =>
  * @param {string} path A path.
  * @return {string} A media type or the empty string.
  */
-export function getMediaTypeFromFilename(path: string): string {
-  const dotIndex = path.lastIndexOf(".");
-  // Get extension after last dot and map to media
-  return (dotIndex >= 0 && key(path.slice(dotIndex + 1))) || "";
+export function getRDFMediaTypeFromFilename(path: string): SerializationFormat | undefined {
+  const sansGzip = path.replace(/\.gz$/, "");
+  return mimetypeForExtension(pathlib.extname(sansGzip));
 }

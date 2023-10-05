@@ -1,57 +1,25 @@
-import * as process from "node:process";
-import type { ICredential } from "../config/types";
-import { substitute } from "./compile-envvars.js";
-
-const name = "utils/auth";
+import type { ICredentialData } from "../config/types.js";
 
 export class AuthTypeError extends Error {}
-export class AuthValueError extends Error {}
-
-/** { username, password } as an object */
-export function usernamePasswordDict(data: ICredential): {
-  username: string;
-  password: string;
-} {
-  if (data.type !== "Basic")
-    throw new AuthTypeError(`${name}: Authentication type '${data.type}' not supported here`);
-
-  return {
-    username: substitute(data.username, process.env),
-    password: substitute(data.password, process.env),
-  };
-}
-
-/** Add Basic authentication to a URL */
-export function addToUrl(url: string, data?: ICredential): string {
-  // We need to insert Basic authentication between URL schema and rest...
-  // Source: <https://comunica.dev/docs/query/advanced/basic_auth/>
-  if (!data) return url;
-  const newUrl = new URL(url);
-  const { username, password } = usernamePasswordDict(data);
-  [newUrl.username, newUrl.password] = [username, password];
-  return newUrl.href;
-}
-
-/** Concatenate username and password with a colon. */
-export function httpSyntax(data: ICredential): string {
-  if (data === undefined) return undefined;
-  const { username, password } = usernamePasswordDict(data);
-  return `${username}:${password}`;
-}
 
 /** Returns auth details ready for usage as an HTTP header */
-export function asHeader(data: ICredential): { Authorization: string } {
-  if (data.type === "Basic") {
+export function asHeader(data: ICredentialData): { Authorization?: string } {
+  if (data === undefined || data === null) return {};
+
+  if (data.type === "Basic")
     return {
-      Authorization: `Basic ${encode(httpSyntax(data))}`,
+      Authorization: `Basic ${encodeB64(data.username + ":" + data.password)}`,
+    };
+
+  if (data.type === "Bearer") {
+    return {
+      Authorization: `Bearer ${data.token}`,
     };
   }
 
-  if (data.type === "Bearer") {
-    const token = substitute(data.token, process.env);
-
+  if (data.type === "HTTP-Header") {
     return {
-      Authorization: `Bearer ${token}`,
+      ...data.headers,
     };
   }
 
@@ -59,6 +27,6 @@ export function asHeader(data: ICredential): { Authorization: string } {
 }
 
 /** Base64 encode */
-export function encode(value: string): string {
+export function encodeB64(value: string): string {
   return Buffer.from(value).toString("base64");
 }

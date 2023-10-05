@@ -8,12 +8,12 @@
       "type": "node",
       "request": "launch",
       "name": "Launch CLI",
-      "skipFiles": ["<node_internals>/**"],
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**/*.js"],
       "program": "${workspaceFolder}/dist/cli/cli.js",
-      "args": ["run"],
+      "args": ["run", "-i", "workflow.sqr.yaml"],
       // "preLaunchTask": "tsc: build - tsconfig.json",
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "cwd": "${workspaceFolder}/src/__tests__/config/1"
+      "cwd": "${workspaceFolder}"
     }
   ]
 }

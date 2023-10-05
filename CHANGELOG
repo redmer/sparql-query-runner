@@ -1,11 +1,11 @@
 # v4
 
 - Configuration file can now also be a YAML file
-- Configuration file renames `pipeline:` to `pipelines:`
-- Step `download-file` is removed. Use `pipelines/destinations`.
+- Configuration file renames `pipeline:` to `jobs:`
+- Step `download-file` is removed. Use `targets/file:`.
   If you run queries after `download-file`, make multiple pipelines instead.
 - Step `delay` is removed.
-- Step `sparql` is split into `sparql-update` and `sparql-query`.
+- Step `sparql` is split into steps `update:` and `construct:`.
   The former performs a `INSERT`, `DELETE` to the (POST) SPARQL endpoint,
   the latter is meant for `CONSTRUCT` or `DESCRIBE` to the SPARQL endpoint.
   (`SELECT`, `ASK` don't make sense in the context of a RDF set)
@@ -15,9 +15,14 @@
   On the CLI, the option `--warnings-as-errors/-e` makes SHACL warnings fatal.
   SHACL information-level messages are posted to stdout.
 - On the CLI, the subcommand `rules` collects the construct queries as SHACL rules.
-- Step `import-msaccess` is removed. This has been replaced with a `pipelines/source`
+- Step `import-access` is removed.
+  Use other tools to generate RDF before sourcing them with e.g. `source/file:`.
+  Automate this with the step `shell:`.
+  An MS Access tool is available at `shell: npx @rdmr-eu/rdfjs-source-msaccess`.
 - Destination `sparql-graph-store` is the W3C Recommendation [SPARQL 1.1 Graph Store][gs].
   Destination `sparql-quad-store` is not standardized, but is similar to the Graph Store protocol,
   but with Dataset semantics. I.e., multiple contexts can be passed and quads can be uploaded.
+- Backend updated for RDF 1.2 support with quoted triples, i.e. RDF-Star and SPARQL-Star.
+- Remote files are automatically downloaded by the query runner.
 
 [gs]: https://www.w3.org/TR/2013/REC-sparql11-http-rdf-update-20130321/
