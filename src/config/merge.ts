@@ -1,4 +1,4 @@
-import { IJobData, type IWorkflowData } from "./types.js";
+import { IJobData, Prefixes, type IWorkflowData } from "./types.js";
 import { ConfigurationError } from "./validate.js";
 
 /** Merge configuration files: throws if job names aren't unique */
@@ -26,7 +26,7 @@ export function mergeConfigurations(configs: IWorkflowData[]): IWorkflowData {
 }
 
 /** Merge prefix definitions: throws if the same prefix has different target namespaces. */
-export function mergePrefixes(prefixObjects: Record<string, string>[]): Record<string, string> {
+export function mergePrefixes(prefixObjects: Prefixes[]): Prefixes {
   const providedPrefixes = prefixObjects.map((m) => Object.entries(m)).flat();
   const compiledPrefixes = new Map();
 

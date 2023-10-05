@@ -4,7 +4,6 @@ import * as dotenv from "dotenv";
 import { glob } from "glob";
 import fs from "node:fs/promises";
 import { resolve } from "node:path";
-import { stdout } from "node:process";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { mergeConfigurations } from "../config/merge.js";
@@ -91,8 +90,13 @@ async function cli() {
           type: "string",
           desc: "Path to workflow file",
         },
+        output: {
+          alias: "o",
+          type: "string",
+          desc: "Path to output rules to",
+        },
       },
-      handler: async (argv) => await createShaclRules(argv["config"]),
+      handler: async (argv) => await createShaclRules(argv["config"], argv["output"]),
     })
     .command({
       command: "new",
@@ -159,15 +163,14 @@ async function runPipelines(configPaths: string[], { defaultPrefixes, ...options
   }
 }
 
-async function createShaclRules(configPaths: string[]) {
+async function createShaclRules(configPaths: string[], output: string) {
   try {
     const configs = [];
     for (const path of ge1(configPaths))
       configs.push(await configFromPath(path, { secrets: process.env, defaultPrefixes: false }));
 
     const config = mergeConfigurations(configs);
-    new ShaclRulesWorker(stdout).start(config);
-    // await RulesWorker.start(config, process.stdout);
+    new ShaclRulesWorker().start(config, output);
   } catch (error) {
     Bye(`during SHACL rule creation:` + error);
   }

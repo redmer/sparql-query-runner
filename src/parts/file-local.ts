@@ -5,6 +5,7 @@ import { IJobSourceData, IJobTargetData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowPartSource, WorkflowPartTarget } from "../runner/types.js";
 import { serializeStream } from "../utils/graphs-to-file.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
+import { InfoUploadingTo } from "../utils/uploading-message.js";
 
 /**
  * Use a local file as a query source, a non-local file with filtered graphs.
@@ -58,9 +59,7 @@ export class LocalFileTarget implements WorkflowPartTarget {
 
       return {
         init: async (stream: RDF.Stream) => {
-          context.info(
-            `Exporting ${data.with.onlyGraphs?.length ?? "all"} graphs to ${data.access}...`
-          );
+          InfoUploadingTo(context.info, data.with.onlyGraphs, data.access);
 
           await serializeStream(stream, data.access, {
             format: mimetype,

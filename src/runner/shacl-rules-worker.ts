@@ -1,12 +1,17 @@
 import * as RDF from "@rdfjs/types";
-import fs from "fs";
+import fs, { createWriteStream } from "fs";
 import N3 from "n3";
+import { stdout } from "process";
 import { DataFactory } from "rdf-data-factory";
 import sparqljs from "sparqljs";
 import { Readable, pipeline } from "stream";
-import { WriteStream } from "tty";
-import { IJobData, IJobStepData, IWorkflowData } from "../config/types.js";
+import { fileURLToPath } from "url";
+import { IJobData, IJobStepData, IWorkflowData, Prefixes } from "../config/types.js";
+import { expandCURIE } from "../config/validate.js";
+import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
+import { fileExistsLocally } from "../utils/local-remote-file.js";
 import { RDFNS, SH, XSD } from "../utils/namespaces.js";
+import { moduleDataDigest } from "../utils/workflow-job-tempdir.js";
 import { Supervisor } from "./types.js";
 const { Generator, Parser } = sparqljs;
 
@@ -14,17 +19,12 @@ const { blankNode, namedNode, quad, literal } = new DataFactory();
 
 /** This worker parses all construct steps with a sh:targetClass  */
 export class ShaclRulesWorker implements Supervisor<IWorkflowData> {
-  destination: WriteStream;
-
-  constructor(destination: WriteStream) {
-    this.destination = destination;
-  }
-
-  async start(data: IWorkflowData): Promise<void> {
-    const stream = new ShaclRulesParser(data);
-    const writer = new N3.StreamWriter({ format: "application/turtle", prefixes: data.prefixes });
-
-    pipeline(stream, writer, this.destination);
+  async start(data: IWorkflowData, output?: string): Promise<void> {
+    pipeline(
+      new ShaclRulesParser(data),
+      new N3.StreamWriter({ format: "application/turtle", prefixes: data.prefixes }),
+      output ? createWriteStream(output, { encoding: "utf-8" }) : stdout
+    );
   }
 }
 
@@ -41,22 +41,21 @@ export class ShaclRulesParser extends Readable implements RDF.Stream {
   }
 
   _construct(callback: (error?: Error) => void): void {
-    const steps = [];
+    let steps = [];
     for (const job of this.data.jobs)
-      steps.concat(
-        job.steps
+      steps = [
+        ...steps,
+        ...job.steps
           .filter((s) => s.type === "steps/construct")
           .filter((s) => s.with["sh:targetClass"])
-      );
+          .filter((s) => typeof s.with["sh:targetClass"] == "string"),
+      ];
 
     this.iterQuad = quadsForSteps(steps);
     callback();
   }
 
   _read(_size: number): void {
-    // _read() manages backpressure: start pushing quads when _read() is called
-    // but stop as soon as this.push() returns falsy. Then stop iteration and
-    // simply wait until _read() is called again.
     this.shouldRead = true;
 
     let shouldContinue: boolean;
@@ -69,13 +68,20 @@ export class ShaclRulesParser extends Readable implements RDF.Stream {
   }
 }
 
-/** Yield quads for SHACL namespace declaration. */
-export function* quadsForNamespaces(data: Record<string, string>): Generator<RDF.Quad> {
+/**
+ * Yield quads for SHACL namespace declaration.
+ *
+ * ```turtle
+ * <ns> sh:declare [
+ *   sh:namespace "ns"^^xsd:anyURI ;
+ *   sh:prefix "abbr" ;
+ * ] .
+ * ```
+ *
+ * @param data Prefix definitions
+ */
+export function* quadsForNamespaces(data: Prefixes): Generator<RDF.Quad> {
   for (const [abbr, val] of Object.entries(data)) {
-    //* ?val sh:declare [
-    //*   sh:namespace "..."^^xsd:anyURI ;
-    //*   sh:prefix "?abbr" ;
-    //* ] .
     const bnode = blankNode();
     yield quad(namedNode(val), SH("declare"), bnode);
     yield quad(bnode, SH("namespace"), literal(val, XSD("anyURI")));
@@ -83,31 +89,40 @@ export function* quadsForNamespaces(data: Record<string, string>): Generator<RDF
   }
 }
 
+/**
+ * Generate SHACL rule quads describing a Construct query body.
+ *
+ * ```turtle
+ * $rule a sh:SPARQLRule ;
+ *    sh:order $i ;
+ *    sh:prefixes rdf: , sh: , ...
+ *    sh:construct """CONSTRUCT {..."""
+ * ```
+ *
+ * @param query Query body string
+ * @param rule The rule subject to generate quads with
+ * @param i Index in list of steps
+ */
 export function* quadsForQuery(
   query: string,
   rule: RDF.Quad_Subject,
   i: number
 ): Generator<RDF.Quad> {
   const parser = new Parser();
-  const results = parser.parse(query);
 
-  //* ?rule a sh:SPARQLRule ;
-  //*   sh:order ?i .  # ordinal from .yaml
   yield quad(rule, RDFNS("type"), SH("SPARQLRule"));
   yield quad(rule, SH("order"), literal(i.toFixed(0), XSD("decimal")));
 
-  // ↓↓ ?rule sh:prefixes __ .
-  for (const [, val] of Object.entries(results.prefixes))
+  const parsedQuery = parser.parse(query);
+  for (const [, val] of Object.entries(parsedQuery.prefixes))
     yield quad(rule, SH("prefixes"), namedNode(val));
-
-  yield* quadsForNamespaces(results.prefixes);
+  yield* quadsForNamespaces(parsedQuery.prefixes);
 
   const generator = new Generator();
-  let body = generator.stringify(results);
-  body = body.replace(/PREFIX [^:]+: <[^>]+>\n/gi, "");
+  let generatedBody = generator.stringify(parsedQuery);
+  generatedBody = generatedBody.replace(/PREFIX [^:]+: <[^>]+>\n/gi, "");
 
-  // ?rule sh:construct """CONSTRUCT {} WHERE {}""" ;
-  yield quad(rule, SH("construct"), literal(body));
+  yield quad(rule, SH("construct"), literal(generatedBody));
 }
 
 export function* quadsForSteps(steps: IJobStepData[]): Generator<RDF.Quad> {
@@ -116,25 +131,38 @@ export function* quadsForSteps(steps: IJobStepData[]): Generator<RDF.Quad> {
   }
 }
 
-export function* quadsForStep(step: IJobStepData, i: number): Generator<RDF.Quad> {
-  const targetClass = step.with["target-class"];
-  if (!targetClass) return;
+/**
+ * Generate SHACL rule quads from a Construct step.
+ *
+ * ```turtle
+ * ?shape a sh:NodeShape ;
+ *   sh:targetClass ?targetClass ;
+ *   sh:rule ?rule .
+ * ```
+ *
+ * @param data Step data
+ * @param i Index in list of steps
+ */
+export function* quadsForStep(data: IJobStepData, i: number): Generator<RDF.Quad> {
+  let queryBody: string;
+  let shape: RDF.NamedNode;
+  const targetClassNode = expandCURIE(data.with["sh:targetClass"], data.prefixes);
 
-  for (const url of step.access) {
-    const shape = namedNode(new URL(url, "https://rdmr.eu/ns/sparql-query-runner/rule/id/").href);
-    const rule = blankNode();
-
-    //* ?shape a sh:NodeShape ;
-    //*   sh:targetClass ?targetClass ;
-    //*   sh:rule ?rule .
-
-    yield quad(shape, RDFNS("type"), SH("NodeShape"));
-    yield quad(shape, SH("targetClass"), namedNode(targetClass));
-    yield quad(shape, SH("rule"), rule);
-
-    const query = fs.readFileSync(url, { encoding: "utf-8" });
-    yield* quadsForQuery(query, rule, i);
+  if (fileExistsLocally(data.access)) {
+    queryBody = fs.readFileSync(data.access, { encoding: "utf-8" });
+    shape = namedNode(fileURLToPath(data.access));
+  } else {
+    queryBody = addPrefixesToQuery(data.access, data.prefixes);
+    shape = namedNode(`urn:shacl:rule:id:${moduleDataDigest(data)}`);
   }
+
+  const rule = blankNode();
+
+  yield quad(shape, RDFNS("type"), SH("NodeShape"));
+  yield quad(shape, SH("targetClass"), namedNode(targetClassNode));
+  yield quad(shape, SH("rule"), rule);
+
+  yield* quadsForQuery(queryBody, rule, i);
 }
 
 export async function start(data: IWorkflowData, out: NodeJS.WritableStream) {

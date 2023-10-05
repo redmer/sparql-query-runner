@@ -42,7 +42,6 @@ export interface JobRuntimeContext {
   /** Query context for Comunica query */
   queryContext: QueryContext;
   // /** Register query context proxy handlers for non-Basic authentication */
-  // httpProxyHandler: AuthProxyHandler;
 
   /** Print an INFO level message */
   info(message: string): void;

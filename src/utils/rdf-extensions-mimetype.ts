@@ -10,6 +10,7 @@ export const MIMETYPE_MAP = {
   "image/svg+xml": [".xml", ".svg", ".svgz"],
 } as const;
 
+import pathlib from "path";
 export type SerializationFormat = keyof typeof MIMETYPE_MAP;
 
 function mimetypeForExtension(ext: string): SerializationFormat | undefined {
@@ -25,7 +26,6 @@ function mimetypeForExtension(ext: string): SerializationFormat | undefined {
  * @return {string} A media type or the empty string.
  */
 export function getRDFMediaTypeFromFilename(path: string): SerializationFormat | undefined {
-  const dotIndex = path.lastIndexOf(".");
-  if (dotIndex < 0) return; // return early if not found
-  return mimetypeForExtension(path.slice(dotIndex));
+  const sansGzip = path.replace(/\.gz$/, "");
+  return mimetypeForExtension(pathlib.extname(sansGzip));
 }

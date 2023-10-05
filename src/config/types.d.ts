@@ -1,10 +1,12 @@
 import * as RDF from "@rdfjs/types";
 import { PartShorthandSource, PartShorthandStep, PartShorthandTarget } from "./schema-types.js";
 
+export type Prefixes = Record<string, string>;
+
 /** Represents a configuration file, that contains one or more {@link IPipeline}s. */
 export interface IWorkflowData {
   version: string;
-  prefixes?: Record<string, string>;
+  prefixes?: Prefixes;
   jobs: IJobData[];
 }
 
@@ -12,7 +14,7 @@ export interface IWorkflowData {
 export interface IJobData {
   name: string;
   independent?: boolean;
-  prefixes?: Record<string, string>;
+  prefixes?: Prefixes;
   sources?: IJobSourceData[];
   steps?: IJobStepData[];
   targets?: IJobTargetData[];
@@ -31,6 +33,7 @@ export type IJobModuleData = {
     onlyGraphs: RDF.Quad_Graph[];
     intoGraph: RDF.Quad_Graph | undefined;
   };
+  prefixes: Prefixes;
 };
 
 export type IJobSourceData = IJobModuleData;

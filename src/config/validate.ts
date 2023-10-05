@@ -4,7 +4,7 @@ import fs from "fs/promises";
 import { DataFactory } from "rdf-data-factory";
 import yaml from "yaml";
 import { ge1 } from "../utils/array.js";
-import { substitute } from "../utils/compile-envvars.js";
+import { substituteVars } from "../utils/compile-envvars.js";
 import { context } from "./rdfa11-context.js";
 import { PartShorthandSource, PartShorthandStep, PartShorthandTarget } from "./schema-types.js";
 import {
@@ -13,6 +13,7 @@ import {
   IAuthHeaderData,
   IJobModuleData,
   IJobPhase,
+  Prefixes,
   type ICredentialData,
   type IJobData,
   type IJobSourceData,
@@ -43,7 +44,7 @@ export async function configFromString(
   contents: string,
   { secrets, defaultPrefixes }: { secrets: Record<string, string>; defaultPrefixes: boolean }
 ): Promise<IWorkflowData> {
-  const substitutedContents = substitute(contents, secrets);
+  const substitutedContents = substituteVars(contents, secrets);
   const config = yaml.parse(substitutedContents, {
     strict: true,
     version: "1.2",
@@ -83,7 +84,7 @@ function validateConfiguration(
 function validateJob(
   name: string,
   data: Map<keyof IJobData, any>,
-  workflowPrefixes: Record<string, string>
+  workflowPrefixes: Prefixes
 ): IJobData {
   const independent = data.get("independent") ?? false;
   const prefixes = Object.assign(
@@ -119,9 +120,9 @@ function knownTypeKeys(
 function validateModule(
   phase: IJobPhase,
   data: Map<keyof IJobSourceData | IJobStepData | IJobTargetData, any>,
-  prefixes: Record<string, string>
+  prefixes: Prefixes
 ): IJobModuleData {
-  let knownType;
+  let knownType: string | any[];
   if (phase == "sources")
     knownType = knownTypeKeys(PartShorthandSource, data) as IJobSourceKnownTypes[];
   if (phase == "steps") knownType = knownTypeKeys(PartShorthandStep, data) as IJobStepKnownTypes[];
@@ -129,7 +130,11 @@ function validateModule(
     knownType = knownTypeKeys(PartShorthandTarget, data) as IJobTargetKnownTypes[];
 
   if (knownType.length != 1 && !data.has("type"))
-    throw new ConfigurationError(`${phase}: ${JSON.stringify([...data.keys()])} lack type key`);
+    throw new ConfigurationError(
+      `${phase}: could not infer type from '${[...data.keys()].join(
+        ", "
+      )}'. Check or provide explicit 'type' key.`
+    );
 
   return {
     ...Object.fromEntries(data.entries()),
@@ -145,6 +150,7 @@ function validateModule(
         ?.map((g) => expandCURIE(g, prefixes))
         ?.map((g) => stringToGraph(g))?.[0],
     },
+    prefixes: prefixes,
   };
 }
 
@@ -178,13 +184,12 @@ function validateAuthentication(
 }
 
 /** Try to expand a CURIE; returns the original string if prefix is unknown */
-function expandCURIE(uriOrCurie: string, prefixes: Record<string, string>): string {
-  const sep = ":";
-  if (uriOrCurie.includes("/")) return uriOrCurie;
+export function expandCURIE(uriOrCurie: string, prefixes: Prefixes): string {
+  for (const prefix of Object.keys(prefixes))
+    if (uriOrCurie.startsWith(prefix + ":"))
+      return prefixes[prefix] + uriOrCurie.slice((prefix + ":").length);
 
-  const [prefix, ...lname] = uriOrCurie.split(sep);
-  const localname = lname.join(sep);
-  return (prefixes[prefix] ?? prefix) + localname;
+  return uriOrCurie;
 }
 
 function stringToGraph(graphName: string): RDF.Quad_Graph {

@@ -5,6 +5,7 @@ import { DataFactory } from "rdf-data-factory";
 import { storeStream } from "rdf-store-stream";
 import { PassThrough } from "stream";
 import { pipeline } from "stream/promises";
+import { Prefixes } from "../config/types.js";
 import type { SerializationFormat } from "./rdf-extensions-mimetype.js";
 import { filteredStream } from "./rdf-stream-filter.js";
 import { MatchStreamReadable, MergeGraphsStream } from "./rdf-stream-override.js";
@@ -16,7 +17,7 @@ export interface FilteredGraphOptions {
 }
 
 export interface GraphToFileOptions {
-  prefixes?: Record<string, string>;
+  prefixes?: Prefixes;
   format?: SerializationFormat;
 }
 

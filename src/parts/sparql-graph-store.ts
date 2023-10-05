@@ -9,6 +9,7 @@ import {
   WorkflowPartTarget,
 } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
+import { digest } from "../utils/digest.js";
 import { serialize } from "../utils/graphs-to-file.js";
 import { getGraphs } from "../utils/quads.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
@@ -29,18 +30,18 @@ export class GraphStoreTarget implements WorkflowPartTarget {
         init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
           const ntriples = getRDFMediaTypeFromFilename(".nt");
           const graphs = data.with.onlyGraphs ?? (await getGraphs(quadStore));
-          const stepTempDir = `${context.tempdir}/sparql-graph-destination-${Date.now()}`;
 
           for (const [i, graph] of graphs.entries()) {
-            context.info(`Uploading ${i + 1}/${graphs.length} to <${data.access}>...`);
+            const tempfile = `${context.tempdir}/export-${digest(graph.value)}.nq`;
+            context.info(`Exporting ${i + 1}/${graphs.length} to <${data.access}>...`);
 
             // First, write-out a single N-Triples file per graph
-            await serialize(quadStore, `${stepTempDir}/${i}.nt`, {
+            await serialize(quadStore, `${tempfile}.nt`, {
               format: ntriples,
               graphs: [graph],
             });
             // And then read that file in-mem
-            const contents = await fs.readFile(`${stepTempDir}/${i}.nq`, { encoding: "utf-8" });
+            const contents = await fs.readFile(`${tempfile}.nq`, { encoding: "utf-8" });
 
             // Set in the URL query part which graph this represents
             const destination = new URL(data.access);

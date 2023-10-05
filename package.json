@@ -73,6 +73,16 @@
     "testMatch": [
       "**/(*.)+test\\.ts"
     ],
+    "moduleDirectories": [
+      "node_modules",
+      "src"
+    ],
+    "roots": [
+      "src"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
     "transform": {
       "\\.[tj]sx?$": [
         "ts-jest",

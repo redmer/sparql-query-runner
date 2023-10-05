@@ -22,6 +22,6 @@
     "declaration": true
   },
   "compileOnSave": true,
-  "include": ["src/**/**.ts", "shacl-engine.d.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "resources"]
 }

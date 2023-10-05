@@ -17,6 +17,6 @@ export const ENV_VAR_RE = /(?<!\\)\$\{(\S{1,}?)\}/g;
  * @param {Record<string, string>} lookup Dictionary of keys and values.
  * @returns {string} Replaced string
  */
-export function substitute(contents: string, lookup: Record<string, string>): string {
-  return contents.replace(ENV_VAR_RE, (match, p1) => lookup[p1] ?? `\${${match}}`);
+export function substituteVars(contents: string, lookup: Record<string, string>): string {
+  return contents.replace(ENV_VAR_RE, (match, p1) => lookup[p1] ?? match);
 }
