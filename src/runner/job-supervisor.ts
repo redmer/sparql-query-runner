@@ -49,8 +49,7 @@ async function EnterModule(
     TEMPDIR,
     `job-${jobData.name}`,
     phase,
-    module.id(),
-    moduleDataDigest(data).slice(0, 8)
+    module.id() + "-" + moduleDataDigest(data).slice(0, 8)
   );
   await mkdir(tempdir, { recursive: true });
 
