@@ -120,7 +120,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
       sources: [{ type: "rdfjsSource", value: quadStore }],
       httpProxyHandler,
       lenient: true,
-      log: new LoggerPretty({ level: "debug" }),
+      log: this.workflowCtx.options.verbose ? new LoggerPretty({ level: "debug" }) : undefined,
     };
 
     // Static properties can be gathered before execution
