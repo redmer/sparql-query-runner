@@ -4,6 +4,9 @@
   "description": "Run SPARQL queries serially on a SPARQL endpoint.",
   "main": "dist/cli/cli.js",
   "repository": "https://github.com/redmer/sparql-query-runner.git",
+  "bugs": {
+    "url": "https://github.com/redmer/sparql-query-runner/issues"
+  },
   "author": "Redmer Kronemeijer <12477216+redmer@users.noreply.github.com> (https://rdmr.eu/)",
   "license": "MPL-2.0",
   "private": false,
