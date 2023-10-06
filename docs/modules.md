@@ -10,12 +10,12 @@ And if so, which arguments may be supplied.
 | file                   |   \*   |      |   \*   |               |      \*       |      \*       |
 | laces-hub              |   \*   |      |   \*   |    always     |  when Source  |  when Target  |
 | triplydb               |   \*   |      |   \*   |    always     |      \*       |      \*       |
+| construct              |        |  \*  |        |               |      \*       |
+| update                 |        |  \*  |
+| assert                 |        |  \*  |        |               |               |               | Message     |
+| shell                  |        |  \*  |
 | shacl                  |        |  \*  |        |               |               |      \*       |
 | infer                  |        |  \*  |        |               | Results-Graph |      \*       | Ruleset     |
-| construct              |        |  \*  |        |               |      \*       |
-| shell                  |        |  \*  |
-| assert                 |        |  \*  |        |               |               |               | Message     |
-| update                 |        |  \*  |
 | sparql-graph-store     |        |      |   \*   |      \*       |      \*       |      \*       |
 | sparql-quad-store      |        |      |   \*   |      \*       |      \*       |      \*       |
 

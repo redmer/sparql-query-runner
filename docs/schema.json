@@ -72,8 +72,8 @@
       "title": "RDF data sources",
       "properties": {
         "file": { "$ref": "#/$defs/Parts/Source/File" },
-        "laces-hub": { "$ref": "#/$defs/Parts/Source/LacesHub" },
         "sparql": { "$ref": "#/$defs/Parts/Source/Sparql" },
+        "laces-hub": { "$ref": "#/$defs/Parts/Source/LacesHub" },
         "triplydb": { "$ref": "#/$defs/Parts/Source/Triplydb" },
         "with": {
           "type": "object",
@@ -87,8 +87,8 @@
       },
       "oneOf": [
         { "required": ["file"] },
-        { "required": ["laces-hub"] },
         { "required": ["sparql"] },
+        { "required": ["laces-hub"] },
         { "required": ["triplydb"] }
       ]
     },
@@ -97,9 +97,10 @@
       "title": "Intermediate job steps",
       "properties": {
         "construct": { "$ref": "#/$defs/Parts/Step/Construct" },
-        "shacl": { "$ref": "#/$defs/Parts/Step/Shacl" },
-        "shell": { "$ref": "#/$defs/Parts/Step/Shell" },
         "update": { "$ref": "#/$defs/Parts/Step/Update" },
+        "assert": { "$ref": "#/$defs/Parts/Step/Assert" },
+        "shell": { "$ref": "#/$defs/Parts/Step/Shell" },
+        "shacl": { "$ref": "#/$defs/Parts/Step/Shacl" },
         "infer": { "$ref": "#/$defs/Parts/Step/Infer" },
         "with": {
           "type": "object",
@@ -112,9 +113,10 @@
       },
       "oneOf": [
         { "required": ["construct"] },
-        { "required": ["shacl"] },
-        { "required": ["shell"] },
         { "required": ["update"] },
+        { "required": ["assert"] },
+        { "required": ["shell"] },
+        { "required": ["shacl"] },
         { "required": ["infer"] }
       ]
     },
@@ -122,10 +124,10 @@
       "type": "object",
       "properties": {
         "file": { "$ref": "#/$defs/Parts/Target/File" },
-        "laces-hub": { "$ref": "#/$defs/Parts/Target/LacesHub" },
+        "sparql-update-endpoint": { "$ref": "#/$defs/Parts/Target/SparqlUpdateEndpoint" },
         "sparql-graph-store": { "$ref": "#/$defs/Parts/Target/SparqlGraphStore" },
         "sparql-quad-store": { "$ref": "#/$defs/Parts/Target/SparqlQuadStore" },
-        "sparql-update-endpoint": { "$ref": "#/$defs/Parts/Target/SparqlUpdateEndpoint" },
+        "laces-hub": { "$ref": "#/$defs/Parts/Target/LacesHub" },
         "triplydb": { "$ref": "#/$defs/Parts/Target/Triplydb" },
         "with": {
           "type": "object",
@@ -139,10 +141,10 @@
       },
       "oneOf": [
         { "required": ["file"] },
-        { "required": ["laces-hub"] },
+        { "required": ["sparql-update-endpoint"] },
         { "required": ["sparql-graph-store"] },
         { "required": ["sparql-quad-store"] },
-        { "required": ["sparql"] },
+        { "required": ["laces-hub"] },
         { "required": ["triplydb"] }
       ]
     },
@@ -226,6 +228,10 @@
           "description": "Path or URL to an RDF file containing SHACL shapes to validate the in-mem dataset with"
         },
         "Shell": { "type": "string", "description": "Perform any CLI / Shell script" },
+        "Assert": {
+          "type": "string",
+          "description": "A SPARQL ASK query or path to a .rq file"
+        },
         "Update": {
           "type": "string",
           "description": "A SPARQL Update query or path or URL to a .ru file"
