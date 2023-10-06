@@ -1,6 +1,6 @@
 {
   "name": "@rdmr-eu/sparql-query-runner",
-  "version": "5.0.1",
+  "version": "5.0.2",
   "description": "Run SPARQL queries serially on a SPARQL endpoint.",
   "main": "dist/cli/cli.js",
   "repository": "https://github.com/redmer/sparql-query-runner.git",
