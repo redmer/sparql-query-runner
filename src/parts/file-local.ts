@@ -21,7 +21,7 @@ export class LocalFileSource implements WorkflowPartSource {
   isQualified(data: IJobSourceData): boolean {
     // please try to keep in sync with <./comunica-auto-datasource.ts>
     // Local files are not supported by the `auto` Comunica source.
-    if (!data.access.startsWith("http")) return true;
+    if (!data.access.match(/^https?:\/\//)) return true;
     // Filtered graphs aren't supported by the `auto` Comunica source
     if (data.access.startsWith("http") && data.with.onlyGraphs) return true;
     if (data.access.startsWith("http") && data.with.intoGraph) return true;
