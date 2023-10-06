@@ -1,6 +1,7 @@
 import { QueryStringContext } from "@comunica/types";
 import type * as RDF from "@rdfjs/types";
 import fs from "fs/promises";
+import util from "util";
 import type { IJobStepData } from "../config/types.js";
 import type { JobRuntimeContext, WorkflowModuleExec, WorkflowPartStep } from "../runner/types.js";
 import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
@@ -19,8 +20,8 @@ export class SparqlConstructQuery implements WorkflowPartStep {
         queryBody = await fs.readFile(data.access, { encoding: "utf-8" });
       else queryBody = addPrefixesToQuery(data.access, context.jobData.prefixes);
 
-      context.debug(`Query body: ` + queryBody);
-      context.debug(`Query Context: ` + context.queryContext);
+      context.debug(`Query body:\n` + queryBody);
+      context.debug(`Query Context:\n${util.inspect(context.queryContext)}`);
 
       return {
         init: async (_stream: RDF.Stream): Promise<RDF.Stream> => {

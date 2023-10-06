@@ -66,7 +66,7 @@ export const ctxMsgs = (caller: string, depth = 0, { fatal }: { fatal: boolean }
     error: errorMsg(caller, depth),
     info: infoMsg(caller, depth),
     warning: warningMsg(caller, depth, { fatal }),
-    debug: infoMsg(caller, depth),
+    debug: debugMsg(caller, depth),
   };
 };
 
