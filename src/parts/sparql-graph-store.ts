@@ -10,7 +10,7 @@ import {
 } from "../runner/types.js";
 import * as Auth from "../utils/auth.js";
 import { digest } from "../utils/digest.js";
-import { serialize } from "../utils/graphs-to-file.js";
+import { serializeStream } from "../utils/graphs-to-file.js";
 import { getGraphs } from "../utils/quads.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
@@ -27,18 +27,17 @@ export class GraphStoreTarget implements WorkflowPartTarget {
       // Therefore, we export to n-triples and loop over graphs in data.quadStore
 
       return {
-        init: async (_stream: RDF.Stream, quadStore: InMemQuadStore) => {
+        init: async (stream: RDF.Stream, quadStore: InMemQuadStore) => {
           const ntriples = getRDFMediaTypeFromFilename(".nt");
           const graphs = data.with.onlyGraphs ?? (await getGraphs(quadStore));
 
           for (const [i, graph] of graphs.entries()) {
-            const tempfile = `${context.tempdir}/export-${digest(graph.value)}.nq`;
+            const tempfile = `${context.tempdir}/export-${digest(graph.value)}.nt`;
             context.info(`Exporting ${i + 1}/${graphs.length} to <${data.access}>...`);
 
             // First, write-out a single N-Triples file per graph
-            await serialize(quadStore, `${tempfile}.nt`, {
+            await serializeStream(stream, tempfile, {
               format: ntriples,
-              graphs: [graph],
             });
             // And then read that file in-mem
             const contents = await fs.readFile(`${tempfile}.nq`, { encoding: "utf-8" });

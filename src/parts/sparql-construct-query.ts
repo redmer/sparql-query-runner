@@ -19,6 +19,9 @@ export class SparqlConstructQuery implements WorkflowPartStep {
         queryBody = await fs.readFile(data.access, { encoding: "utf-8" });
       else queryBody = addPrefixesToQuery(data.access, context.jobData.prefixes);
 
+      context.debug(`Query body: ` + queryBody);
+      context.debug(`Query Context: ` + context.queryContext);
+
       return {
         init: async (_stream: RDF.Stream): Promise<RDF.Stream> => {
           return await context.engine.queryQuads(

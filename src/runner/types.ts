@@ -43,6 +43,8 @@ export interface JobRuntimeContext {
   queryContext: QueryContext;
   // /** Register query context proxy handlers for non-Basic authentication */
 
+  /** Print an DEBUG level message */
+  debug(message: string): void;
   /** Print an INFO level message */
   info(message: string): void;
   /** Print a WARNING level message */

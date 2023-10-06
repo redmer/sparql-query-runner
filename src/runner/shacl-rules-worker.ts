@@ -178,8 +178,7 @@ export async function start(data: IWorkflowData, out: NodeJS.WritableStream) {
 
     for (const [i, step] of constructStepsWithTargetClass.entries()) {
       for await (const quad of quadsForStep(step, i)) writer.addQuad(quad);
-
-      writer.end();
     }
   }
+  writer.end();
 }
