@@ -1,7 +1,7 @@
 import * as RDF from "@rdfjs/types";
 import { DataFactory } from "rdf-data-factory";
 import { RdfStore } from "rdf-stores";
-import { Readable, Transform, TransformCallback } from "stream";
+import { PassThrough, Readable, Transform, TransformCallback } from "stream";
 
 export interface OverrideGraphOptions {
   /** Override the context/graph of the quad into */
@@ -13,22 +13,12 @@ export interface FilteredGraphOptions {
   graphs?: RDF.Quad_Graph[];
 }
 
-export class MatchStreamReadable extends Readable implements RDF.Stream {
-  stream: RDF.Stream<RDF.Quad>;
-
-  /** Consume an RDF.Stream as a Readable */
-  constructor(stream: RDF.Stream) {
-    super({ objectMode: true });
-    this.stream = stream;
-  }
-
-  _read(_size: number): void {
-    let shouldContinue: boolean;
-    do {
-      const quad = this.stream.read();
-      shouldContinue = this.push(quad);
-    } while (shouldContinue);
-  }
+export function MatchStreamReadable2(stream: RDF.Stream): Readable & RDF.Stream {
+  const streamOUT = new PassThrough({ objectMode: true });
+  stream.on("error", (error) => streamOUT.emit("error", error));
+  stream.on("end", () => streamOUT.push(null));
+  stream.on("data", (quad: RDF.Quad) => streamOUT.push(quad));
+  return streamOUT;
 }
 
 export class MergeGraphsStream extends Transform implements RDF.Stream {
@@ -46,7 +36,7 @@ export class MergeGraphsStream extends Transform implements RDF.Stream {
     this.push(
       this.#DF.quad(quad.subject, quad.predicate, quad.object, this.#targetGraph ?? quad.graph)
     );
-    callback();
+    return callback();
   }
 }
 
@@ -62,10 +52,12 @@ export class FilteredStream extends Transform implements RDF.Stream {
   }
 
   _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
-    if (this.#onlyGraphs && !this.#onlyGraphs.includes(quad.graph)) callback();
+    if (this.#onlyGraphs && !this.#onlyGraphs.includes(quad.graph)) {
+      return callback();
+    }
 
     this.push(this.#DF.quad(quad.subject, quad.predicate, quad.object, quad.graph));
-    callback();
+    return callback();
   }
 }
 
@@ -90,7 +82,7 @@ export class RdfStoresImportStream extends Transform implements RDF.Stream {
   _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
     this.store.addQuad(quad);
     this.push(quad, encoding);
-    callback();
+    return callback();
   }
 }
 
@@ -110,8 +102,8 @@ export class First_NQuadsStream extends Transform implements RDF.Stream {
   }
 
   _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
-    if (this.currentN > this.maxN) this.end();
+    if (this.currentN > this.maxN) return callback();
     this.currentN += 1;
-    callback(null, quad);
+    return callback(null, quad);
   }
 }

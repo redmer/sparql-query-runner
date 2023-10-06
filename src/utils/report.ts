@@ -5,7 +5,7 @@ export const DONE = chalk.bgGreen(` DONE `);
 export const INFO = chalk.bgBlue(` INFO `) + " ";
 export const ERROR = chalk.bgRed(` ERROR `) + " ";
 
-type MessageLevels = "info" | "warning" | "error";
+type MessageLevels = "debug" | "info" | "warning" | "error";
 
 export function consoleMessage(
   type: MessageLevels,
@@ -36,10 +36,12 @@ export function consoleMessage(type: MessageLevels, caller: string, depth = 0, f
         : chalk.bgYellowBright(` Warning `) + `: `
       : type == "error"
       ? chalk.bgRed(` Error `) + `: `
+      : type == "debug"
+      ? chalk.bgBlue(` Debug `) + `: `
       : ``;
 
   // const which = type == "warning" ? "warn" : type;
-  const which = type == "info" ? stdout : stderr;
+  const which = ["debug", "info"].includes(type) ? stdout : stderr;
 
   /*
 · jobs/my-db - Starting job
@@ -53,6 +55,8 @@ export function consoleMessage(type: MessageLevels, caller: string, depth = 0, f
   };
 }
 
+export const debugMsg = (caller: string, depth = 0) =>
+  consoleMessage("debug", caller, depth, false);
 export const infoMsg = (caller: string, depth = 0) => consoleMessage("info", caller, depth, false);
 export const warningMsg = (caller: string, depth = 0, { fatal }: { fatal: boolean }) =>
   consoleMessage("warning", caller, depth, fatal);
@@ -62,6 +66,7 @@ export const ctxMsgs = (caller: string, depth = 0, { fatal }: { fatal: boolean }
     error: errorMsg(caller, depth),
     info: infoMsg(caller, depth),
     warning: warningMsg(caller, depth, { fatal }),
+    debug: infoMsg(caller, depth),
   };
 };
 

@@ -1,6 +1,6 @@
 import type * as RDF from "@rdfjs/types";
 import fs from "fs";
-import { StreamParser } from "n3";
+import N3 from "n3";
 import { IJobSourceData, IJobTargetData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowPartSource, WorkflowPartTarget } from "../runner/types.js";
 import { serializeStream } from "../utils/graphs-to-file.js";
@@ -40,7 +40,7 @@ export class LocalFileSource implements WorkflowPartSource {
         init: async () => {
           const quadStream = fs
             .createReadStream(data.access)
-            .pipe(new StreamParser({ format: mimetype }));
+            .pipe(new N3.StreamParser({ format: mimetype }));
 
           return quadStream;
         },
