@@ -46,7 +46,7 @@ async function EnterModule(
     TEMPDIR,
     `job-${jobData.name}`,
     phase,
-    module.id() + "-" + moduleDataDigest(data).slice(0, 8)
+    `${iterN}-${module.id()}-${moduleDataDigest(data).slice(0, 8)}`
   );
   await mkdir(tempdir, { recursive: true });
 
@@ -186,7 +186,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
           if (!(quadsOUT instanceof Object)) return;
 
           const streamOUT = MatchStreamReadable2(quadsOUT)
-            .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }))
+            .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug))
             .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
           // const event = quadStore.import(streamOUT);
@@ -223,7 +223,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
           // Steps input quads are filtered with Only-Graphs
           const quadsIN = MatchStreamReadable2(quadStore.match()).pipe(
-            new FilteredStream({ graphs: data.with.onlyGraphs })
+            new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug)
           );
 
           // Get output quad stream and check if it's not void
@@ -265,9 +265,9 @@ export class JobSupervisor implements Supervisor<IJobData> {
         async (ctx) => {
           const info: Partial<WorkflowPartGetter> = await m.exec(data)(ctx);
 
-          // Steps input quads are filtered with Only-Graphs
+          // Target input quads are filtered with Only-Graphs and Into-Graph
           const quadsIN = MatchStreamReadable2(quadStore.match())
-            .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }))
+            .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug))
             .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
           // Get output quad stream and check if it's not void

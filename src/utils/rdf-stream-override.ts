@@ -43,16 +43,23 @@ export class MergeGraphsStream extends Transform implements RDF.Stream {
 export class FilteredStream extends Transform implements RDF.Stream {
   #onlyGraphs: RDF.Quad_Graph[];
   #DF: DataFactory<RDF.Quad>;
+  #skippedGraphs: Set<string>;
+  #printer: (message: string) => void;
 
   /** Filter out graphs in an RDF.Stream */
-  constructor(options: FilteredGraphOptions) {
+  constructor(options: FilteredGraphOptions, printer?: (message: string) => void) {
     super({ readableObjectMode: true, writableObjectMode: true });
     this.#onlyGraphs = options.graphs;
     this.#DF = new DataFactory();
+    this.#skippedGraphs = new Set();
+    this.#printer = printer;
   }
 
   _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
-    if (this.#onlyGraphs && !this.#onlyGraphs.includes(quad.graph)) {
+    if (this.#onlyGraphs && !this.#onlyGraphs.find((v) => v.equals(quad.graph))) {
+      if (!this.#skippedGraphs.has(quad.graph.value) && this.#printer)
+        this.#printer(`${this.constructor.name}: skipping graph ${quad.graph.value}`);
+      this.#skippedGraphs.add(quad.graph.value);
       return callback();
     }
 

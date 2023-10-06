@@ -18,7 +18,7 @@ export class ComunicaAutoSource implements WorkflowPartSource {
   names = ["sources/sparql", "sources/file"];
 
   isQualified(data: IJobSourceData): boolean {
-    return data.access.match(/^https?:/) !== null;
+    return data.access.match(/^https?:\/\//) !== null;
   }
 
   shouldCacheAccess(_data: IJobSourceData): boolean {
