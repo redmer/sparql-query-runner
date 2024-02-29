@@ -18,9 +18,7 @@ export function asHeader(data: ICredentialData): { Authorization?: string } {
   }
 
   if (data.type === "HTTP-Header") {
-    return {
-      ...data.headers,
-    };
+    return Object.fromEntries(data.headers.entries());
   }
 
   throw new AuthTypeError(`Authentication type '${JSON.stringify(data)}' not supported here`);

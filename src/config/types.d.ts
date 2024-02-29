@@ -52,7 +52,7 @@ export interface IAuthBasicData {
 
 export interface IAuthHeaderData {
   readonly type: "HTTP-Header";
-  headers: Record<string, string>;
+  headers: Map<string, string>;
 }
 
 export interface IAuthBearerData {
