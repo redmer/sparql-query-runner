@@ -11,7 +11,10 @@ test("add credentials to header", () => {
   const bearerCreds: IAuthBearerData = { type: "Bearer", token: "helloworld" };
   const bearerData = { Authorization: "Bearer helloworld" };
 
-  const headerCreds: IAuthHeaderData = { type: "HTTP-Header", headers: { "X-Hello": "world" } };
+  const headerCreds: IAuthHeaderData = {
+    type: "HTTP-Header",
+    headers: new Map([["X-Hello", "world"]]),
+  };
   const headerData = { "X-Hello": "world" };
 
   expect(asHeader(basicCreds)).toEqual(basicData);
