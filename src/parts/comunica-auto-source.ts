@@ -1,5 +1,10 @@
-import { IJobSourceData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowModuleExec, WorkflowPartSource } from "../runner/types.js";
+import { IJobSourceData, type IJobModuleData } from "../config/types.js";
+import {
+  JobRuntimeContext,
+  WorkflowModuleExec,
+  WorkflowPartSource,
+  type QueryContext,
+} from "../runner/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 /**
@@ -23,6 +28,10 @@ export class ComunicaAutoSource implements WorkflowPartSource {
 
   shouldCacheAccess(_data: IJobSourceData): boolean {
     return false; // this step should only have online sources
+  }
+
+  staticQueryContext(data: IJobModuleData): Partial<QueryContext> {
+    return { destination: { type: "auto", value: data.access } };
   }
 
   staticAuthProxyHandler(data: IJobSourceData): AuthProxyHandler {

@@ -1,8 +1,14 @@
 import type * as RDF from "@rdfjs/types";
 import fs from "fs";
 import N3 from "n3";
-import { IJobSourceData, IJobTargetData } from "../config/types.js";
-import { JobRuntimeContext, WorkflowPartSource, WorkflowPartTarget } from "../runner/types.js";
+import { IJobSourceData, IJobTargetData, type IJobModuleData } from "../config/types.js";
+import {
+  JobRuntimeContext,
+  WorkflowPartSource,
+  WorkflowPartTarget,
+  type QueryContext,
+  type WorkflowModuleExec,
+} from "../runner/types.js";
 import { serializeStream } from "../utils/graphs-to-file.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 import { InfoUploadingTo } from "../utils/uploading-message.js";
@@ -32,7 +38,11 @@ export class LocalFileSource implements WorkflowPartSource {
     return true;
   }
 
-  exec(data: IJobSourceData | IJobTargetData) {
+  staticQueryContext(data: IJobModuleData): Partial<QueryContext> {
+    return { destination: { type: "rdfjsStore", value: data.access } };
+  }
+
+  exec(data: IJobSourceData | IJobTargetData): WorkflowModuleExec {
     return async (_context: JobRuntimeContext) => {
       const mimetype = getRDFMediaTypeFromFilename(data.access);
 
