@@ -20,11 +20,11 @@ class LacesHubCommon {
     const publicationUri = new URL(data.access).pathname;
 
     // Check if repo and publication URL are correct
-    const repos = await Laces.repositories(auth, repoName);
+    const repos = await Laces.repositories(data.with.credentials, repoName);
     const targetRepo = repos.find((r) => r.path == repoFullPath);
     if (!targetRepo) context.error(`Laces repository '${repoName}' not found`);
 
-    const allPubls = await Laces.publications(targetRepo.id, auth);
+    const allPubls = await Laces.publications(targetRepo.id, data.with.credentials);
     const publication = allPubls.find((p) => p.uri.startsWith(publicationUri));
 
     if (!publication)
