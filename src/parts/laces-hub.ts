@@ -19,9 +19,6 @@ class LacesHubCommon {
     const repoFullPath = new URL(data.access).pathname.split("/").slice(1, -1).join("/");
     const publicationUri = new URL(data.access).pathname;
 
-    const auth = data.with.credentials;
-    if (auth === undefined) context.error(`Laces requires auth details`);
-
     // Check if repo and publication URL are correct
     const repos = await Laces.repositories(auth, repoName);
     const targetRepo = repos.find((r) => r.path == repoFullPath);
@@ -86,6 +83,8 @@ export class LacesHubTarget extends LacesHubCommon implements WorkflowPartTarget
 
       if (publ.versioningMode !== "NONE")
         context.error(`Unsupported versioning mode '${publ.versioningMode}' ('${publ.name}')`);
+      const auth = data.with.credentials;
+      if (auth === undefined) context.error(`Laces requires auth details`);
 
       return {
         init: async (stream: RDF.Stream) => {
