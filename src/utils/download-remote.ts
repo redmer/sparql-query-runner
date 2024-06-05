@@ -1,6 +1,7 @@
-import fs from "fs";
-import { default as fetch } from "node-fetch";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
+import { Readable } from "node:stream";
+import type { ReadableStream } from "node:stream/web";
 import type { ICredentialData } from "../config/types.js";
 import * as Auth from "./auth.js";
 
@@ -18,8 +19,8 @@ export async function download(url: string, path: string, auth?: ICredentialData
   const stream = fs.createWriteStream(path);
 
   await new Promise((resolve, reject) => {
-    response.body?.pipe(stream) ?? reject();
-    response.body?.on("error", reject) ?? reject();
+    Readable.fromWeb(response.body as ReadableStream).pipe(stream) ?? reject();
+    Readable.fromWeb(response.body as ReadableStream).on("error", reject) ?? reject();
     stream.on("finish", resolve);
   });
 }

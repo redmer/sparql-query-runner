@@ -1,5 +1,4 @@
 import fs from "fs/promises";
-import fetch, { FormData, Response } from "node-fetch";
 import type { ICredentialData } from "../config/types.js";
 import * as Auth from "./auth.js";
 

@@ -1,6 +1,5 @@
 import type * as RDF from "@rdfjs/types";
 import fs from "fs/promises";
-import fetch from "node-fetch";
 import { IJobTargetData } from "../config/types.js";
 import {
   InMemQuadStore,
