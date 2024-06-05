@@ -41,7 +41,12 @@ async function EnterModule(
   quadStore: RdfStore,
   closure: (ctx: JobRuntimeContext) => Promise<void>
 ) {
-  const localname = data.type.split("/", 2)[1];
+  const moduleLocalName = data.type.split("/", 2)[1];
+  // Only output last 80 chars of the Access
+  let accessLocalName = data.access;
+  if (accessLocalName.length > 79)
+    accessLocalName = "..." + accessLocalName.replaceAll(/\s/g, " ").trim().slice(-80);
+
   const tempdir = path.join(
     TEMPDIR,
     `job-${jobData.name}`,
@@ -53,12 +58,11 @@ async function EnterModule(
   const context: JobRuntimeContext = {
     ...(<JobRuntimeContext>ctx),
     tempdir,
-    ...Report.ctxMsgs(`- ${localname}`, 3, { fatal: workflowCtx.options.warningsAsErrors }),
+    ...Report.ctxMsgs(`- ${moduleLocalName} (${accessLocalName})`, 3, {
+      fatal: workflowCtx.options.warningsAsErrors,
+    }),
   };
-  if (!context.workflowContext.options.verbose)
-    context.debug = (_message) => {
-      void 0;
-    };
+  if (context.workflowContext.options.verbosityLevel >= 4) context.debug = (_message) => void 0;
 
   if (
     module.shouldCacheAccess &&
@@ -82,7 +86,7 @@ async function EnterModule(
   try {
     await closure(context);
   } catch (err) {
-    context.error(`inside ${module.id()}. Cause: ${err.message}` + err);
+    context.error(`\nDuring '${module.id()}': ` + err);
   }
 
   const quadCountDiff = quadStore.countQuads() - quadCountInitial;
@@ -111,7 +115,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
     // Prepare and gather all pipeline parts
     const modules = await match(jobData);
-    if (this.workflowCtx.options.verbose) {
+    if (this.workflowCtx.options.verbosityLevel > 0) {
       const sources = modules.sources?.map((s) => s.module.id()).join(", ");
       const steps = modules.steps?.map((s) => s.module.id()).join(", ");
       const targets = modules.targets?.map((s) => s.module.id()).join(", ");
@@ -125,13 +129,32 @@ export class JobSupervisor implements Supervisor<IJobData> {
       `);
     }
 
-    const httpProxyHandler = new AuthProxyHandler();
+    let httpProxyHandler = new AuthProxyHandler();
+    const comunicaLoggerLevel = {
+      0: "fatal",
+      1: "error",
+      2: "warn",
+      3: "info",
+      4: "debug",
+      5: "trace",
+    };
+    let rdfjsSources = [{ type: "rdfjs", value: quadStore }];
+    if (modules.steps.every((m) => m.module.id() == "sparql-update-query")) rdfjsSources = [];
+    if (
+      [...modules.sources, ...modules.steps, ...modules.targets].some(
+        (m) => m.data.with.credentials
+      )
+    )
+      httpProxyHandler = undefined;
+
     let queryContext: QueryContext = {
-      sources: [{ type: "rdfjsSource", value: quadStore }],
+      sources: rdfjsSources,
       httpProxyHandler,
       unionDefaultGraph: true,
       lenient: true,
-      log: this.workflowCtx.options.verbose ? new LoggerPretty({ level: "debug" }) : undefined,
+      log: new LoggerPretty({
+        level: comunicaLoggerLevel[this.workflowCtx.options.verbosityLevel],
+      }),
     };
 
     // Static properties can be gathered before execution
@@ -189,20 +212,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
             .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug))
             .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
-          // const event = quadStore.import(streamOUT);
-
           await ImportStream(streamOUT, quadStore);
-          // streamOUT.pipe(new RdfStoresImportStream(quadStore));
-          // if (ctx.workflowContext.options.cacheIntermediateResults) {
-          //   streamOUT
-          //     .pipe(new N3.StreamWriter({ format: "application/n-quads" }))
-          //     .pipe(createGzip())
-          //     .pipe(createWriteStream(ctx.tempdir + `stream-quads-out.nq.gz`));
-          //   streamOUT
-          //     .pipe(new First_NQuadsStream(30))
-          //     .pipe(new N3.StreamWriter({ format: "application/trig", prefixes: jobData.prefixes }))
-          //     .pipe(createWriteStream(ctx.tempdir + `stream-quads-out--head30.trig`));
-          // }
         }
       );
     }
@@ -235,17 +245,6 @@ export class JobSupervisor implements Supervisor<IJobData> {
           );
 
           await ImportStream(streamOUT, quadStore);
-          // streamOUT.pipe(new RdfStoresImportStream(quadStore));
-          // if (ctx.workflowContext.options.cacheIntermediateResults) {
-          //   streamOUT
-          //     .pipe(new N3.StreamWriter({ format: "application/n-quads" }))
-          //     .pipe(createGzip())
-          //     .pipe(createWriteStream(ctx.tempdir + `stream-quads-out.nq.gz`));
-          //   streamOUT
-          //     .pipe(new First_NQuadsStream(50))
-          //     .pipe(new N3.StreamWriter({ format: "application/trig", prefixes: jobData.prefixes }))
-          //     .pipe(createWriteStream(ctx.tempdir + `stream-quads-out--head30.trig`));
-          // }
         }
       );
     }

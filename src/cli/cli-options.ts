@@ -1,6 +1,6 @@
 export interface ICliOptions {
   /** Make workflow and job execution even more verbose */
-  verbose: boolean;
+  verbosityLevel: number;
   /** Enable cache of each step results */
   cacheIntermediateResults: boolean;
   /** Add RDFa Intitial Context prefixes to workflow and prefix definitions */

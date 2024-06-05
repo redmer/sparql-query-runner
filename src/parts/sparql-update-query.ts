@@ -1,5 +1,6 @@
 import { QueryStringContext } from "@comunica/types";
 import fs from "fs/promises";
+import util from "util";
 import { IJobStepData } from "../config/types.js";
 import { JobRuntimeContext, WorkflowModuleExec, WorkflowPartStep } from "../runner/types.js";
 import { addPrefixesToQuery } from "../utils/add-prefixes-to-query.js";
@@ -20,6 +21,9 @@ export class SparqlUpdateQuery implements WorkflowPartStep {
       if (fileExistsLocally(data.access))
         queryBody = await fs.readFile(data.access, { encoding: "utf-8" });
       else queryBody = addPrefixesToQuery(data.access, context.jobData.prefixes);
+
+      context.debug(`Prepared query: (update): ${queryBody}`);
+      context.debug(`Query Context:\n${util.inspect(context.queryContext)}`);
 
       return {
         init: async () => {
