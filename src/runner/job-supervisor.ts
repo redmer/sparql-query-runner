@@ -129,7 +129,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
       `);
     }
 
-    let httpProxyHandler = new AuthProxyHandler();
+    const httpProxyHandler = new AuthProxyHandler();
     const comunicaLoggerLevel = {
       0: "fatal",
       1: "error",
@@ -140,12 +140,6 @@ export class JobSupervisor implements Supervisor<IJobData> {
     };
     let rdfjsSources = [{ type: "rdfjs", value: quadStore }];
     if (modules.steps.every((m) => m.module.id() == "sparql-update-query")) rdfjsSources = [];
-    if (
-      [...modules.sources, ...modules.steps, ...modules.targets].some(
-        (m) => m.data.with.credentials
-      )
-    )
-      httpProxyHandler = undefined;
 
     let queryContext: QueryContext = {
       sources: rdfjsSources,
