@@ -91,6 +91,7 @@ per external source/target.`);
       init: {
         ...request.init,
         headers: {
+          ...request?.init?.headers,
           ...value?.additionalHeaders,
           ...Auth.asHeader(value?.credentials),
         },
