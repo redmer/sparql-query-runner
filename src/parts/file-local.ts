@@ -1,12 +1,11 @@
 import type * as RDF from "@rdfjs/types";
 import fs from "fs";
 import N3 from "n3";
-import { IJobSourceData, IJobTargetData, type IJobModuleData } from "../config/types.js";
+import { IJobSourceData, IJobTargetData } from "../config/types.js";
 import {
   JobRuntimeContext,
   WorkflowPartSource,
   WorkflowPartTarget,
-  type QueryContext,
   type WorkflowModuleExec,
 } from "../runner/types.js";
 import { serializeStream } from "../utils/graphs-to-file.js";
@@ -36,10 +35,6 @@ export class LocalFileSource implements WorkflowPartSource {
 
   shouldCacheAccess(_data: IJobSourceData): boolean {
     return true;
-  }
-
-  staticQueryContext(data: IJobModuleData): Partial<QueryContext> {
-    return { destination: { type: "rdfjsStore", value: data.access } };
   }
 
   exec(data: IJobSourceData | IJobTargetData): WorkflowModuleExec {

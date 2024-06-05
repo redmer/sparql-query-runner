@@ -1,10 +1,9 @@
 import type { QueryEngine } from "@comunica/query-sparql";
 import type {
-  IDataSourceExpanded,
-  IDataSourceSerialized,
+  QuerySourceUnidentifiedExpanded,
   QueryStringContext,
   SourceType,
-} from "@comunica/types/lib";
+} from "@comunica/types";
 import type * as RDF from "@rdfjs/types";
 import { RdfStore } from "rdf-stores";
 import type { ICliOptions } from "../cli/cli-options.js";
@@ -19,7 +18,8 @@ import type {
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 export type QueryContext = Omit<QueryStringContext, "sources"> & {
-  sources: SourceType[]; // There should be at least 1 sources at execution time
+  // There should be at least 1 source at execution time, but not at TypeScript compile time
+  sources: SourceType[];
 };
 
 /** Workflow context of the full configuration at runtime */
@@ -59,7 +59,7 @@ export type InMemQuadStore = RDF.Store & RdfStore;
 
 export interface WorkflowPartGetter {
   /** Supply a Comunica Data Source, for non-quad streams */
-  comunicaDataSources?(): [IDataSourceExpanded | IDataSourceSerialized];
+  comunicaDataSources?(): [QuerySourceUnidentifiedExpanded];
   /** Execute a step */
   init?(stream: RDF.Stream, quadStore: InMemQuadStore): Promise<RDF.Stream | void>;
 }

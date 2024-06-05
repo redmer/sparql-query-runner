@@ -1,20 +1,15 @@
-import { IJobSourceData, type IJobModuleData } from "../config/types.js";
-import {
-  JobRuntimeContext,
-  WorkflowModuleExec,
-  WorkflowPartSource,
-  type QueryContext,
-} from "../runner/types.js";
+import { IJobSourceData } from "../config/types.js";
+import { JobRuntimeContext, WorkflowModuleExec, WorkflowPartSource } from "../runner/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 
 /**
  * These sources are automatically supported by Comunica.
  *
- * - `file` (plain RDF in any RDF serialization), as well as `hdtFile` (HDT) and `ostrichFile`.
+ * - `file` (plain RDF in any RDF serialization), `hdt` (HDT) and `ostrichFile` (OSTRICH archive).
  *   These source MUST be remote, unsupported via local filesystem in @comunica/query-sparql.
  * - `sparql`
- * - `hypermedia` (Triple/Quad Pattern Fragments)
- * - `rdfjsSource` (not available via workflow.sqr.yaml)
+ * - `hypermedia`, `qpf`, `brtpf` (Triple/Quad Pattern Fragments)
+ * - `rdfjs` (not available via workflow.sqr.yaml)
  *
  * Source: <https://comunica.dev/docs/query/advanced/source_types/#supported-source-types>
  * */
@@ -28,10 +23,6 @@ export class ComunicaAutoSource implements WorkflowPartSource {
 
   shouldCacheAccess(_data: IJobSourceData): boolean {
     return false; // this step should only have online sources
-  }
-
-  staticQueryContext(data: IJobModuleData): Partial<QueryContext> {
-    return { destination: { type: "auto", value: data.access } };
   }
 
   staticAuthProxyHandler(data: IJobSourceData): AuthProxyHandler {
