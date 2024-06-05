@@ -62,7 +62,7 @@ async function EnterModule(
       fatal: workflowCtx.options.warningsAsErrors,
     }),
   };
-  if (context.workflowContext.options.verbosityLevel >= 4) context.debug = (_message) => void 0;
+  if (context.workflowContext.options.verbosityLevel < 4) context.debug = (_message) => void 0;
 
   if (
     module.shouldCacheAccess &&
