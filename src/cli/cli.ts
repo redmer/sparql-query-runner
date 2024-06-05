@@ -36,7 +36,7 @@ async function cli() {
         await runPipelines(configFiles, {
           cacheIntermediateResults: argv["cache"] ?? false,
           defaultPrefixes: !argv["no-default-prefixes"] ?? false,
-          verbose: argv["verbose"] ?? false,
+          verbosityLevel: argv["verbose"] > 5 ? 5 : argv["verbose"], // max 5 = trace
           warningsAsErrors: argv["warnings-as-errors"] ?? false,
           allowShellScripts: argv["exec-shell"] ?? false,
           skipAssertions: argv["skip-assertions"] ?? false,
@@ -55,7 +55,7 @@ async function cli() {
         },
         verbose: {
           alias: "V",
-          type: "boolean",
+          type: "count",
           desc: "Increase output verbosity",
         },
         "exec-shell": {

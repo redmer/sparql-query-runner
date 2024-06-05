@@ -14,7 +14,6 @@ export class SparqlUpdateEndpointTarget implements WorkflowPartTarget {
   staticQueryContext(data: IJobTargetData) {
     return {
       destination: { type: "sparql", value: data.access },
-      // httpAuth: Auth.httpSyntax(data.with.credentials),
     };
   }
 

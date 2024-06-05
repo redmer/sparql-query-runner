@@ -29,7 +29,8 @@ export class AskAssertStep implements WorkflowPartStep {
             queryBody,
             <QueryStringContext>context.queryContext
           );
-          if (!result) context.error(`${data.with["message"]}`);
+          const message = data.with["message"] ?? "assertion not met";
+          if (!result) context.error(`${message}`);
         },
       };
     };
