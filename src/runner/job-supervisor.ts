@@ -43,9 +43,9 @@ async function EnterModule(
 ) {
   const moduleLocalName = data.type.split("/", 2)[1];
   // Only output last 80 chars of the Access
-  let accessLocalName = data.access;
+  let accessLocalName = data.access.trim();
   if (accessLocalName.length > 79)
-    accessLocalName = "..." + accessLocalName.replaceAll(/\s/g, " ").trim().slice(-80);
+    accessLocalName = "..." + accessLocalName.replaceAll(/\s/g, " ").trim().slice(-80).trim();
 
   const tempdir = path.join(
     TEMPDIR,
