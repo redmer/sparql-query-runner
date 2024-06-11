@@ -7,6 +7,7 @@ import {
 } from "../config/types.js";
 import { AskAssertStep } from "../parts/ask-assert.js";
 import { ComunicaAutoSource } from "../parts/comunica-auto-source.js";
+import { HttpRequestStep } from "../parts/download-file.js";
 import { LocalFileSource, LocalFileTarget } from "../parts/file-local.js";
 import { InferReason } from "../parts/infer-reason.js";
 import { LacesHubSource, LacesHubTarget } from "../parts/laces-hub.js";
@@ -35,6 +36,7 @@ export const KNOWN_MODULES: RegisteredModule[] = [
   new AskAssertStep(),
   new InferReason(),
   new ShellCommandStep(),
+  new HttpRequestStep(),
   new SparqlUpdateEndpointTarget(),
   new LocalFileTarget(),
   new LacesHubSource(),
