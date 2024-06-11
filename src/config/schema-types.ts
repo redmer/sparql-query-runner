@@ -6,6 +6,7 @@ export const PartShorthandStep = [
   "shell",
   "shacl",
   "infer",
+  "http-request",
 ] as const;
 export const PartShorthandTarget = [
   "file",
