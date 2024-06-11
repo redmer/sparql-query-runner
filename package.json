@@ -29,7 +29,6 @@
   "types": "dist",
   "type": "module",
   "devDependencies": {
-    "@types/command-exists": "^1.2.0",
     "@types/jest": "^29.4.0",
     "@types/json-stable-stringify": "^1.0.34",
     "@types/n3": "^1.10.4",
@@ -133,7 +132,6 @@
     "@triply/triplydb": "^4.3.0",
     "asynciterator": "^3.8.1",
     "chalk": "^5.1.2",
-    "command-exists": "^1.2.9",
     "dotenv": "^16.0.3",
     "glob": "^10.3.10",
     "hylar-core": "^1.2.0",
