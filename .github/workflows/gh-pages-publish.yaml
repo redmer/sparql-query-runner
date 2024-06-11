@@ -2,6 +2,8 @@ name: Release NodeJS package
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "docs/**"
   workflow_dispatch:
