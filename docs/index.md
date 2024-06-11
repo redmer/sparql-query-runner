@@ -323,6 +323,20 @@ steps:
 
 Implemented by Comunica.
 
+## Execute web requests with `http-request`
+
+Run any GET, POST, etc. HTTP requests.
+
+| Configure                   | Notes                                |
+| --------------------------- | ------------------------------------ |
+| `http-request:`             | Path to a web resource               |
+| `with:`                     |
+| &nbsp;&nbsp; `destination:` | Save response to local file          |
+| &nbsp;&nbsp; `body:`        | Request body (string)                |
+| &nbsp;&nbsp; `body-file:`   | Request body (file contents)         |
+| &nbsp;&nbsp; `method:`      | Request HTTP method (GET, POST, ...) |
+| &nbsp;&nbsp; `headers:`     | Other request headers (Dictionary)   |
+
 # Targets
 
 ## Export a job dataset to a local file with `file`

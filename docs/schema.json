@@ -9,17 +9,17 @@
       "pattern": "^v5",
       "description": "Version of the sparql-query-runner configuration"
     },
-    "jobs": { "$ref": "#/$defs/JobsObject" },
-    "prefixes": { "$ref": "#/$defs/PrefixesObject" },
+    "jobs": { "$ref": "#/definitions/JobsObject" },
+    "prefixes": { "$ref": "#/definitions/PrefixesObject" },
     "$schema": {
       "type": "string",
       "const": "https://rdmr.eu/sparql-query-runner/schema.json"
     }
   },
-  "$defs": {
+  "definitions": {
     "PrefixesObject": {
-      "description": "Prefixes used in the SPARQL queries and CONSTRUCT result files.",
       "type": "object",
+      "title": "Prefixes used in the SPARQL queries and result files.",
       "patternProperties": {
         "^[a-zA-Z0-9-_]+$": {
           "type": "string",
@@ -34,30 +34,30 @@
       "title": "Final targets",
       "description": "A workflow run is made up of one or more jobs, that run consecutively by default.",
       "patternProperties": {
-        "^[a-z][a-z0-9-_]{0,127}$": { "$ref": "#/$defs/Job" }
+        "^[a-z][a-z0-9-_]{0,127}$": { "$ref": "#/definitions/Job" }
       },
       "additionalProperties": false
     },
 
     "Job": {
-      "description": "The title of a job.",
       "type": "object",
+      "title": "A workflow job that is executed top-down",
       "properties": {
         "prefixes": {
-          "$ref": "#/$defs/PrefixesObject",
-          "description": "Prefixes specific to this job"
+          "$ref": "#/definitions/PrefixesObject",
+          "title": "Prefixes specific to this job"
         },
         "sources": {
           "type": "array",
-          "items": { "$ref": "#/$defs/JobSource" }
+          "items": { "$ref": "#/definitions/JobSource" }
         },
         "steps": {
           "type": "array",
-          "items": { "$ref": "#/$defs/JobStep" }
+          "items": { "$ref": "#/definitions/JobStep" }
         },
         "targets": {
           "type": "array",
-          "items": { "$ref": "#/$defs/JobTarget" }
+          "items": { "$ref": "#/definitions/JobTarget" }
         },
         "independent": {
           "description": "Indicate that the job does not depend on a preceding job",
@@ -68,89 +68,48 @@
     },
 
     "JobSource": {
-      "type": "object",
       "title": "RDF data sources",
-      "properties": {
-        "file": { "$ref": "#/$defs/Parts/Source/File" },
-        "sparql": { "$ref": "#/$defs/Parts/Source/Sparql" },
-        "laces-hub": { "$ref": "#/$defs/Parts/Source/LacesHub" },
-        "triplydb": { "$ref": "#/$defs/Parts/Source/Triplydb" },
-        "with": {
-          "type": "object",
-          "description": "Optional arguments to access or to import data from the source.",
-          "properties": {
-            "credentials": { "$ref": "#/$defs/Options/Credentials" },
-            "only-graphs": { "$ref": "#/$defs/Options/OnlyGraphs" },
-            "into-graph": { "$ref": "#/$defs/Options/IntoGraph" }
-          }
-        }
-      },
       "oneOf": [
-        { "required": ["file"] },
-        { "required": ["sparql"] },
-        { "required": ["laces-hub"] },
-        { "required": ["triplydb"] }
+        { "$ref": "#/definitions/Parts/Source/File" },
+        { "$ref": "#/definitions/Parts/Source/Sparql" },
+        { "$ref": "#/definitions/Parts/Source/LacesHub" },
+        { "$ref": "#/definitions/Parts/Source/Triplydb" }
       ]
     },
     "JobStep": {
-      "type": "object",
       "title": "Intermediate job steps",
-      "properties": {
-        "construct": { "$ref": "#/$defs/Parts/Step/Construct" },
-        "update": { "$ref": "#/$defs/Parts/Step/Update" },
-        "assert": { "$ref": "#/$defs/Parts/Step/Assert" },
-        "shell": { "$ref": "#/$defs/Parts/Step/Shell" },
-        "shacl": { "$ref": "#/$defs/Parts/Step/Shacl" },
-        "infer": { "$ref": "#/$defs/Parts/Step/Infer" },
-        "with": {
-          "type": "object",
-          "description": "Optional arguments to modify data from this step.",
-          "properties": {
-            "only-graphs": { "$ref": "#/$defs/Options/OnlyGraphs" },
-            "into-graph": { "$ref": "#/$defs/Options/IntoGraph" }
-          }
-        }
-      },
       "oneOf": [
-        { "required": ["construct"] },
-        { "required": ["update"] },
-        { "required": ["assert"] },
-        { "required": ["shell"] },
-        { "required": ["shacl"] },
-        { "required": ["infer"] }
+        { "$ref": "#/definitions/Parts/Step/Construct" },
+        { "$ref": "#/definitions/Parts/Step/Update" },
+        { "$ref": "#/definitions/Parts/Step/Assert" },
+        { "$ref": "#/definitions/Parts/Step/Shell" },
+        { "$ref": "#/definitions/Parts/Step/Shacl" },
+        { "$ref": "#/definitions/Parts/Step/Infer" },
+        { "$ref": "#/definitions/Parts/Step/HttpRequest" }
       ]
     },
     "JobTarget": {
-      "type": "object",
-      "properties": {
-        "file": { "$ref": "#/$defs/Parts/Target/File" },
-        "sparql-update-endpoint": { "$ref": "#/$defs/Parts/Target/SparqlUpdateEndpoint" },
-        "sparql-graph-store": { "$ref": "#/$defs/Parts/Target/SparqlGraphStore" },
-        "sparql-quad-store": { "$ref": "#/$defs/Parts/Target/SparqlQuadStore" },
-        "laces-hub": { "$ref": "#/$defs/Parts/Target/LacesHub" },
-        "triplydb": { "$ref": "#/$defs/Parts/Target/Triplydb" },
-        "with": {
-          "type": "object",
-          "description": "Optional arguments to export data to this target.",
-          "properties": {
-            "credentials": { "$ref": "#/$defs/Options/Credentials" },
-            "only-graphs": { "$ref": "#/$defs/Options/OnlyGraphs" },
-            "into-graph": { "$ref": "#/$defs/Options/IntoGraph" }
-          }
-        }
-      },
+      "title": "Export in-mem results",
       "oneOf": [
-        { "required": ["file"] },
-        { "required": ["sparql-update-endpoint"] },
-        { "required": ["sparql-graph-store"] },
-        { "required": ["sparql-quad-store"] },
-        { "required": ["laces-hub"] },
-        { "required": ["triplydb"] }
+        { "$ref": "#/definitions/Parts/Target/File" },
+        { "$ref": "#/definitions/Parts/Target/SparqlUpdateEndpoint" },
+        { "$ref": "#/definitions/Parts/Target/SparqlGraphStore" },
+        { "$ref": "#/definitions/Parts/Target/SparqlQuadStore" },
+        { "$ref": "#/definitions/Parts/Target/LacesHub" },
+        { "$ref": "#/definitions/Parts/Target/Triplydb" }
       ]
     },
 
     "Options": {
+      "WithIntoGraph": {
+        "type": "object",
+        "properties": { "into-graph": { "$ref": "#/definitions/Options/WithIntoGraph" } }
+      },
       "IntoGraph": { "type": "string", "description": "(Option) Override the quads' graph." },
+      "WithOnlyGraphs": {
+        "type": "object",
+        "properties": { "only-graph": { "$ref": "#/definitions/Options/WithOnlyGraphs" } }
+      },
       "OnlyGraphs": {
         "type": "array",
         "items": { "type": "string" },
@@ -194,8 +153,12 @@
           }
         }
       },
+      "WithCredentials": {
+        "type": "object",
+        "properties": { "credentials": { "$ref": "#/definitions/Options/Credentials" } }
+      },
       "Credentials": {
-        "description": "(Optional) Method of authentication",
+        "title": "(Optional) Authentication",
         "type": "object",
         "properties": {
           "type": {
@@ -204,53 +167,302 @@
           }
         },
         "oneOf": [
-          { "$ref": "#/$defs/Options/CredentialsBasic" },
-          { "$ref": "#/$defs/Options/CredentialsBearer" },
-          { "$ref": "#/$defs/Options/CredentialsAnyHeader" }
+          { "$ref": "#/definitions/Options/CredentialsBasic" },
+          { "$ref": "#/definitions/Options/CredentialsBearer" },
+          { "$ref": "#/definitions/Options/CredentialsAnyHeader" }
         ]
+      },
+      "WithSourceType": {
+        "type": "object",
+        "properties": { "source-type": { "$ref": "#/definitions/Options/SourceType" } }
+      },
+      "SourceType": {
+        "type": "string",
+        "description": "(Optional) Instruct Comunica type of source"
       }
     },
 
     "Parts": {
       "Source": {
-        "File": { "type": "string", "description": "Path or URL to a RDF file" },
-        "LacesHub": { "type": "string", "description": "URL to a Laces dataset" },
-        "Sparql": { "type": "string", "description": "URL to a SPARQL endpoint" },
-        "Triplydb": { "type": "string", "description": "URL to a TriplyDB dataset" }
+        "File": {
+          "type": "object",
+          "title": "Local or remote RDF file",
+          "required": ["file"],
+          "properties": {
+            "file": { "type": "string", "description": "Path or URL to RDF file" },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
+        },
+        "LacesHub": {
+          "type": "object",
+          "title": "Laces Hub dataset",
+          "required": ["laces-hub"],
+          "properties": {
+            "laces-hub": { "type": "string", "description": "URL to Laces dataset" },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
+        },
+        "Sparql": {
+          "type": "object",
+          "title": "SPARQL endpoint",
+          "required": ["sparql"],
+          "properties": {
+            "sparql": { "type": "string", "description": "URL to SPARQL endpoint" },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithSourceType" }
+              ]
+            }
+          }
+        },
+        "Triplydb": {
+          "type": "object",
+          "title": "TriplyDB dataset",
+          "required": ["triplydb"],
+          "properties": {
+            "triplydb": { "type": "string", "description": "URL to TriplyDB dataset" },
+            "with": {
+              "anyOf": [{ "$ref": "#/definitions/Options/WithCredentials" }]
+            }
+          }
+        }
       },
       "Step": {
         "Construct": {
-          "type": "string",
-          "description": "A SPARQL Construct query or path or URL to a .rq file"
+          "type": "object",
+          "title": "SPARQL Construct query",
+          "required": ["construct"],
+          "properties": {
+            "construct": { "type": "string", "description": "Query or path to .rq file" },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
         },
         "Shacl": {
-          "type": "string",
-          "description": "Path or URL to an RDF file containing SHACL shapes to validate the in-mem dataset with"
+          "type": "object",
+          "title": "Validate in-mem dataset with SHACL",
+          "required": ["shacl"],
+          "properties": {
+            "shacl": {
+              "type": "string",
+              "description": "Path or URL to an RDF file containing SHACL shapes"
+            },
+            "with": {
+              "type": "object",
+              "properties": {
+                "anyOf": [{ "$ref": "#/definitions/Options/WithOnlyGraphs" }]
+              }
+            }
+          }
         },
-        "Shell": { "type": "string", "description": "Perform any CLI / Shell script" },
+        "Shell": {
+          "type": "object",
+          "title": "Execute CLI (shell) script",
+          "required": ["shell"],
+          "properties": {
+            "shell": {
+              "type": "string",
+              "description": "CLI / Shell command"
+            },
+            "with": { "type": "object", "properties": {}, "additionalProperties": false }
+          }
+        },
         "Assert": {
-          "type": "string",
-          "description": "A SPARQL ASK query or path to a .rq file"
+          "type": "object",
+          "title": "SPARQL ASK query",
+          "required": ["assert"],
+          "properties": {
+            "assert": { "type": "string", "description": "Query or path to .rq file" },
+            "with": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "description": "Message to log if assertion not met"
+                }
+              }
+            }
+          }
         },
         "Update": {
-          "type": "string",
-          "description": "A SPARQL Update query or path or URL to a .ru file"
+          "type": "object",
+          "title": "SPARQL Update (DELETE, INSERT, ...)",
+          "required": ["update"],
+          "properties": {
+            "update": { "type": "string", "description": "Query or path to .ru file" },
+            "with": { "type": "object", "properties": {}, "additionalProperties": false }
+          }
         },
         "Infer": {
-          "type": "string",
-          "description": "Infer new statements with RDFS or OWL2RL reasoning"
+          "type": "object",
+          "title": "Infer new statements with RDFS or OWL2RL reasoning",
+          "required": ["infer"],
+          "properties": {
+            "infer": {
+              "type": "string",
+              "description": "(Optional) Path to RDF file with additional RDF facts"
+            },
+            "with": {
+              "type": "object",
+              "properties": {
+                "ruleset": {
+                  "type": "string",
+                  "enum": ["owl2rl", "rdfs"]
+                }
+              }
+            }
+          }
+        },
+        "HttpRequest": {
+          "type": "object",
+          "title": "Execute any HTTP request",
+          "required": ["http-request"],
+          "properties": {
+            "http-request": {
+              "type": "string",
+              "description": "URL to connect to"
+            },
+            "with": {
+              "type": "object",
+              "properties": {
+                "destination": {
+                  "type": "string",
+                  "description": "Path to save request output to"
+                },
+                "body": {
+                  "type": "string",
+                  "description": "Contents of request body"
+                },
+                "body-file": {
+                  "type": "string",
+                  "description": "Path to file with contents of request body"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"]
+                },
+                "headers": {
+                  "type": "object"
+                }
+              }
+            }
+          }
         }
       },
       "Target": {
-        "File": { "type": "string", "description": "Path or URL to a save a RDF file to" },
-        "LacesHub": { "type": "string", "description": "URL to a Laces dataset to replace" },
-        "SparqlGraphStore": { "type": "string", "description": "URL to a SPARQL Graph Store" },
-        "SparqlQuadStore": { "type": "string", "description": "URL to a SPARQL Quad Store" },
-        "SparqlUpdateEndpoint": {
-          "type": "string",
-          "description": "URL to a SPARQL Update endpoint seperate from all sources"
+        "File": {
+          "type": "object",
+          "title": "Export to RDF file",
+          "required": ["file"],
+          "properties": {
+            "file": { "type": "string", "description": "Path or URL" },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
         },
-        "Triplydb": { "type": "string", "description": "URL to a TriplyDB dataset" }
+        "LacesHub": {
+          "type": "object",
+          "title": "Laces Hub",
+          "required": ["sparql-update-endpoint"],
+          "properties": {
+            "sparql-update-endpoint": {
+              "type": "string",
+              "description": "URL to a Laces dataset to replace"
+            },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
+        },
+        "SparqlGraphStore": {
+          "type": "object",
+          "title": "SPARQL Graph Store",
+          "required": ["sparql-graph-store"],
+          "properties": {
+            "sparql-graph-store": {
+              "type": "string",
+              "description": "URL to a SPARQL Graph Store endpoint"
+            },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
+        },
+        "SparqlQuadStore": {
+          "type": "object",
+          "title": "SPARQL Quad Store",
+          "required": ["sparql-quad-store"],
+          "properties": {
+            "sparql-quad-store": {
+              "type": "string",
+              "description": "URL to a SPARQL Quad Store endpoint"
+            },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
+        },
+        "SparqlUpdateEndpoint": {
+          "type": "object",
+          "title": "Set one SPARQL Update endpoint to send SPARQL Updates to",
+          "required": ["laces-hub"],
+          "properties": {
+            "laces-hub": {
+              "type": "string",
+              "description": "URL to a SPARQL Update endpoint"
+            },
+            "with": { "type": "object", "properties": {}, "additionalProperties": false }
+          }
+        },
+        "Triplydb": {
+          "type": "object",
+          "title": "Replace a TriplyDB dataset",
+          "required": ["triplydb"],
+          "properties": {
+            "triplydb": { "type": "string", "description": "URL to a TriplyDB dataset" },
+            "with": {
+              "anyOf": [
+                { "$ref": "#/definitions/Options/WithCredentials" },
+                { "$ref": "#/definitions/Options/WithOnlyGraphs" },
+                { "$ref": "#/definitions/Options/WithIntoGraph" }
+              ]
+            }
+          }
+        }
       }
     }
   }

@@ -16,7 +16,6 @@ Below example shows an excerpt from [@stichting-crow/imbor](https://github.com/s
 There is a single (developer-local) endpoint used, that gets the defined prefixes set.
 Then, a MS-Access database is imported into the GraphDB-instance,
 five `INSERT {} WHERE {}`-SPARQL update requests are sent.
-After a short delay (default: 5 sec), two graphs are downloaded.
 
 ```yaml
 version: v5
