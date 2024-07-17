@@ -1,5 +1,6 @@
 import fs from "node:fs";
-import path from "node:path";
+import fsp from "node:fs/promises";
+import pathlib from "node:path";
 import { Readable } from "node:stream";
 import type { ReadableStream } from "node:stream/web";
 import type { ICredentialData } from "../config/types.js";
@@ -16,6 +17,7 @@ export async function download(url: string, path: string, auth?: ICredentialData
   // Syntax: { ...null } => { }
   const auhorizationHeader = auth ? Auth.asHeader(auth) : null;
   const response = await fetch(url, { method: "GET", headers: { ...auhorizationHeader } });
+  await fsp.mkdir(pathlib.dirname(path), { recursive: true });
   const stream = fs.createWriteStream(path);
 
   await new Promise((resolve, reject) => {
@@ -39,7 +41,7 @@ export async function fetchContent(
 
   const response = await fetch(path_url, { method: "GET", headers: Auth.asHeader(auth) });
   const contents = await response.text();
-  fs.writeFileSync(path.join(cachedir, basename(path_url)), contents);
+  fs.writeFileSync(pathlib.join(cachedir, basename(path_url)), contents);
   return contents;
 }
 
@@ -51,6 +53,6 @@ export async function streamContent(
 
   const response = await fetch(path_url, { method: "GET", headers: Auth.asHeader(auth) });
   const contents = await response.text();
-  fs.writeFileSync(path.join(cachedir, basename(path_url)), contents);
+  fs.writeFileSync(pathlib.join(cachedir, basename(path_url)), contents);
   return contents;
 }

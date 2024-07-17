@@ -42,6 +42,7 @@ export class HttpRequestStep implements WorkflowPartStep {
 
           if (response.ok && response.body != null) {
             const destination = pathlib.resolve(filename);
+            await fs.mkdir(pathlib.dirname(destination), { recursive: true });
             const fileStream = createWriteStream(destination, { flags: "w" });
             await finished(
               Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(fileStream)
