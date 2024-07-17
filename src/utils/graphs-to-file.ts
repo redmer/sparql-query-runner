@@ -1,6 +1,8 @@
 import type * as RDF from "@rdfjs/types";
 import fs from "fs";
 import N3 from "n3";
+import fsp from "node:fs/promises";
+import pathlib from "node:path";
 import { DataFactory } from "rdf-data-factory";
 import { PassThrough } from "stream";
 import { pipeline } from "stream/promises";
@@ -37,6 +39,8 @@ export async function serializeStream(
   path: string,
   options?: GraphToFileOptions
 ) {
+  // Ensure that the output path exists
+  await fsp.mkdir(pathlib.dirname(path), { recursive: true });
   // If a pretty serialization isn't required, use streaming serializer
   if (STREAMABLE_FORMATS.includes(options.format)) return writeStream(stream, path, options);
 
@@ -44,7 +48,7 @@ export async function serializeStream(
 }
 
 /** Serialize an RDF.Stream to a path formatted as NQ / NT */
-export function writeStream(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
+export async function writeStream(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
   const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
 
   return pipeline(
@@ -58,7 +62,7 @@ export function writeStream(stream: RDF.Stream, path: string, options: GraphToFi
 }
 
 /** Serialize an RDF.Stream to a path with a blocking, pretty formatter */
-export function writeStreamPretty(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
+function writeStreamPretty(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
   return new Promise((resolve, reject) => {
     const fd = fs.createWriteStream(path, { encoding: "utf-8" });
     const plainWriter = new N3.Writer(fd, options);
