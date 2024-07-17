@@ -86,7 +86,9 @@ export class TriplyDBTarget extends TriplyDBCommon implements WorkflowPartTarget
           if ((await dataset.getInfo()).serviceCount > 0) {
             context.info(`Updating services...`);
             for await (const service of dataset.getServices()) {
-              if (!(await service.isUpToDate())) service.update();
+              const serviceInfo = await service.getInfo();
+              if (!(await service.isUpToDate()))
+                context.info(`Update service "${serviceInfo.name}" manually`);
             }
           }
         },
