@@ -152,7 +152,7 @@ async function runPipelines(configPaths: string[], { defaultPrefixes, ...options
     for (const path of ge1(configPaths)) {
       const config = await configFromPath(path, { secrets: process.env, defaultPrefixes });
       // Run them all. The supervisor handles job dependencies.
-      new WorkflowSupervisor(config).runAll({ defaultPrefixes, ...options });
+      await new WorkflowSupervisor(config).runAll({ defaultPrefixes, ...options });
     }
   } catch (error) {
     Bye(`during workflow execution (stopping all):` + error);
