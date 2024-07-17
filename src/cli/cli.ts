@@ -7,7 +7,6 @@ import { resolve } from "node:path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { mergeConfigurations } from "../config/merge.js";
-import { IWorkflowData } from "../config/types.js";
 import { CONFIG_EXT, CONFIG_FILENAME_YAML, configFromPath } from "../config/validate.js";
 import { TEMPDIR } from "../runner/job-supervisor.js";
 import { newPipelineTemplate } from "../runner/new-pipeline.js";
@@ -50,7 +49,7 @@ async function cli() {
         },
         config: {
           alias: "i",
-          type: "string",
+          type: "array",
           desc: "Path to workflow file(s)",
         },
         verbose: {
@@ -150,16 +149,13 @@ async function createNewPipelineFile(path: string) {
 
 async function runPipelines(configPaths: string[], { defaultPrefixes, ...options }: ICliOptions) {
   try {
-    // Gather all configurations
-    const configs: IWorkflowData[] = [];
-    for (const path of ge1(configPaths))
-      configs.push(await configFromPath(path, { secrets: process.env, defaultPrefixes }));
-    const config = mergeConfigurations(configs);
-
-    // Run them all. The supervisor handles dependencies.
-    new WorkflowSupervisor(config).runAll({ defaultPrefixes, ...options });
+    for (const path of ge1(configPaths)) {
+      const config = await configFromPath(path, { secrets: process.env, defaultPrefixes });
+      // Run them all. The supervisor handles job dependencies.
+      new WorkflowSupervisor(config).runAll({ defaultPrefixes, ...options });
+    }
   } catch (error) {
-    Bye(`during workflow execution:` + error);
+    Bye(`during workflow execution (stopping all):` + error);
   }
 }
 
