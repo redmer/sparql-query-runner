@@ -108,7 +108,7 @@
       "IntoGraph": { "type": "string", "description": "(Option) Override the quads' graph." },
       "WithOnlyGraphs": {
         "type": "object",
-        "properties": { "only-graph": { "$ref": "#/definitions/Options/WithOnlyGraphs" } }
+        "properties": { "only-graphs": { "$ref": "#/definitions/Options/WithOnlyGraphs" } }
       },
       "OnlyGraphs": {
         "type": "array",
