@@ -1,4 +1,4 @@
-name: Release NodeJS package
+name: Publish GitHub pages
 
 on:
   push:

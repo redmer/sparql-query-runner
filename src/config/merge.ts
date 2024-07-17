@@ -12,7 +12,7 @@ export function mergeConfigurations(configs: IWorkflowData[]): IWorkflowData {
       // The merge won't do namespacing of jobs. They simply have to be unique
       if (jobs.has(sep_job.name))
         throw new ConfigurationError(
-          `Could not merge configurations: multiple seperate jobs named '${name}'`
+          `Could not merge configurations: multiple seperate jobs named '${sep_job.name}'`
         );
       jobs.set(sep_job.name, sep_job);
     }
