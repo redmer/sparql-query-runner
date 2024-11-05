@@ -6,11 +6,9 @@ import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { mergeConfigurations } from "../config/merge.js";
 import { CONFIG_EXT, CONFIG_FILENAME_YAML, configFromPath } from "../config/validate.js";
 import { TEMPDIR } from "../runner/job-supervisor.js";
 import { newPipelineTemplate } from "../runner/new-pipeline.js";
-import { ShaclRulesWorker } from "../runner/shacl-rules-worker.js";
 import { WorkflowSupervisor } from "../runner/workflow-supervisor.js";
 import { ge1 } from "../utils/array.js";
 import { Bye, Done } from "../utils/report.js";
@@ -81,23 +79,6 @@ async function cli() {
       },
     })
     .command({
-      command: "rules",
-      describe: "Generate SHACL SPARQL Rules to construct triples",
-      builder: {
-        config: {
-          alias: "i",
-          type: "string",
-          desc: "Path to workflow file",
-        },
-        output: {
-          alias: "o",
-          type: "string",
-          desc: "Path to output rules to",
-        },
-      },
-      handler: async (argv) => await createShaclRules(argv["config"], argv["output"]),
-    })
-    .command({
       command: "new",
       describe: "Create a new workflow declaration file",
       builder: {
@@ -156,19 +137,6 @@ async function runPipelines(configPaths: string[], { defaultPrefixes, ...options
     }
   } catch (error) {
     Bye(`during workflow execution (stopping all):` + error);
-  }
-}
-
-async function createShaclRules(configPaths: string[], output: string) {
-  try {
-    const configs = [];
-    for (const path of ge1(configPaths))
-      configs.push(await configFromPath(path, { secrets: process.env, defaultPrefixes: false }));
-
-    const config = mergeConfigurations(configs);
-    new ShaclRulesWorker().start(config, output);
-  } catch (error) {
-    Bye(`during SHACL rule creation:` + error);
   }
 }
 
