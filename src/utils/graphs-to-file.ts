@@ -1,3 +1,4 @@
+import Serializer from "@rdfjs/serializer-turtle";
 import type * as RDF from "@rdfjs/types";
 import fs from "fs";
 import N3 from "n3";
@@ -26,6 +27,8 @@ export const STREAMABLE_FORMATS: SerializationFormat[] = [
   "application/n-triples",
 ];
 
+export const PRETTY_FORMATS: SerializationFormat[] = ["text/turtle"];
+
 /** Formats that cannot serialize quads, only triples. */
 export const ONLY_TRIPLES_NO_QUADS_FORMATS: SerializationFormat[] = [
   "application/n-triples",
@@ -41,6 +44,8 @@ export async function serializeStream(
 ) {
   // Ensure that the output path exists
   await fsp.mkdir(pathlib.dirname(path), { recursive: true });
+  // Pretty formats are tried first
+  if (PRETTY_FORMATS.includes(options.format)) return writeStreamRealPretty(stream, path, options);
   // If a pretty serialization isn't required, use streaming serializer
   if (STREAMABLE_FORMATS.includes(options.format)) return writeStream(stream, path, options);
 
@@ -59,6 +64,28 @@ export async function writeStream(stream: RDF.Stream, path: string, options: Gra
     new N3.StreamWriter(options),
     fs.createWriteStream(path, { encoding: "utf-8" })
   );
+}
+
+/** Generate a Map that looks like an RDFJS PrefixMap (but isn't) */
+function prefixMapFromPrefixes(prefixes: Prefixes): Map<string, RDF.NamedNode> {
+  const array: [string, RDF.NamedNode][] = [];
+  for (const [alias, ns] of Object.entries(prefixes)) {
+    array.push([alias, DF.namedNode(ns)]);
+  }
+  return new Map(array);
+}
+
+/** Serialize an RDF.Stream to a path pretty formatted as Turtle. This is heavy on memory use. */
+export async function writeStreamRealPretty(
+  stream: RDF.Stream,
+  path: string,
+  options: GraphToFileOptions
+) {
+  // @ts-expect-error (The prefixes option doesn't require a PrefixMap, a Map suffices.)
+  const serializer = new Serializer({ prefixes: prefixMapFromPrefixes(options.prefixes) });
+  const output = serializer.import(stream);
+  // @ts-expect-error (The output stream can be piped.)
+  output.pipe(fs.createWriteStream(path, { encoding: "utf-8" }));
 }
 
 /** Serialize an RDF.Stream to a path with a blocking, pretty formatter */

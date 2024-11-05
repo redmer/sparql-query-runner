@@ -14,18 +14,18 @@ export class QuadStoreTarget implements WorkflowPartTarget {
 
   exec(data: IJobTargetData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
-      const mimetype = getRDFMediaTypeFromFilename(".nq");
+      const nquads = getRDFMediaTypeFromFilename(".nq");
       const stepTempFile = `${context.tempdir}/sparql-quad-destination-${new Date().getTime()}.nq`;
 
       return {
         init: async (stream: RDF.Stream) => {
           InfoUploadingTo(context.info, data.with.onlyGraphs, data.access);
 
-          await serializeStream(stream, stepTempFile, { format: mimetype });
+          await serializeStream(stream, stepTempFile, { format: nquads });
           const contents = await fs.readFile(stepTempFile, { encoding: "utf-8" });
 
           const response = await fetch(data.access, {
-            headers: { ...Auth.asHeader(data.with.credentials), "Content-Type": mimetype },
+            headers: { ...Auth.asHeader(data.with.credentials), "Content-Type": nquads },
             method: "POST",
             body: contents,
           });
