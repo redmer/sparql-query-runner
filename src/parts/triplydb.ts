@@ -1,6 +1,5 @@
 import * as RDF from "@rdfjs/types";
 import App from "@triply/triplydb";
-import { Store } from "n3";
 import { exit } from "process";
 import { storeStream } from "rdf-store-stream";
 import type { IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
@@ -11,6 +10,7 @@ import type {
   WorkflowPartTarget,
 } from "../runner/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
+import { convertStore } from "../utils/rdfjs-store-to-n3-store.js";
 import { InfoUploadingTo } from "../utils/uploading-message.js";
 
 class TriplyDBCommon {
@@ -80,17 +80,9 @@ export class TriplyDBTarget extends TriplyDBCommon implements WorkflowPartTarget
         init: async (stream: RDF.Stream) => {
           InfoUploadingTo(context.info, data.with.onlyGraphs, data.access);
 
-          const store = await storeStream(stream);
-          await dataset.importFromStore(<Store>store, { overwriteAll: true, mergeGraphs: false });
-
-          if ((await dataset.getInfo()).serviceCount > 0) {
-            context.info(`Updating services...`);
-            for await (const service of dataset.getServices()) {
-              const serviceInfo = await service.getInfo();
-              if (!(await service.isUpToDate()))
-                context.info(`Update service "${serviceInfo.name}" manually`);
-            }
-          }
+          const rdfjsStore = await storeStream(stream);
+          const store = await convertStore(rdfjsStore);
+          await dataset.importFromStore(store, { overwriteAll: true, mergeGraphs: false });
         },
       };
     };
