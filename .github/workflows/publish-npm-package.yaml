@@ -1,4 +1,4 @@
-name: Release NodeJS package
+name: Build and release on NPM
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@master
+        uses: actions/checkout@v4
 
       - name: Setup NodeJS
         uses: actions/setup-node@v3
