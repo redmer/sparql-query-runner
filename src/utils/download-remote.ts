@@ -23,6 +23,7 @@ export async function download(url: string, path: string, auth?: ICredentialData
   await new Promise((resolve, reject) => {
     Readable.fromWeb(response.body as ReadableStream).pipe(stream) ?? reject();
     Readable.fromWeb(response.body as ReadableStream).on("error", reject) ?? reject();
+    //@ts-ignore
     stream.on("finish", resolve);
   });
 }

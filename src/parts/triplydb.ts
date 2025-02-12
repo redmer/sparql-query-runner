@@ -25,7 +25,7 @@ class TriplyDBCommon {
     return dataset;
   }
 
-  async app(data: IJobModuleData, context?: JobRuntimeContext): Promise<App.default> {
+  async app(data: IJobModuleData, context?: JobRuntimeContext): Promise<App> {
     const messenger = context ? context.error : console.error;
 
     const auth = data.with.credentials;
@@ -34,7 +34,7 @@ class TriplyDBCommon {
       exit(-1);
     }
 
-    return App.default.get({ token: auth.token });
+    return App.get({ token: auth.token });
   }
 
   async tpf(data: IJobModuleData, context: JobRuntimeContext) {

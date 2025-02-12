@@ -3,14 +3,19 @@ import { readFileSync } from "fs";
 import { factsToQuads, incremental, owl2rl, quadsToFacts, rdfs } from "hylar-core";
 import N3 from "n3";
 import type { IJobStepData } from "../config/types.js";
-import type { InMemQuadStore, JobRuntimeContext, WorkflowPartStep } from "../runner/types.js";
+import type {
+  InMemQuadStore,
+  JobRuntimeContext,
+  WorkflowModuleExec,
+  WorkflowPartStep,
+} from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 export class InferReason implements WorkflowPartStep {
   id = () => "hylar-entailment-step";
   names = ["steps/infer"];
 
-  exec(data: IJobStepData) {
+  exec(data: IJobStepData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       const ruleset = data.with["ruleset"] == "owl2rl" ? owl2rl : rdfs;
 
