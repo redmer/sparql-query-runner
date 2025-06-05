@@ -11,4 +11,4 @@ RUN npm ci
 ARG NODE_ENV=production
 ENV NODE_ENV=$NODE_ENV
 
-ENTRYPOINT ["node", "dist/cli/cli.js"]
+ENTRYPOINT ["node", "/home/node/app/dist/cli/cli.js"]
