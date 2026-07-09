@@ -2,10 +2,17 @@ import { QueryEngine } from "@comunica/query-sparql";
 import { RdfStore } from "rdf-stores";
 import type { ICliOptions } from "../../src/cli/cli-options.js";
 import type { IJobData } from "../../src/config/types.js";
-import type { JobRuntimeContext, QueryContext } from "../../src/runner/types.js";
+import type { InMemQuadStore, JobRuntimeContext, QueryContext } from "../../src/runner/types.js";
+
+export interface TestJobRuntimeContext extends JobRuntimeContext {
+  /** The store backing this context's queryContext (exposed for test setup). */
+  store: InMemQuadStore;
+}
 
 /** Build a minimal JobRuntimeContext for unit-testing individual parts. */
-export function makeJobRuntimeContext(overrides: Partial<JobRuntimeContext> = {}): JobRuntimeContext {
+export function makeJobRuntimeContext(
+  overrides: Partial<JobRuntimeContext> & { store?: InMemQuadStore } = {}
+): TestJobRuntimeContext {
   const jobData: IJobData = overrides.jobData ?? {
     name: "test-job",
     prefixes: {},
@@ -23,7 +30,7 @@ export function makeJobRuntimeContext(overrides: Partial<JobRuntimeContext> = {}
     cacheIntermediateResults: false,
   };
   const engine = overrides.engine ?? new QueryEngine();
-  const store = RdfStore.createDefault();
+  const store: InMemQuadStore = (overrides.store ?? RdfStore.createDefault()) as InMemQuadStore;
   const queryContext: QueryContext = overrides.queryContext ?? {
     sources: [{ type: "rdfjs", value: store }],
     unionDefaultGraph: true,
@@ -48,5 +55,6 @@ export function makeJobRuntimeContext(overrides: Partial<JobRuntimeContext> = {}
     info: overrides.info ?? noop,
     warning: overrides.warning ?? noop,
     error: overrides.error ?? throwErr,
+    store,
   };
 }
