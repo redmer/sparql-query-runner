@@ -1,7 +1,12 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import type * as RDF from "@rdfjs/types";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";
-import { collectStream, parseRdfFile, streamOf } from "../../test/helpers/rdf.js";
+import {
+  collectStream,
+  parseRdfFile,
+  streamOf,
+} from "../../test/helpers/rdf.js";
 import type { IJobStepData } from "../config/types.js";
 import { SparqlConstructQuery } from "./sparql-construct-query.js";
 

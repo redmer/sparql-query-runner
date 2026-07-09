@@ -40,7 +40,7 @@ function silentOptions(
   overrides: Partial<ICliOptions> = {}
 ): Partial<ICliOptions> {
   return {
-    verbosityLevel: 5,
+    verbosityLevel: 0,
     warningsAsErrors: false,
     defaultPrefixes: false,
     allowShellScripts: false,

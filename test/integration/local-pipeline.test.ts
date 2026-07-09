@@ -13,7 +13,7 @@ const MINIMAL_WORKFLOW = path.resolve(
 
 function defaultCliOptions(overrides: Partial<ICliOptions> = {}): ICliOptions {
   return {
-    verbosityLevel: 5,
+    verbosityLevel: 0,
     warningsAsErrors: false,
     defaultPrefixes: false,
     allowShellScripts: false,

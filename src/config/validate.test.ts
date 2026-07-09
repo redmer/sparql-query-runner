@@ -1,9 +1,17 @@
-import { configFromString, ConfigurationError, expandCURIE } from "./validate.js";
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import {
+  configFromString,
+  ConfigurationError,
+  expandCURIE,
+} from "./validate.js";
 
 const emptySecrets = {};
 
 async function parse(yaml: string, defaultPrefixes = false) {
-  return await configFromString(yaml, { secrets: emptySecrets, defaultPrefixes });
+  return await configFromString(yaml, {
+    secrets: emptySecrets,
+    defaultPrefixes,
+  });
 }
 
 describe("configFromString()", () => {
@@ -181,7 +189,10 @@ jobs:
 });
 
 describe("expandCURIE()", () => {
-  const prefixes = { ex: "http://example.org/", rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#" };
+  const prefixes = {
+    ex: "http://example.org/",
+    rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  };
 
   test("expands a known CURIE", () => {
     expect(expandCURIE("ex:foo", prefixes)).toBe("http://example.org/foo");
@@ -192,6 +203,8 @@ describe("expandCURIE()", () => {
   });
 
   test("returns full IRIs untouched", () => {
-    expect(expandCURIE("http://example.org/bar", prefixes)).toBe("http://example.org/bar");
+    expect(expandCURIE("http://example.org/bar", prefixes)).toBe(
+      "http://example.org/bar"
+    );
   });
 });

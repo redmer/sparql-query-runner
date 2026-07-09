@@ -1,9 +1,14 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import type * as RDF from "@rdfjs/types";
 import path from "node:path";
 import { DataFactory } from "rdf-data-factory";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";
-import { collectStream, parseRdfFile, streamOf } from "../../test/helpers/rdf.js";
+import {
+  collectStream,
+  parseRdfFile,
+  streamOf,
+} from "../../test/helpers/rdf.js";
 import { withTempDir } from "../../test/helpers/tempdir.js";
 import type { IJobSourceData, IJobTargetData } from "../config/types.js";
 import type { WorkflowPartGetter } from "../runner/types.js";
@@ -54,7 +59,11 @@ describe("LocalFileSource.isQualified", () => {
       src.isQualified(
         sourceData({
           access: "https://example.org/data.ttl",
-          with: { credentials: undefined, onlyGraphs: [g], intoGraph: undefined },
+          with: {
+            credentials: undefined,
+            onlyGraphs: [g],
+            intoGraph: undefined,
+          },
         })
       )
     ).toBe(true);
@@ -83,7 +92,10 @@ describe("LocalFileSource.exec", () => {
     const ctx = makeJobRuntimeContext();
     const getter: WorkflowPartGetter = await src.exec(sourceData())(ctx);
     expect(getter.init).toBeDefined();
-    const stream = (await getter.init!(streamOf([]), null as never)) as RDF.Stream;
+    const stream = (await getter.init!(
+      streamOf([]),
+      null as never
+    )) as RDF.Stream;
     const quads = await collectStream(stream);
     // people.ttl: alice (a, name, age) + bob (a, name, age) = 6 quads
     expect(quads.length).toBe(6);
@@ -97,7 +109,9 @@ describe("LocalFileTarget.exec", () => {
       const input = await parseRdfFile("test/fixtures/data/people.ttl");
       const target = new LocalFileTarget();
       const ctx = makeJobRuntimeContext();
-      const getter: WorkflowPartGetter = await target.exec(targetData({ access: outPath }))(ctx);
+      const getter: WorkflowPartGetter = await target.exec(
+        targetData({ access: outPath })
+      )(ctx);
       await getter.init!(streamOf(input), null as never);
 
       const roundTrip = await parseRdfFile(outPath);

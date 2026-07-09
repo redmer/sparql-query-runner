@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import { DataFactory } from "rdf-data-factory";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";

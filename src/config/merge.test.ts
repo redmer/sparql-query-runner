@@ -1,6 +1,6 @@
 import { mergeConfigurations, mergePrefixes } from "./merge.js";
+import type { IJobData, IWorkflowData } from "./types.js";
 import { ConfigurationError } from "./validate.js";
-import type { IWorkflowData } from "./types.js";
 
 function workflow(overrides: Partial<IWorkflowData>): IWorkflowData {
   return {
@@ -49,11 +49,15 @@ describe("mergeConfigurations()", () => {
   test("merges jobs from multiple configurations", () => {
     const a = workflow({
       prefixes: { ex: "http://example.org/" },
-      jobs: [{ name: "job-a", sources: [], steps: [], targets: [] } as any],
+      jobs: [
+        { name: "job-a", sources: [], steps: [], targets: [] } as IJobData,
+      ],
     });
     const b = workflow({
       prefixes: { schema: "http://schema.org/" },
-      jobs: [{ name: "job-b", sources: [], steps: [], targets: [] } as any],
+      jobs: [
+        { name: "job-b", sources: [], steps: [], targets: [] } as IJobData,
+      ],
     });
     const merged = mergeConfigurations([a, b]);
     expect(merged.version).toBe("v5.compiled");
@@ -66,10 +70,10 @@ describe("mergeConfigurations()", () => {
 
   test("throws on duplicate job names across configurations", () => {
     const a = workflow({
-      jobs: [{ name: "dup", sources: [] } as any],
+      jobs: [{ name: "dup", sources: [] } as IJobData],
     });
     const b = workflow({
-      jobs: [{ name: "dup", sources: [] } as any],
+      jobs: [{ name: "dup", sources: [] } as IJobData],
     });
     expect(() => mergeConfigurations([a, b])).toThrow(/multiple.*'dup'/);
   });
