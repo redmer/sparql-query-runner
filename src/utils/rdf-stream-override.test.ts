@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import type * as RDF from "@rdfjs/types";
 import { DataFactory } from "rdf-data-factory";
 import { RdfStore } from "rdf-stores";

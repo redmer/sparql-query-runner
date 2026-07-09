@@ -14,9 +14,9 @@
     "sparql-query-runner": "dist/cli/cli.js"
   },
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "build": "tsc -p ./tsconfig.json",
     "watch": "tsc --watch -p ./tsconfig.json",
     "lint": "cross-env ESLINT_STRICT=true ESLINT_EXPENSIVE=true eslint . --ext .ts",
