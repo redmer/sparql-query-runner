@@ -6,8 +6,6 @@ jobs:
   minimal-job:
     sources:
       - file: test/fixtures/data/people.ttl
-        with:
-          into-graph: ex:data
     steps:
       - construct: >
           PREFIX schema: <http://schema.org/>
@@ -15,7 +13,5 @@ jobs:
             ?s schema:name ?name .
             BIND(UCASE(?name) AS ?upper)
           }
-        with:
-          into-graph: ex:derived
     targets:
       - file: OUTPUT_PATH_PLACEHOLDER
