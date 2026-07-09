@@ -1,0 +1,13 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix schema: <http://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <https://example.org/shapes/> .
+
+ex:PersonEmailShape a sh:NodeShape ;
+  sh:targetClass schema:Person ;
+  sh:property [
+    sh:path schema:email ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:message "Every Person must have an email"
+  ] .

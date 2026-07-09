@@ -1,0 +1,12 @@
+@prefix ex: <https://example.org/> .
+@prefix schema: <http://schema.org/> .
+
+ex:g1 {
+  ex:alice a schema:Person ;
+    schema:name "Alice" .
+}
+
+ex:g2 {
+  ex:bob a schema:Person ;
+    schema:name "Bob" .
+}

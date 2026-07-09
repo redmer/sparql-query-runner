@@ -1,0 +1,8 @@
+PREFIX schema: <http://schema.org/>
+CONSTRUCT {
+  ?s schema:name ?upper .
+}
+WHERE {
+  ?s schema:name ?name .
+  BIND(UCASE(?name) AS ?upper)
+}

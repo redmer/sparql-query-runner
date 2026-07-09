@@ -15,6 +15,8 @@
   },
   "scripts": {
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "build": "tsc -p ./tsconfig.json",
     "watch": "tsc --watch -p ./tsconfig.json",
     "lint": "cross-env ESLINT_STRICT=true ESLINT_EXPENSIVE=true eslint . --ext .ts",
@@ -76,7 +78,8 @@
       "src"
     ],
     "roots": [
-      "src"
+      "src",
+      "test"
     ],
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
@@ -85,15 +88,37 @@
       "\\.[tj]sx?$": [
         "ts-jest",
         {
-          "useESM": true
+          "useESM": true,
+          "tsconfig": "tsconfig.test.json"
         }
       ]
     },
     "transformIgnorePatterns": [
-      "<rootDir>/node_modules/"
+      "node_modules/(?!(@rdfjs|@comunica|n3|rdf-.*|shacl-engine|rdf-validate-shacl|hylar-core|readable-stream-node-to-web|stream-chunks|readable-to-string)/)"
     ],
     "extensionsToTreatAsEsm": [
       ".ts"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.test.ts",
+      "!src/**/*.d.ts",
+      "!src/type-defs/**",
+      "!src/config/schema-types.ts",
+      "!src/parts/triplydb.ts",
+      "!src/parts/laces-hub.ts",
+      "!src/parts/sparql-update-endpoint.ts",
+      "!src/parts/sparql-graph-store.ts",
+      "!src/parts/sparql-quad-store.ts",
+      "!src/parts/download-file.ts",
+      "!src/parts/shell.ts",
+      "!src/parts/comunica-auto-source.ts",
+      "!src/utils/download-remote.ts",
+      "!src/utils/laces.ts",
+      "!src/utils/auth-proxy-handler.ts",
+      "!src/utils/uploading-message.ts",
+      "!src/utils/report.ts",
+      "!src/cli/cli.ts"
     ]
   },
   "prettier": {

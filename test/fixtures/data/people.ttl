@@ -1,0 +1,10 @@
+@prefix ex: <https://example.org/> .
+@prefix schema: <http://schema.org/> .
+
+ex:alice a schema:Person ;
+  schema:name "Alice" ;
+  schema:age 30 .
+
+ex:bob a schema:Person ;
+  schema:name "Bob" ;
+  schema:age 25 .

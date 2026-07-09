@@ -1,0 +1,2 @@
+<https://example.org/alice> <http://schema.org/name> "Alice" <https://example.org/g1> .
+<https://example.org/bob> <http://schema.org/name> "Bob" <https://example.org/g2> .
