@@ -1,6 +1,7 @@
 import type * as RDF from "@rdfjs/types";
-import fs from "fs";
 import N3 from "n3";
+import fsp from "node:fs/promises";
+import { Readable } from "node:stream";
 import { IJobSourceData, IJobTargetData } from "../config/types.js";
 import {
   JobRuntimeContext,
@@ -43,11 +44,24 @@ export class LocalFileSource implements WorkflowPartSource {
 
       return {
         init: async () => {
-          const quadStream = fs
-            .createReadStream(data.access)
-            .pipe(new N3.StreamParser({ format: mimetype }));
-
-          return quadStream;
+          // Read + parse the file synchronously and emit the resulting quads
+          // through a native `Readable` object stream.
+          //
+          // Why not stream directly through `fs.createReadStream().pipe(N3.StreamParser)`?
+          // N3's stream classes extend `readable-stream`'s `Transform`. Under
+          // Jest's `--experimental-vm-modules` mode, `readable-stream` can be
+          // instantiated in a different module realm than Node's builtin
+          // `stream`, which produces the intermittent CI hangs we observed
+          // (the parser never emitted `end`, and downstream `pipeline()`
+          // therefore never resolved). Using the synchronous `N3.Parser` +
+          // `Readable.from(...)` sidesteps that interop entirely and keeps
+          // fixture files (which are always small) in memory — perfectly
+          // acceptable for a config-driven CLI runner.
+          const contents = await fsp.readFile(data.access, {
+            encoding: "utf-8",
+          });
+          const quads = new N3.Parser({ format: mimetype }).parse(contents);
+          return Readable.from(quads, { objectMode: true }) as RDF.Stream;
         },
       };
     };
