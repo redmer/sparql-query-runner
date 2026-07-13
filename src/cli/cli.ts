@@ -36,7 +36,7 @@ async function cli() {
         // Then pass them on to the executor
         await runPipelines(configFiles, {
           cacheIntermediateResults: argv["cache"] ?? false,
-          defaultPrefixes: !argv["no-default-prefixes"] ?? false,
+          defaultPrefixes: !argv["no-default-prefixes"],
           verbosityLevel: argv["verbose"] > 5 ? 5 : argv["verbose"], // max 5 = trace
           warningsAsErrors: argv["warnings-as-errors"] ?? false,
           allowShellScripts: argv["exec-shell"] ?? false,
