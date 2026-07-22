@@ -1,8 +1,12 @@
 import * as RDF from "@rdfjs/types";
-import App from "@triply/triplydb";
+import { default as App } from "@triply/triplydb";
 import { exit } from "process";
 import { storeStream } from "rdf-store-stream";
-import type { IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
+import type {
+  IJobModuleData,
+  IJobSourceData,
+  IJobTargetData,
+} from "../config/types.js";
 import type {
   JobRuntimeContext,
   WorkflowModuleExec,
@@ -46,7 +50,10 @@ class TriplyDBCommon {
   }
 }
 
-export class TriplyDBSource extends TriplyDBCommon implements WorkflowPartSource {
+export class TriplyDBSource
+  extends TriplyDBCommon
+  implements WorkflowPartSource
+{
   // Export a(ll) graph(s) to Laces
   id = () => "triplydb-source";
   names = ["sources/triplydb"];
@@ -54,7 +61,9 @@ export class TriplyDBSource extends TriplyDBCommon implements WorkflowPartSource
   staticAuthProxyHandler(data: IJobModuleData): AuthProxyHandler {
     const url = new URL(data.access);
     url.hostname = "api." + url.hostname;
-    return new AuthProxyHandler(data.with.credentials, url.href, { Accept: "application/ld+json" });
+    return new AuthProxyHandler(data.with.credentials, url.href, {
+      Accept: "application/ld+json",
+    });
   }
 
   exec(data: IJobSourceData): WorkflowModuleExec {
@@ -67,7 +76,10 @@ export class TriplyDBSource extends TriplyDBCommon implements WorkflowPartSource
   }
 }
 
-export class TriplyDBTarget extends TriplyDBCommon implements WorkflowPartTarget {
+export class TriplyDBTarget
+  extends TriplyDBCommon
+  implements WorkflowPartTarget
+{
   // Export a(ll) graph(s) to Laces
   id = () => "triplydb-target";
   names = ["targets/triplydb"];
@@ -82,7 +94,10 @@ export class TriplyDBTarget extends TriplyDBCommon implements WorkflowPartTarget
 
           const rdfjsStore = await storeStream(stream);
           const store = await convertStore(rdfjsStore);
-          await dataset.importFromStore(store, { overwriteAll: true, mergeGraphs: false });
+          await dataset.importFromStore(store, {
+            overwriteAll: true,
+            mergeGraphs: false,
+          });
         },
       };
     };

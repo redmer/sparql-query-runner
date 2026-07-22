@@ -6,7 +6,11 @@ import fs from "node:fs/promises";
 import { resolve } from "node:path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { CONFIG_EXT, CONFIG_FILENAME_YAML, configFromPath } from "../config/validate.js";
+import {
+  CONFIG_EXT,
+  CONFIG_FILENAME_YAML,
+  configFromPath,
+} from "../config/validate.js";
 import { TEMPDIR } from "../runner/job-supervisor.js";
 import { newPipelineTemplate } from "../runner/new-pipeline.js";
 import { WorkflowSupervisor } from "../runner/workflow-supervisor.js";
@@ -32,7 +36,7 @@ async function cli() {
         // Then pass them on to the executor
         await runPipelines(configFiles, {
           cacheIntermediateResults: argv["cache"] ?? false,
-          defaultPrefixes: !argv["no-default-prefixes"] ?? false,
+          defaultPrefixes: !argv["no-default-prefixes"],
           verbosityLevel: argv["verbose"] > 5 ? 5 : argv["verbose"], // max 5 = trace
           warningsAsErrors: argv["warnings-as-errors"] ?? false,
           allowShellScripts: argv["exec-shell"] ?? false,
@@ -101,7 +105,8 @@ async function cli() {
           desc: "Force deletion of the cache",
         },
       },
-      handler: async (argv) => await clearCache(argv["force"]),
+      handler: async (argv) =>
+        await clearCache({ force: argv["force"] ?? false }),
     })
     .demandCommand() // require a "command" verb
     .help()
@@ -128,12 +133,21 @@ async function createNewPipelineFile(path: string) {
   }
 }
 
-async function runPipelines(configPaths: string[], { defaultPrefixes, ...options }: ICliOptions) {
+async function runPipelines(
+  configPaths: string[],
+  { defaultPrefixes, ...options }: ICliOptions
+) {
   try {
     for (const path of ge1(configPaths)) {
-      const config = await configFromPath(path, { secrets: process.env, defaultPrefixes });
+      const config = await configFromPath(path, {
+        secrets: process.env,
+        defaultPrefixes,
+      });
       // Run them all. The supervisor handles job dependencies.
-      await new WorkflowSupervisor(config).runAll({ defaultPrefixes, ...options });
+      await new WorkflowSupervisor(config).runAll({
+        defaultPrefixes,
+        ...options,
+      });
     }
   } catch (error) {
     Bye(`during workflow execution (stopping all):` + error);

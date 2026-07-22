@@ -1,0 +1,2 @@
+PREFIX schema: <http://schema.org/>
+ASK { ?s a schema:Person }

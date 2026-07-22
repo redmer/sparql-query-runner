@@ -1,0 +1,17 @@
+version: v5
+prefixes:
+  ex: https://example.org/
+  schema: http://schema.org/
+jobs:
+  minimal-job:
+    sources:
+      - file: test/fixtures/data/people.ttl
+    steps:
+      - construct: >
+          PREFIX schema: <http://schema.org/>
+          CONSTRUCT { ?s schema:name ?upper } WHERE {
+            ?s schema:name ?name .
+            BIND(UCASE(?name) AS ?upper)
+          }
+    targets:
+      - file: OUTPUT_PATH_PLACEHOLDER

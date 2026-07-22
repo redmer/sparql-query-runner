@@ -103,23 +103,14 @@ dist
 # TernJS port file
 .tern-port
 
-test/*
-
-workflow.sqr.yaml
-test1.ttl
-roundtripping.ttl
-roundtripping.rdf
-output2.ttl
-output1.trig
-roundtripping2.ttl
-
 # General
 .DS_Store
 .localized
 __MACOSX/
 .AppleDouble
 .LSOverride
-Icon[]
+Icon[
+]
 
 # Resource forks
 ._*
@@ -140,7 +131,8 @@ Icon[]
 .file
 .disk_label*
 lost+found
-.HFS+ Private Directory Data[]
+.HFS+ Private Directory Data[
+]
 
 # Directories potentially created on remote AFP share
 .AppleDB
