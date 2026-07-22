@@ -33,17 +33,14 @@ jobs:
         run: npm run build
 
       - name: Test
-        # Constrain parallelism and bump the per-test timeout: GitHub-hosted
-        # runners are noticeably slower than local machines, and the
-        # combination of `--experimental-vm-modules` + `ts-jest` makes worker
-        # startup expensive. Running with too many workers causes flaky
-        # timeouts in the local-pipeline / job-supervisor / file-local tests.
+        # Run tests fully in-band to avoid intermittent cross-worker
+        # ESM/stream deadlocks observed on hosted runners.
         if: matrix.node != '22'
         run: npm run test:ci
 
       - name: Coverage
-        # Only collect coverage once (on Node 22) to keep CI fast; upload as an
-        # artifact so we can compare before / after dependency upgrades.
+        # Only collect coverage once (on Node 22) to keep CI fast; run in-band
+        # for maximum stability on hosted runners.
         if: matrix.node == '22'
         run: npm run test:ci:coverage
 
