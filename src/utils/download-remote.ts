@@ -13,16 +13,23 @@ export function basename(url: string) {
 }
 
 /** Download a remote file, with optional auth headers to path */
-export async function download(url: string, path: string, auth?: ICredentialData) {
+export async function download(
+  url: string,
+  path: string,
+  auth?: ICredentialData,
+) {
   // Syntax: { ...null } => { }
   const auhorizationHeader = auth ? Auth.asHeader(auth) : null;
-  const response = await fetch(url, { method: "GET", headers: { ...auhorizationHeader } });
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { ...auhorizationHeader },
+  });
   await fsp.mkdir(pathlib.dirname(path), { recursive: true });
   const stream = fs.createWriteStream(path);
 
   await new Promise((resolve, reject) => {
-    Readable.fromWeb(response.body as ReadableStream).pipe(stream) ?? reject();
-    Readable.fromWeb(response.body as ReadableStream).on("error", reject) ?? reject();
+    Readable.fromWeb(response.body as ReadableStream).pipe(stream);
+    Readable.fromWeb(response.body as ReadableStream).on("error", reject);
     //@ts-ignore
     stream.on("finish", resolve);
   });
@@ -36,11 +43,15 @@ export type IFetchContentOptions = {
 
 export async function fetchContent(
   path_url: string,
-  { cachedir, auth, encoding }: IFetchContentOptions
+  { cachedir, auth, encoding }: IFetchContentOptions,
 ) {
-  if (!path_url.startsWith("http")) return fs.readFileSync(path_url, { encoding });
+  if (!path_url.startsWith("http"))
+    return fs.readFileSync(path_url, { encoding });
 
-  const response = await fetch(path_url, { method: "GET", headers: Auth.asHeader(auth) });
+  const response = await fetch(path_url, {
+    method: "GET",
+    headers: Auth.asHeader(auth),
+  });
   const contents = await response.text();
   fs.writeFileSync(pathlib.join(cachedir, basename(path_url)), contents);
   return contents;
@@ -48,11 +59,15 @@ export async function fetchContent(
 
 export async function streamContent(
   path_url: string,
-  { cachedir, auth, encoding }: IFetchContentOptions
+  { cachedir, auth, encoding }: IFetchContentOptions,
 ) {
-  if (!path_url.startsWith("http")) return fs.readFileSync(path_url, { encoding });
+  if (!path_url.startsWith("http"))
+    return fs.readFileSync(path_url, { encoding });
 
-  const response = await fetch(path_url, { method: "GET", headers: Auth.asHeader(auth) });
+  const response = await fetch(path_url, {
+    method: "GET",
+    headers: Auth.asHeader(auth),
+  });
   const contents = await response.text();
   fs.writeFileSync(pathlib.join(cachedir, basename(path_url)), contents);
   return contents;

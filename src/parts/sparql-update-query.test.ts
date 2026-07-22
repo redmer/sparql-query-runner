@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import { DataFactory } from "rdf-data-factory";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";
@@ -31,7 +30,7 @@ describe("SparqlUpdateQuery", () => {
     const getter = await step.exec(
       stepData({
         access: "INSERT DATA { <https://example.org/blog> a schema:Blog }",
-      })
+      }),
     )(ctx);
     // The init function should not throw
     await getter.init!(streamOf([]), ctx.store);
@@ -41,7 +40,7 @@ describe("SparqlUpdateQuery", () => {
       DF.namedNode("https://example.org/blog"),
       DF.namedNode("http://www.w3.org/1999/02/22-rdf-syntax-ns#type"),
       DF.namedNode("http://schema.org/Blog"),
-      null
+      null,
     );
     expect(found.length).toBe(1);
   });
@@ -51,7 +50,7 @@ describe("SparqlUpdateQuery", () => {
 
     const step = new SparqlUpdateQuery();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/queries/insert-blog.ru" })
+      stepData({ access: "test/fixtures/queries/insert-blog.ru" }),
     )(ctx);
     await getter.init!(streamOf([]), ctx.store);
 
@@ -59,7 +58,7 @@ describe("SparqlUpdateQuery", () => {
       DF.namedNode("https://example.org/blog"),
       null,
       null,
-      null
+      null,
     );
     expect(found.length).toBeGreaterThan(0);
   });

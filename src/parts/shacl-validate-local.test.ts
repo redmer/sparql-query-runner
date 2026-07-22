@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";
 import { parseRdfFile, streamOf } from "../../test/helpers/rdf.js";
@@ -40,7 +39,7 @@ describe("ShaclValidateLocal", () => {
 
     const step = new ShaclValidateLocal();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/shapes/person-shape.ttl" })
+      stepData({ access: "test/fixtures/shapes/person-shape.ttl" }),
     )(ctx);
     await getter.init!(streamOf([]), ctx.store);
     expect(infos.some((m) => /OK.*conforms/.test(m))).toBe(true);
@@ -58,7 +57,7 @@ describe("ShaclValidateLocal", () => {
 
     const step = new ShaclValidateLocal();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/shapes/strict-shape.ttl" })
+      stepData({ access: "test/fixtures/shapes/strict-shape.ttl" }),
     )(ctx);
     await getter.init!(streamOf([]), ctx.store);
     expect(warnings.length).toBeGreaterThan(0);

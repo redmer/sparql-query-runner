@@ -5,7 +5,11 @@ import { RdfStore } from "rdf-stores";
 import SHACLValidator from "rdf-validate-shacl";
 import { Validator } from "shacl-engine";
 import type { IJobStepData } from "../config/types.js";
-import type { InMemQuadStore, JobRuntimeContext, WorkflowPartStep } from "../runner/types.js";
+import type {
+  InMemQuadStore,
+  JobRuntimeContext,
+  WorkflowPartStep,
+} from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 export class ShaclValidateLocal implements WorkflowPartStep {
@@ -38,13 +42,19 @@ export class ShaclValidateLocal implements WorkflowPartStep {
           else shapes = quadStore.asDataset();
 
           const validator = new SHACLValidator(shapes, {});
-          const report = validator.validate(quadStore.asDataset());
+          const report = await validator.validate(quadStore.asDataset());
 
-          const validator2 = new Validator(shapes, { factory: quadStore.dataFactory });
-          const report2 = await validator2.validate({ dataset: quadStore.asDataset() });
+          const validator2 = new Validator(shapes, {
+            factory: quadStore.dataFactory,
+          });
+          const report2 = await validator2.validate({
+            dataset: quadStore.asDataset(),
+          });
 
           if (report.conforms !== report2.conforms)
-            context.warning(`Validator implementations do not evaluate identically`);
+            context.warning(
+              `Validator implementations do not evaluate identically`
+            );
 
           // If the report conforms, the data is OK
           if (report.conforms && report2.conforms) {

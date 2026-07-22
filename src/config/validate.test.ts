@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import {
   configFromString,
   ConfigurationError,
@@ -21,7 +20,7 @@ describe("configFromString()", () => {
 jobs:
   x:
     sources: []
-`)
+`),
     ).rejects.toThrow(ConfigurationError);
   });
 
@@ -32,7 +31,7 @@ version: v4
 jobs:
   x:
     sources: []
-`)
+`),
     ).rejects.toThrow(/v5/);
   });
 
@@ -74,7 +73,7 @@ jobs:
     sources:
       - foo: bar
         baz: qux
-`)
+`),
     ).rejects.toThrow(/could not infer type/);
   });
 
@@ -114,7 +113,7 @@ jobs:
   demo:
     sources: []
 `,
-      true
+      true,
     );
     // The rdfa11 context includes common vocabs like rdf, rdfs, owl, xsd, ...
     expect(config.prefixes).toHaveProperty("rdf");
@@ -131,7 +130,7 @@ jobs:
   demo:
     sources: []
 `,
-      false
+      false,
     );
     expect(config.prefixes).toEqual({ ex: "http://example.org/" });
   });
@@ -183,7 +182,7 @@ jobs:
         with:
           credentials:
             oddball: value
-`)
+`),
     ).rejects.toThrow(/authentication type/);
   });
 });
@@ -204,7 +203,7 @@ describe("expandCURIE()", () => {
 
   test("returns full IRIs untouched", () => {
     expect(expandCURIE("http://example.org/bar", prefixes)).toBe(
-      "http://example.org/bar"
+      "http://example.org/bar",
     );
   });
 });

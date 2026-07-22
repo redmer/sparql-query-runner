@@ -4,6 +4,7 @@
     "lib": ["ES2022", "DOM"],
     "module": "NodeNext",
     // "moduleResolution": "Node10",
+    "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
     "allowJs": true,
     "esModuleInterop": true,
