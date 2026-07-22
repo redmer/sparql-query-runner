@@ -24,13 +24,15 @@ export class HttpRequestStep implements WorkflowPartStep {
   exec(data: IJobStepData): WorkflowModuleExec {
     return async (context: JobRuntimeContext) => {
       const filename =
-        data.with?.["destination"] ?? `${context.tempdir}/${pathlib.basename(data.access)}`;
+        data.with?.["destination"] ??
+        `${context.tempdir}/${pathlib.basename(data.access)}`;
 
       // body-file prevails over body
-      let payload: Buffer;
+      let payload: RequestInit["body"];
 
-      if (data.with?.["body"]) payload = Buffer.from(data.with["body"], "utf-8");
-      if (data.with?.["body-file"]) payload = await fs.readFile(data.with["body-file"]);
+      if (data.with?.["body"]) payload = data.with["body"];
+      if (data.with?.["body-file"])
+        payload = new Uint8Array(await fs.readFile(data.with["body-file"]));
 
       return {
         init: async () => {
@@ -45,7 +47,9 @@ export class HttpRequestStep implements WorkflowPartStep {
             await fs.mkdir(pathlib.dirname(destination), { recursive: true });
             const fileStream = createWriteStream(destination, { flags: "w" });
             await finished(
-              Readable.fromWeb(response.body as ReadableStream<Uint8Array>).pipe(fileStream)
+              Readable.fromWeb(
+                response.body as ReadableStream<Uint8Array>,
+              ).pipe(fileStream),
             );
           }
         },
