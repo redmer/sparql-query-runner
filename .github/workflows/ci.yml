@@ -38,17 +38,14 @@ jobs:
         # combination of `--experimental-vm-modules` + `ts-jest` makes worker
         # startup expensive. Running with too many workers causes flaky
         # timeouts in the local-pipeline / job-supervisor / file-local tests.
-        env:
-          NODE_OPTIONS: --experimental-vm-modules --max-old-space-size=4096
-        run: npx jest --maxWorkers=2 --testTimeout=60000
+        if: matrix.node != '22'
+        run: npm run test:ci
 
       - name: Coverage
         # Only collect coverage once (on Node 22) to keep CI fast; upload as an
         # artifact so we can compare before / after dependency upgrades.
         if: matrix.node == '22'
-        env:
-          NODE_OPTIONS: --experimental-vm-modules --max-old-space-size=4096
-        run: npx jest --coverage --maxWorkers=2 --testTimeout=60000
+        run: npm run test:ci:coverage
 
       - name: Upload coverage artifact
         if: matrix.node == '22'
