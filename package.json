@@ -3,7 +3,10 @@
   "version": "7.0.1",
   "description": "Run SPARQL queries serially on a SPARQL endpoint.",
   "main": "dist/cli/cli.js",
-  "repository": "https://github.com/redmer/sparql-query-runner.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/redmer/sparql-query-runner.git"
+  },
   "bugs": {
     "url": "https://github.com/redmer/sparql-query-runner/issues"
   },
@@ -23,7 +26,6 @@
     "watch": "tsc --watch -p ./tsconfig.json",
     "lint": "cross-env ESLINT_STRICT=true ESLINT_EXPENSIVE=true eslint .",
     "prepare": "npm run build",
-    "prepublishOnly": "npm run test && npm run lint",
     "preversion": "npm run lint",
     "postversion": "git push && git push --tags"
   },

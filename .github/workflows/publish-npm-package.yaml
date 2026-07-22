@@ -5,27 +5,30 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: NPM
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup NodeJS
-        uses: actions/setup-node@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 22
-          registry-url: "https://registry.npmjs.org/"
-          scope: "@rdmr-eu"
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false # never use caching in release builds
+
+      - run: npm ci
+      - run: npm run build --if-present
+      - run: npm test
+      - run: npm publish
 
       - name: Make release
         uses: softprops/action-gh-release@v1
         with:
           generate_release_notes: true
-
-      - run: npm ci
-
-      - run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
