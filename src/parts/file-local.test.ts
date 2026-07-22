@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import type * as RDF from "@rdfjs/types";
 import path from "node:path";
@@ -64,8 +63,8 @@ describe("LocalFileSource.isQualified", () => {
             onlyGraphs: [g],
             intoGraph: undefined,
           },
-        })
-      )
+        }),
+      ),
     ).toBe(true);
   });
 
@@ -76,8 +75,8 @@ describe("LocalFileSource.isQualified", () => {
         sourceData({
           access: "https://example.org/data.ttl",
           with: { credentials: undefined, onlyGraphs: [], intoGraph: g },
-        })
-      )
+        }),
+      ),
     ).toBe(true);
   });
 
@@ -94,7 +93,7 @@ describe("LocalFileSource.exec", () => {
     expect(getter.init).toBeDefined();
     const stream = (await getter.init!(
       streamOf([]),
-      null as never
+      null as never,
     )) as RDF.Stream;
     const quads = await collectStream(stream);
     // people.ttl: alice (a, name, age) + bob (a, name, age) = 6 quads
@@ -110,7 +109,7 @@ describe("LocalFileTarget.exec", () => {
       const target = new LocalFileTarget();
       const ctx = makeJobRuntimeContext();
       const getter: WorkflowPartGetter = await target.exec(
-        targetData({ access: outPath })
+        targetData({ access: outPath }),
       )(ctx);
       await getter.init!(streamOf(input), null as never);
 

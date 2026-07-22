@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import { DataFactory } from "rdf-data-factory";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";
@@ -36,7 +35,7 @@ describe("InferReason", () => {
 
     const step = new InferReason();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" })
+      stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" }),
     )(ctx);
     const result = await getter.init!(streamOf([]), ctx.store);
     // With intoGraph set to a non-"--" value, init returns an RDF.Stream (Store.match())
@@ -54,7 +53,7 @@ describe("InferReason", () => {
 
     const step = new InferReason();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" })
+      stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" }),
     )(ctx);
     const result = await getter.init!(streamOf([]), ctx.store);
     expect(result).toBeUndefined();

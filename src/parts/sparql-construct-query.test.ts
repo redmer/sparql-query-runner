@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import type * as RDF from "@rdfjs/types";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";
@@ -33,7 +32,7 @@ describe("SparqlConstructQuery", () => {
 
     const step = new SparqlConstructQuery();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/queries/uppercase-names.rq" })
+      stepData({ access: "test/fixtures/queries/uppercase-names.rq" }),
     )(ctx);
     const out = (await getter.init!(streamOf([]), ctx.store)) as RDF.Stream;
     const results = await collectStream(out);
@@ -52,7 +51,7 @@ describe("SparqlConstructQuery", () => {
     const getter = await step.exec(
       stepData({
         access: "CONSTRUCT { ?s schema:name ?n } WHERE { ?s schema:name ?n }",
-      })
+      }),
     )(ctx);
     const out = (await getter.init!(streamOf([]), ctx.store)) as RDF.Stream;
     const results = await collectStream(out);

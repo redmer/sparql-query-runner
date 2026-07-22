@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { describe, expect, test } from "@jest/globals";
 import { makeJobRuntimeContext } from "../../test/helpers/job-context.js";
 import { parseRdfFile, streamOf } from "../../test/helpers/rdf.js";
@@ -31,11 +30,11 @@ describe("AskAssertStep", () => {
 
     const step = new AskAssertStep();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/queries/assert-has-persons.rq" })
+      stepData({ access: "test/fixtures/queries/assert-has-persons.rq" }),
     )(ctx);
 
     await expect(
-      getter.init!(streamOf([]), ctx.store)
+      getter.init!(streamOf([]), ctx.store),
     ).resolves.toBeUndefined();
   });
 
@@ -73,10 +72,10 @@ describe("AskAssertStep", () => {
 
     const step = new AskAssertStep();
     const getter = await step.exec(
-      stepData({ access: "test/fixtures/queries/assert-never.rq" })
+      stepData({ access: "test/fixtures/queries/assert-never.rq" }),
     )(ctx);
     await expect(
-      getter.init!(streamOf([]), ctx.store)
+      getter.init!(streamOf([]), ctx.store),
     ).resolves.toBeUndefined();
     expect(errored).toBe(false);
   });
