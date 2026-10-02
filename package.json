@@ -136,7 +136,7 @@
     "@comunica/logger-pretty": "^5.3.0",
     "@comunica/query-sparql": "^5.3.0",
     "@rdfjs/serializer-turtle": "^1.1.5",
-    "@triply/triplydb": "^9.3.5",
+    "@triply/triplydb": "^12.1.0",
     "chalk": "^5.6.2",
     "dotenv": "^17.4.2",
     "glob": "^13.0.6",
