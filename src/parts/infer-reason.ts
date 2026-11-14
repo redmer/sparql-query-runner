@@ -39,7 +39,7 @@ export class InferReason implements WorkflowPartStep {
               [],
               [],
               [],
-              ruleset
+              ruleset,
             );
 
             ontologyImplicit.addQuads(factsToQuads(additions).implicit);
@@ -56,7 +56,7 @@ export class InferReason implements WorkflowPartStep {
             [],
             quadsToFacts(ontologyExplicit.getQuads(null, null, null, null)),
             quadsToFacts(ontologyImplicit.getQuads(null, null, null, null)),
-            ruleset
+            ruleset,
           );
 
           datasetImplicit.addQuads(factsToQuads(additions).implicit);

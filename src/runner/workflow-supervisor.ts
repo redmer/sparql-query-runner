@@ -39,7 +39,7 @@ export class WorkflowSupervisor {
     await Promise.all(
       indep.map((j) => {
         return new JobSupervisor(j.name, context).start(j);
-      })
+      }),
     );
 
     if (indep.length && dep.length) wfInfo(`Starting dependent jobs...`);

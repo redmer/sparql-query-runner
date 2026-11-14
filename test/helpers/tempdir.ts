@@ -7,10 +7,7 @@ import path from "node:path";
  * Create an ephemeral temporary directory and remove it after the callback resolves.
  * Returns whatever the callback returns.
  */
-export async function withTempDir<T>(
-  prefix: string,
-  fn: (dir: string) => Promise<T>
-): Promise<T> {
+export async function withTempDir<T>(prefix: string, fn: (dir: string) => Promise<T>): Promise<T> {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), `sqr-${prefix}-`));
   try {
     return await fn(dir);

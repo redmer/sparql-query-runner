@@ -57,7 +57,7 @@ export class LacesHubSource extends LacesHubCommon implements WorkflowPartSource
           const contents = Laces.getPublicationContents(publ.id, data.with.credentials);
 
           return Readable.from([contents]).pipe(
-            new N3.StreamParser({ format: "application/n-triples" })
+            new N3.StreamParser({ format: "application/n-triples" }),
           );
         },
       };
@@ -99,7 +99,7 @@ export class LacesHubTarget extends LacesHubCommon implements WorkflowPartTarget
 
           if (!response.ok)
             context.error(
-              `While publishing '${publ.name}' ${response.status}:\n` + (await response.text())
+              `While publishing '${publ.name}' ${response.status}:\n` + (await response.text()),
             );
         },
       };

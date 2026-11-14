@@ -144,9 +144,7 @@ describe("match()", () => {
   test("throws ModuleMatcherError for an unknown type", async () => {
     const job: IJobData = {
       name: "j",
-      sources: [
-        moduleData({ type: "sources/does-not-exist", access: "whatever" }),
-      ],
+      sources: [moduleData({ type: "sources/does-not-exist", access: "whatever" })],
       steps: [],
       targets: [],
     };

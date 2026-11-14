@@ -5,11 +5,7 @@ import { RdfStore } from "rdf-stores";
 import SHACLValidator from "rdf-validate-shacl";
 import { Validator } from "shacl-engine";
 import type { IJobStepData } from "../config/types.js";
-import type {
-  InMemQuadStore,
-  JobRuntimeContext,
-  WorkflowPartStep,
-} from "../runner/types.js";
+import type { InMemQuadStore, JobRuntimeContext, WorkflowPartStep } from "../runner/types.js";
 import { getRDFMediaTypeFromFilename } from "../utils/rdf-extensions-mimetype.js";
 
 export class ShaclValidateLocal implements WorkflowPartStep {
@@ -52,9 +48,7 @@ export class ShaclValidateLocal implements WorkflowPartStep {
           });
 
           if (report.conforms !== report2.conforms)
-            context.warning(
-              `Validator implementations do not evaluate identically`
-            );
+            context.warning(`Validator implementations do not evaluate identically`);
 
           // If the report conforms, the data is OK
           if (report.conforms && report2.conforms) {
@@ -80,12 +74,12 @@ source: ${r.shape} / ${r.constraintComponent}`);
           context.warning(
             `${warnings.length} SHACL results (implementation: rdf-shacl-validate)` +
               "\n" +
-              warnings.join("")
+              warnings.join(""),
           );
           context.warning(
             `${warnings2.length} SHACL results (implementation: shacl-engine)` +
               "\n" +
-              warnings2.join("")
+              warnings2.join(""),
           );
         },
       };

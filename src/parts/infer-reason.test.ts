@@ -34,9 +34,9 @@ describe("InferReason", () => {
     await seedPeople(ctx);
 
     const step = new InferReason();
-    const getter = await step.exec(
-      stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" }),
-    )(ctx);
+    const getter = await step.exec(stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" }))(
+      ctx,
+    );
     const result = await getter.init!(streamOf([]), ctx.store);
     // With intoGraph set to a non-"--" value, init returns an RDF.Stream (Store.match())
     expect(result).toBeDefined();
@@ -52,9 +52,9 @@ describe("InferReason", () => {
     await seedPeople(ctx);
 
     const step = new InferReason();
-    const getter = await step.exec(
-      stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" }),
-    )(ctx);
+    const getter = await step.exec(stepData({ access: "test/fixtures/data/rdfs-ontology.ttl" }))(
+      ctx,
+    );
     const result = await getter.init!(streamOf([]), ctx.store);
     expect(result).toBeUndefined();
   });

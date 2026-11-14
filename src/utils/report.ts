@@ -24,26 +24,21 @@ export function consoleMessage(
   type: MessageLevels,
   caller: string,
   depth: number,
-  fatal: true
+  fatal: true,
 ): (message: string) => never;
 export function consoleMessage(
   type: MessageLevels,
   caller: string,
   depth: number,
-  fatal: false
+  fatal: false,
 ): (message: string) => void;
 export function consoleMessage(
   type: MessageLevels,
   caller: string,
   depth: number,
-  fatal: boolean
+  fatal: boolean,
 ): (message: string) => void;
-export function consoleMessage(
-  type: MessageLevels,
-  caller: string,
-  depth = 0,
-  fatal: boolean
-) {
+export function consoleMessage(type: MessageLevels, caller: string, depth = 0, fatal: boolean) {
   let indent = " ".repeat(depth * 2);
   if (indent) indent += "";
 
@@ -53,10 +48,10 @@ export function consoleMessage(
         ? chalk.bgRed(` Warning `) + `: `
         : chalk.bgYellowBright(` Warning `) + `: `
       : type == "error"
-      ? chalk.bgRed(` Error `) + `: `
-      : type == "debug"
-      ? chalk.bgBlue(` Debug `) + `: `
-      : ``;
+        ? chalk.bgRed(` Error `) + `: `
+        : type == "debug"
+          ? chalk.bgBlue(` Debug `) + `: `
+          : ``;
 
   // const which = type == "warning" ? "warn" : type;
   const which = ["debug", "info"].includes(type) ? stdout : stderr;
@@ -67,8 +62,7 @@ export function consoleMessage(
 ·· steps/shell - ERROR: shell scripts not allowed (curl)
 */
   return (message: string) => {
-    if (message.trim().length)
-      which.write(`${indent}${caller} - ${flag}${message}\n`);
+    if (message.trim().length) which.write(`${indent}${caller} - ${flag}${message}\n`);
     else which.write(`${indent}${caller}${message}\r`);
     if (fatal) {
       // Throw a typed error rather than calling `process.exit(-1)` directly.
@@ -89,20 +83,11 @@ export function consoleMessage(
 
 export const debugMsg = (caller: string, depth = 0) =>
   consoleMessage("debug", caller, depth, false);
-export const infoMsg = (caller: string, depth = 0) =>
-  consoleMessage("info", caller, depth, false);
-export const warningMsg = (
-  caller: string,
-  depth = 0,
-  { fatal }: { fatal: boolean }
-) => consoleMessage("warning", caller, depth, fatal);
-export const errorMsg = (caller: string, depth = 0) =>
-  consoleMessage("error", caller, depth, true);
-export const ctxMsgs = (
-  caller: string,
-  depth = 0,
-  { fatal }: { fatal: boolean }
-) => {
+export const infoMsg = (caller: string, depth = 0) => consoleMessage("info", caller, depth, false);
+export const warningMsg = (caller: string, depth = 0, { fatal }: { fatal: boolean }) =>
+  consoleMessage("warning", caller, depth, fatal);
+export const errorMsg = (caller: string, depth = 0) => consoleMessage("error", caller, depth, true);
+export const ctxMsgs = (caller: string, depth = 0, { fatal }: { fatal: boolean }) => {
   return {
     error: errorMsg(caller, depth),
     info: infoMsg(caller, depth),

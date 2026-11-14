@@ -34,7 +34,7 @@ export class MergeGraphsStream extends Transform implements RDF.Stream {
 
   _transform(quad: RDF.Quad, encoding: BufferEncoding, callback: TransformCallback): void {
     this.push(
-      this.#DF.quad(quad.subject, quad.predicate, quad.object, this.#targetGraph ?? quad.graph)
+      this.#DF.quad(quad.subject, quad.predicate, quad.object, this.#targetGraph ?? quad.graph),
     );
     return callback();
   }

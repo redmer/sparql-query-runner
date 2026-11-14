@@ -2,11 +2,7 @@ import * as RDF from "@rdfjs/types";
 import { default as App } from "@triply/triplydb";
 import { exit } from "process";
 import { storeStream } from "rdf-store-stream";
-import type {
-  IJobModuleData,
-  IJobSourceData,
-  IJobTargetData,
-} from "../config/types.js";
+import type { IJobModuleData, IJobSourceData, IJobTargetData } from "../config/types.js";
 import type {
   JobRuntimeContext,
   WorkflowModuleExec,
@@ -50,10 +46,7 @@ class TriplyDBCommon {
   }
 }
 
-export class TriplyDBSource
-  extends TriplyDBCommon
-  implements WorkflowPartSource
-{
+export class TriplyDBSource extends TriplyDBCommon implements WorkflowPartSource {
   // Export a(ll) graph(s) to Laces
   id = () => "triplydb-source";
   names = ["sources/triplydb"];
@@ -76,10 +69,7 @@ export class TriplyDBSource
   }
 }
 
-export class TriplyDBTarget
-  extends TriplyDBCommon
-  implements WorkflowPartTarget
-{
+export class TriplyDBTarget extends TriplyDBCommon implements WorkflowPartTarget {
   // Export a(ll) graph(s) to Laces
   id = () => "triplydb-target";
   names = ["targets/triplydb"];

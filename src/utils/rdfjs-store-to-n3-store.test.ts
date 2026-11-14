@@ -8,7 +8,7 @@ test("convertStore mirrors all quads into an n3.Store", async () => {
   const source = RdfStore.createDefault();
   source.addQuad(DF.quad(DF.namedNode("s1"), DF.namedNode("p"), DF.literal("o1")));
   source.addQuad(
-    DF.quad(DF.namedNode("s2"), DF.namedNode("p"), DF.literal("o2"), DF.namedNode("g"))
+    DF.quad(DF.namedNode("s2"), DF.namedNode("p"), DF.literal("o2"), DF.namedNode("g")),
   );
 
   const dest = await convertStore(source);

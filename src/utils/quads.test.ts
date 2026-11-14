@@ -7,9 +7,15 @@ const DF = new DataFactory();
 
 test("getGraphs lists distinct graphs in a store", async () => {
   const store = RdfStore.createDefault();
-  store.addQuad(DF.quad(DF.namedNode("s1"), DF.namedNode("p"), DF.literal("o"), DF.namedNode("g1")));
-  store.addQuad(DF.quad(DF.namedNode("s2"), DF.namedNode("p"), DF.literal("o"), DF.namedNode("g2")));
-  store.addQuad(DF.quad(DF.namedNode("s3"), DF.namedNode("p"), DF.literal("o"), DF.namedNode("g1")));
+  store.addQuad(
+    DF.quad(DF.namedNode("s1"), DF.namedNode("p"), DF.literal("o"), DF.namedNode("g1")),
+  );
+  store.addQuad(
+    DF.quad(DF.namedNode("s2"), DF.namedNode("p"), DF.literal("o"), DF.namedNode("g2")),
+  );
+  store.addQuad(
+    DF.quad(DF.namedNode("s3"), DF.namedNode("p"), DF.literal("o"), DF.namedNode("g1")),
+  );
 
   const graphs = await getGraphs(store);
   const values = graphs.map((g) => g.value).sort();

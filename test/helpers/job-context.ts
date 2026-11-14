@@ -11,7 +11,7 @@ export interface TestJobRuntimeContext extends JobRuntimeContext {
 
 /** Build a minimal JobRuntimeContext for unit-testing individual parts. */
 export function makeJobRuntimeContext(
-  overrides: Partial<JobRuntimeContext> & { store?: InMemQuadStore } = {}
+  overrides: Partial<JobRuntimeContext> & { store?: InMemQuadStore } = {},
 ): TestJobRuntimeContext {
   const jobData: IJobData = overrides.jobData ?? {
     name: "test-job",

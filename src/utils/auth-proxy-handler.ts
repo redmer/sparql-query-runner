@@ -23,7 +23,7 @@ export class AuthProxyHandler implements IProxyHandler {
   constructor(
     credentials?: ICredentialData,
     forURL?: string,
-    additionalHeaders?: Record<string, string>
+    additionalHeaders?: Record<string, string>,
   ) {
     this.store = {};
 
@@ -41,12 +41,12 @@ export class AuthProxyHandler implements IProxyHandler {
   public add(
     credentials: ICredentialData,
     forURL: string,
-    additionalHeaders?: Record<string, string>
+    additionalHeaders?: Record<string, string>,
   ): void;
   public add(
     cred_hand: ICredentialData | AuthProxyHandler,
     forURL?: string,
-    additionalHeaders?: Record<string, string>
+    additionalHeaders?: Record<string, string>,
   ) {
     if (cred_hand instanceof AuthProxyHandler) {
       for (const [origin, { credentials, additionalHeaders }] of Object.entries(cred_hand.store))

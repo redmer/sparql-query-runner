@@ -12,12 +12,12 @@ function samplePersonQuads() {
     DF.quad(
       DF.namedNode("https://example.org/alice"),
       DF.namedNode("http://schema.org/name"),
-      DF.literal("Alice")
+      DF.literal("Alice"),
     ),
     DF.quad(
       DF.namedNode("https://example.org/alice"),
       DF.namedNode("http://schema.org/age"),
-      DF.literal("30", DF.namedNode("http://www.w3.org/2001/XMLSchema#integer"))
+      DF.literal("30", DF.namedNode("http://www.w3.org/2001/XMLSchema#integer")),
     ),
   ];
 }
@@ -43,7 +43,7 @@ describe("serializeStream()", () => {
           DF.namedNode("https://example.org/alice"),
           DF.namedNode("http://schema.org/name"),
           DF.literal("Alice"),
-          DF.namedNode("https://example.org/g")
+          DF.namedNode("https://example.org/g"),
         ),
       ];
       await serializeStream(streamOf(quads), out, { format: "application/n-triples" });

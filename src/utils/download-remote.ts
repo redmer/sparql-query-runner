@@ -13,11 +13,7 @@ export function basename(url: string) {
 }
 
 /** Download a remote file, with optional auth headers to path */
-export async function download(
-  url: string,
-  path: string,
-  auth?: ICredentialData,
-) {
+export async function download(url: string, path: string, auth?: ICredentialData) {
   // Syntax: { ...null } => { }
   const auhorizationHeader = auth ? Auth.asHeader(auth) : null;
   const response = await fetch(url, {
@@ -45,8 +41,7 @@ export async function fetchContent(
   path_url: string,
   { cachedir, auth, encoding }: IFetchContentOptions,
 ) {
-  if (!path_url.startsWith("http"))
-    return fs.readFileSync(path_url, { encoding });
+  if (!path_url.startsWith("http")) return fs.readFileSync(path_url, { encoding });
 
   const response = await fetch(path_url, {
     method: "GET",
@@ -61,8 +56,7 @@ export async function streamContent(
   path_url: string,
   { cachedir, auth, encoding }: IFetchContentOptions,
 ) {
-  if (!path_url.startsWith("http"))
-    return fs.readFileSync(path_url, { encoding });
+  if (!path_url.startsWith("http")) return fs.readFileSync(path_url, { encoding });
 
   const response = await fetch(path_url, {
     method: "GET",

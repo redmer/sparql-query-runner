@@ -86,7 +86,7 @@ async function matchModules(data: IJobData, modules: RegisteredModule[]): Promis
 
       if (qModules.length == 0)
         throw new ModuleMatcherError(
-          `No matching modules for '${stepData.type}':'${stepData.access}')`
+          `No matching modules for '${stepData.type}':'${stepData.access}')`,
         );
 
       // Note that multiple modules may qualify: we take the first, so the MODULES order is significant

@@ -27,7 +27,7 @@ describe("moduleDataDigest()", () => {
 
   test("differs when access changes", () => {
     expect(moduleDataDigest(makeData({ access: "a.ttl" }))).not.toEqual(
-      moduleDataDigest(makeData({ access: "b.ttl" }))
+      moduleDataDigest(makeData({ access: "b.ttl" })),
     );
   });
 });

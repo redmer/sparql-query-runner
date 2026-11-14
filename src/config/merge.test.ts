@@ -13,10 +13,7 @@ function workflow(overrides: Partial<IWorkflowData>): IWorkflowData {
 
 describe("mergePrefixes()", () => {
   test("merges disjoint prefix sets", () => {
-    const out = mergePrefixes([
-      { ex: "http://example.org/" },
-      { schema: "http://schema.org/" },
-    ]);
+    const out = mergePrefixes([{ ex: "http://example.org/" }, { schema: "http://schema.org/" }]);
     expect(out).toEqual({
       ex: "http://example.org/",
       schema: "http://schema.org/",
@@ -24,19 +21,13 @@ describe("mergePrefixes()", () => {
   });
 
   test("accepts identical duplicate prefixes", () => {
-    const out = mergePrefixes([
-      { ex: "http://example.org/" },
-      { ex: "http://example.org/" },
-    ]);
+    const out = mergePrefixes([{ ex: "http://example.org/" }, { ex: "http://example.org/" }]);
     expect(out).toEqual({ ex: "http://example.org/" });
   });
 
   test("throws on conflicting values for the same prefix", () => {
     expect(() =>
-      mergePrefixes([
-        { ex: "http://example.org/" },
-        { ex: "http://other.example/" },
-      ])
+      mergePrefixes([{ ex: "http://example.org/" }, { ex: "http://other.example/" }]),
     ).toThrow(ConfigurationError);
   });
 
@@ -49,15 +40,11 @@ describe("mergeConfigurations()", () => {
   test("merges jobs from multiple configurations", () => {
     const a = workflow({
       prefixes: { ex: "http://example.org/" },
-      jobs: [
-        { name: "job-a", sources: [], steps: [], targets: [] } as IJobData,
-      ],
+      jobs: [{ name: "job-a", sources: [], steps: [], targets: [] } as IJobData],
     });
     const b = workflow({
       prefixes: { schema: "http://schema.org/" },
-      jobs: [
-        { name: "job-b", sources: [], steps: [], targets: [] } as IJobData,
-      ],
+      jobs: [{ name: "job-b", sources: [], steps: [], targets: [] } as IJobData],
     });
     const merged = mergeConfigurations([a, b]);
     expect(merged.version).toBe("v5.compiled");

@@ -29,9 +29,7 @@ async function runCli(args: string[], cwd: string): Promise<CliResult> {
     child.stdout?.on("data", (chunk: Buffer) => (stdout += String(chunk)));
     child.stderr?.on("data", (chunk: Buffer) => (stderr += String(chunk)));
     child.on("error", reject);
-    child.on("close", (code: number | null) =>
-      resolve({ code, stdout, stderr })
-    );
+    child.on("close", (code: number | null) => resolve({ code, stdout, stderr }));
   });
 }
 

@@ -7,9 +7,7 @@ import { WorkflowSupervisor } from "../../src/runner/workflow-supervisor.js";
 import { parseRdfFile } from "../helpers/rdf.js";
 import { withTempDir } from "../helpers/tempdir.js";
 
-const MINIMAL_WORKFLOW = path.resolve(
-  "test/fixtures/workflows/minimal.sqr.yaml"
-);
+const MINIMAL_WORKFLOW = path.resolve("test/fixtures/workflows/minimal.sqr.yaml");
 
 function defaultCliOptions(overrides: Partial<ICliOptions> = {}): ICliOptions {
   return {
@@ -31,10 +29,7 @@ describe("WorkflowSupervisor (local end-to-end)", () => {
 
       // Load the fixture workflow and substitute the output-path placeholder.
       const rawTemplate = await fs.readFile(MINIMAL_WORKFLOW, "utf-8");
-      const substituted = rawTemplate.replace(
-        "OUTPUT_PATH_PLACEHOLDER",
-        outPath
-      );
+      const substituted = rawTemplate.replace("OUTPUT_PATH_PLACEHOLDER", outPath);
 
       const config = await configFromString(substituted, {
         secrets: {},

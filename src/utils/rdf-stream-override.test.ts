@@ -4,12 +4,12 @@ import { DataFactory } from "rdf-data-factory";
 import { RdfStore } from "rdf-stores";
 import { collectStream, streamOf } from "../../test/helpers/rdf.js";
 import {
-    FilteredStream,
-    First_NQuadsStream,
-    ImportStream,
-    MatchStreamReadable2,
-    MergeGraphsStream,
-    RdfStoresImportStream,
+  FilteredStream,
+  First_NQuadsStream,
+  ImportStream,
+  MatchStreamReadable2,
+  MergeGraphsStream,
+  RdfStoresImportStream,
 } from "./rdf-stream-override.js";
 
 const DF = new DataFactory();

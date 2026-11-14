@@ -49,17 +49,12 @@ describe("SparqlUpdateQuery", () => {
     const ctx = makeJobRuntimeContext();
 
     const step = new SparqlUpdateQuery();
-    const getter = await step.exec(
-      stepData({ access: "test/fixtures/queries/insert-blog.ru" }),
-    )(ctx);
+    const getter = await step.exec(stepData({ access: "test/fixtures/queries/insert-blog.ru" }))(
+      ctx,
+    );
     await getter.init!(streamOf([]), ctx.store);
 
-    const found = ctx.store.getQuads(
-      DF.namedNode("https://example.org/blog"),
-      null,
-      null,
-      null,
-    );
+    const found = ctx.store.getQuads(DF.namedNode("https://example.org/blog"), null, null, null);
     expect(found.length).toBeGreaterThan(0);
   });
 });

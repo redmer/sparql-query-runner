@@ -38,9 +38,9 @@ describe("ShaclValidateLocal", () => {
     await seedPeople(ctx);
 
     const step = new ShaclValidateLocal();
-    const getter = await step.exec(
-      stepData({ access: "test/fixtures/shapes/person-shape.ttl" }),
-    )(ctx);
+    const getter = await step.exec(stepData({ access: "test/fixtures/shapes/person-shape.ttl" }))(
+      ctx,
+    );
     await getter.init!(streamOf([]), ctx.store);
     expect(infos.some((m) => /OK.*conforms/.test(m))).toBe(true);
     expect(warnings.length).toBe(0);
@@ -56,9 +56,9 @@ describe("ShaclValidateLocal", () => {
     await seedPeople(ctx);
 
     const step = new ShaclValidateLocal();
-    const getter = await step.exec(
-      stepData({ access: "test/fixtures/shapes/strict-shape.ttl" }),
-    )(ctx);
+    const getter = await step.exec(stepData({ access: "test/fixtures/shapes/strict-shape.ttl" }))(
+      ctx,
+    );
     await getter.init!(streamOf([]), ctx.store);
     expect(warnings.length).toBeGreaterThan(0);
     expect(warnings.some((m) => /SHACL/.test(m))).toBe(true);

@@ -1,8 +1,4 @@
-import {
-  configFromString,
-  ConfigurationError,
-  expandCURIE,
-} from "./validate.js";
+import { configFromString, ConfigurationError, expandCURIE } from "./validate.js";
 
 const emptySecrets = {};
 
@@ -202,8 +198,6 @@ describe("expandCURIE()", () => {
   });
 
   test("returns full IRIs untouched", () => {
-    expect(expandCURIE("http://example.org/bar", prefixes)).toBe(
-      "http://example.org/bar",
-    );
+    expect(expandCURIE("http://example.org/bar", prefixes)).toBe("http://example.org/bar");
   });
 });

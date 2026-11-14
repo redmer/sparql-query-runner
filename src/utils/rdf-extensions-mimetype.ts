@@ -15,7 +15,7 @@ export type SerializationFormat = keyof typeof MIMETYPE_MAP;
 
 function mimetypeForExtension(ext: string): SerializationFormat | undefined {
   return Object.keys(MIMETYPE_MAP).find((k) =>
-    MIMETYPE_MAP[k].includes(ext)
+    MIMETYPE_MAP[k].includes(ext),
   ) as SerializationFormat;
 }
 

@@ -36,7 +36,7 @@ export function overrideStream(stream: RDF.Stream, options: OverrideGraphOptions
   stream.on("error", (error) => out.emit("error", error));
   stream.on("end", () => out.push(null));
   stream.on("data", (quad: RDF.Quad) =>
-    out.push(DF.quad(quad.subject, quad.predicate, quad.object, options.intoGraph))
+    out.push(DF.quad(quad.subject, quad.predicate, quad.object, options.intoGraph)),
   );
   return out;
 }

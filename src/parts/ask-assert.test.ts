@@ -33,9 +33,7 @@ describe("AskAssertStep", () => {
       stepData({ access: "test/fixtures/queries/assert-has-persons.rq" }),
     )(ctx);
 
-    await expect(
-      getter.init!(streamOf([]), ctx.store),
-    ).resolves.toBeUndefined();
+    await expect(getter.init!(streamOf([]), ctx.store)).resolves.toBeUndefined();
   });
 
   test("fails via context.error when assertion is false", async () => {
@@ -71,12 +69,10 @@ describe("AskAssertStep", () => {
     });
 
     const step = new AskAssertStep();
-    const getter = await step.exec(
-      stepData({ access: "test/fixtures/queries/assert-never.rq" }),
-    )(ctx);
-    await expect(
-      getter.init!(streamOf([]), ctx.store),
-    ).resolves.toBeUndefined();
+    const getter = await step.exec(stepData({ access: "test/fixtures/queries/assert-never.rq" }))(
+      ctx,
+    );
+    await expect(getter.init!(streamOf([]), ctx.store)).resolves.toBeUndefined();
     expect(errored).toBe(false);
   });
 });

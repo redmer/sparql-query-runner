@@ -18,10 +18,10 @@ export async function parseRdfFile(path: string, format?: string): Promise<RDF.Q
     (path.endsWith(".trig")
       ? "application/trig"
       : path.endsWith(".nq") || path.endsWith(".nquads")
-      ? "application/n-quads"
-      : path.endsWith(".nt")
-      ? "application/n-triples"
-      : "text/turtle");
+        ? "application/n-quads"
+        : path.endsWith(".nt")
+          ? "application/n-triples"
+          : "text/turtle");
   return parseRdf(contents, guessed);
 }
 

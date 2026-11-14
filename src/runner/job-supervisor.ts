@@ -4,18 +4,10 @@ import type * as RDF from "@rdfjs/types";
 import { mkdir } from "fs/promises";
 import { default as path, default as pathlib } from "path";
 import { RdfStore } from "rdf-stores";
-import type {
-  IJobData,
-  IJobModuleData,
-  IJobPhase,
-  IJobTargetData,
-} from "../config/types.js";
+import type { IJobData, IJobModuleData, IJobPhase, IJobTargetData } from "../config/types.js";
 import { AuthProxyHandler } from "../utils/auth-proxy-handler.js";
 import { download } from "../utils/download-remote.js";
-import {
-  fileExistsLocally,
-  fileMightExistRemotely,
-} from "../utils/local-remote-file.js";
+import { fileExistsLocally, fileMightExistRemotely } from "../utils/local-remote-file.js";
 import {
   FilteredStream,
   ImportStream,
@@ -47,20 +39,19 @@ async function EnterModule(
   iterN: number,
   phase: IJobPhase,
   quadStore: RdfStore,
-  closure: (ctx: JobRuntimeContext) => Promise<void>
+  closure: (ctx: JobRuntimeContext) => Promise<void>,
 ) {
   const moduleLocalName = data.type.split("/", 2)[1];
   // Only output last 80 chars of the Access
   let accessLocalName = data.access.trim();
   if (accessLocalName.length > 79)
-    accessLocalName =
-      "..." + accessLocalName.replaceAll(/\s/g, " ").trim().slice(-80).trim();
+    accessLocalName = "..." + accessLocalName.replaceAll(/\s/g, " ").trim().slice(-80).trim();
 
   const tempdir = path.join(
     TEMPDIR,
     `job-${jobData.name}`,
     phase,
-    `${iterN}-${module.id()}-${moduleDataDigest(data).slice(0, 8)}`
+    `${iterN}-${module.id()}-${moduleDataDigest(data).slice(0, 8)}`,
   );
   await mkdir(tempdir, { recursive: true });
 
@@ -71,8 +62,7 @@ async function EnterModule(
       fatal: workflowCtx.options.warningsAsErrors,
     }),
   };
-  if (context.workflowContext.options.verbosityLevel < 4)
-    context.debug = (_message) => void 0;
+  if (context.workflowContext.options.verbosityLevel < 4) context.debug = (_message) => void 0;
 
   if (
     module.shouldCacheAccess &&
@@ -86,9 +76,7 @@ async function EnterModule(
       await download(data.access, newAccess, data.with.credentials);
       data.access = newAccess;
     } catch (error) {
-      context.warning(
-        `could not save '${data.access}' to cache` + error.message
-      );
+      context.warning(`could not save '${data.access}' to cache` + error.message);
     }
   }
 
@@ -104,8 +92,7 @@ async function EnterModule(
   const quadCountDiff = quadStore.countQuads() - quadCountInitial;
   const sign = quadCountDiff >= 0 ? "+" : "";
   context.info(
-    Report.DONE +
-      (phase === "targets" ? "" : ` (#local quads: ${sign}${quadCountDiff})`)
+    Report.DONE + (phase === "targets" ? "" : ` (#local quads: ${sign}${quadCountDiff})`),
   );
 }
 
@@ -134,7 +121,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
       const targets = modules.targets?.map((s) => s.module.id()).join(", ");
       Report.debugMsg(
         this.#name,
-        1
+        1,
       )(`matched modules:
         sources: ${sources}
         steps: ${steps}
@@ -152,8 +139,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
       5: "trace",
     };
     let rdfjsSources = [{ type: "rdfjs", value: quadStore }];
-    if (modules.steps.every((m) => m.module.id() == "sparql-update-query"))
-      rdfjsSources = [];
+    if (modules.steps.every((m) => m.module.id() == "sparql-update-query")) rdfjsSources = [];
 
     let queryContext: QueryContext = {
       sources: rdfjsSources,
@@ -173,21 +159,17 @@ export class JobSupervisor implements Supervisor<IJobData> {
           (queryContext = {
             ...queryContext,
             ...m.module.staticQueryContext(<IJobTargetData>m.data),
-          })
+          }),
       );
 
     /**
      * Register staticHttpProxyHandler`s
      * @param modules Modules from which staticAuthProxyHandler`s should be gotten
      */
-    const addHttpProxyHandlers = (
-      modules: IExecutableJob["sources"] | IExecutableJob["targets"]
-    ) =>
+    const addHttpProxyHandlers = (modules: IExecutableJob["sources"] | IExecutableJob["targets"]) =>
       modules
         .filter((m) => m.module.staticAuthProxyHandler)
-        .forEach((m) =>
-          httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data))
-        );
+        .forEach((m) => httpProxyHandler.add(m.module.staticAuthProxyHandler(m.data)));
 
     const staticCtx: Partial<JobRuntimeContext> = {
       workflowContext: this.workflowCtx,
@@ -214,9 +196,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
           // Sources are independent, so no input stream is provided.
           if (info.comunicaDataSources)
-            queryContext.sources = queryContext.sources.concat(
-              ...info.comunicaDataSources()
-            );
+            queryContext.sources = queryContext.sources.concat(...info.comunicaDataSources());
           if (info.init) quadsOUT = await info.init(undefined, quadStore);
 
           // Output quad stream is optionally void, therefore check if it's there.
@@ -227,13 +207,11 @@ export class JobSupervisor implements Supervisor<IJobData> {
           if (!quadsOUT) return;
 
           const streamOUT = MatchStreamReadable2(quadsOUT as RDF.Stream)
-            .pipe(
-              new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug)
-            )
+            .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug))
             .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
           await ImportStream(streamOUT, quadStore);
-        }
+        },
       );
     }
 
@@ -253,7 +231,7 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
           // Steps input quads are filtered with Only-Graphs
           const quadsIN = MatchStreamReadable2(quadStore.match()).pipe(
-            new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug)
+            new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug),
           );
 
           // Get output quad stream and check if it's not void.
@@ -262,11 +240,11 @@ export class JobSupervisor implements Supervisor<IJobData> {
           if (!quadsOUT) return;
 
           const streamOUT = MatchStreamReadable2(quadsOUT as RDF.Stream).pipe(
-            new MergeGraphsStream({ intoGraph: data.with.intoGraph })
+            new MergeGraphsStream({ intoGraph: data.with.intoGraph }),
           );
 
           await ImportStream(streamOUT, quadStore);
-        }
+        },
       );
     }
 
@@ -287,14 +265,12 @@ export class JobSupervisor implements Supervisor<IJobData> {
 
           // Target input quads are filtered with Only-Graphs and Into-Graph
           const quadsIN = MatchStreamReadable2(quadStore.match())
-            .pipe(
-              new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug)
-            )
+            .pipe(new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug))
             .pipe(new MergeGraphsStream({ intoGraph: data.with.intoGraph }));
 
           // Get output quad stream and check if it's not void
           await info.init(quadsIN, quadStore);
-        }
+        },
       );
     }
   }

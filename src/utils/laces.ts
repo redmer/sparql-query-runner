@@ -32,10 +32,10 @@ export interface LacesHubPublicationPatch {
 /** All accessible Laces repositories */
 export async function repositories(
   auth: ICredentialData,
-  repoName: string
+  repoName: string,
 ): Promise<LacesHubRepositoryDesc[]> {
   const endpoint = `https://hub.laces.tech/api/v4/repositories?searchText=${encodeURIComponent(
-    repoName
+    repoName,
   )}`;
   const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
   const answ = await resp.json();
@@ -45,7 +45,7 @@ export async function repositories(
 /** All accessible publications in a Laces repository. */
 export async function publications(
   repositoryId: string,
-  auth: ICredentialData
+  auth: ICredentialData,
 ): Promise<LacesHubPublicationDesc[]> {
   const endpoint = `https://hub.laces.tech/api/v4/publications?repositoryId=${repositoryId}`;
   const resp = await fetch(endpoint, { headers: { ...Auth.asHeader(auth) } });
@@ -55,7 +55,7 @@ export async function publications(
 
 export async function getPublicationContents(
   publicationId: string,
-  auth: ICredentialData
+  auth: ICredentialData,
 ): Promise<string> {
   const endpoint = `https://hub.laces.tech/api/v4/publications/${publicationId}/statements`;
   const resp = await fetch(endpoint, {
@@ -70,7 +70,7 @@ export async function updatePublication(
   publicationId: string,
   contentPayloadPath: string,
   // metadataPayload: LacesHubPublicationPatch,
-  auth: ICredentialData
+  auth: ICredentialData,
 ): Promise<Response> {
   const endpoint = `https://hub.laces.tech/api/v4/publications/${publicationId}/statements/async`;
 

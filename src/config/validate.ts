@@ -33,7 +33,7 @@ export class ConfigurationError extends Error {}
 /** Get a configuration from a valid pipeline declaration file in JSON or YAML */
 export async function configFromPath(
   path: string,
-  { secrets, defaultPrefixes }
+  { secrets, defaultPrefixes },
 ): Promise<IWorkflowData> {
   const rawContents = await fs.readFile(path, { encoding: "utf-8" });
   return await configFromString(rawContents, { secrets, defaultPrefixes });
@@ -42,7 +42,7 @@ export async function configFromPath(
 /** Get a configuration from a valid pipeline declaration in JSON or YAML */
 export async function configFromString(
   contents: string,
-  { secrets, defaultPrefixes }: { secrets: Record<string, string>; defaultPrefixes: boolean }
+  { secrets, defaultPrefixes }: { secrets: Record<string, string>; defaultPrefixes: boolean },
 ): Promise<IWorkflowData> {
   const substitutedContents = substituteVars(contents, secrets);
   const config = yaml.parse(substitutedContents, {
@@ -56,7 +56,7 @@ export async function configFromString(
 /** Validate a configuratioun file */
 function validateConfiguration(
   data: Map<keyof IWorkflowData, any>,
-  defaultPrefixes: boolean
+  defaultPrefixes: boolean,
 ): IWorkflowData {
   const version = data.get("version");
 
@@ -66,7 +66,7 @@ function validateConfiguration(
   // Default prefixes are set here, config-level are copied here, so that jobs may get a copy, too
   const prefixes = Object.assign(
     defaultPrefixes ? context : {},
-    data.has("prefixes") ? Object.fromEntries(data.get("prefixes").entries()) : {}
+    data.has("prefixes") ? Object.fromEntries(data.get("prefixes").entries()) : {},
   );
 
   // validate the jobs individually
@@ -84,12 +84,12 @@ function validateConfiguration(
 function validateJob(
   name: string,
   data: Map<keyof IJobData, any>,
-  workflowPrefixes: Prefixes
+  workflowPrefixes: Prefixes,
 ): IJobData {
   const independent = data.get("independent") ?? false;
   const prefixes = Object.assign(
     workflowPrefixes,
-    data.has("prefixes") ? Object.fromEntries(data.get("prefixes").entries) : {}
+    data.has("prefixes") ? Object.fromEntries(data.get("prefixes").entries) : {},
   );
   const sources = data.get("sources")?.map((data) => validateModule("sources", data, prefixes));
   const steps = data.get("steps")?.map((data) => validateModule("steps", data, prefixes));
@@ -109,10 +109,8 @@ function validateJob(
 /** Find keys that are well-known access types (sparql:, file:, etc.) */
 function knownTypeKeys(
   shortHandTypes:
-    | typeof PartShorthandSource
-    | typeof PartShorthandStep
-    | typeof PartShorthandTarget,
-  data: Map<any, any>
+    typeof PartShorthandSource | typeof PartShorthandStep | typeof PartShorthandTarget,
+  data: Map<any, any>,
 ) {
   return [...data.keys()].filter((k: never) => shortHandTypes.includes(k));
 }
@@ -120,7 +118,7 @@ function knownTypeKeys(
 function validateModule(
   phase: IJobPhase,
   data: Map<keyof IJobSourceData | IJobStepData | IJobTargetData, any>,
-  prefixes: Prefixes
+  prefixes: Prefixes,
 ): IJobModuleData {
   let knownType: string | any[];
   if (phase == "sources")
@@ -132,8 +130,8 @@ function validateModule(
   if (knownType.length != 1 && !data.has("type"))
     throw new ConfigurationError(
       `${phase}: could not infer type from '${[...data.keys()].join(
-        ", "
-      )}'. Check or provide explicit 'type' key.`
+        ", ",
+      )}'. Check or provide explicit 'type' key.`,
     );
 
   return {
@@ -156,10 +154,10 @@ function validateModule(
 
 function validateAuthentication(data: undefined): undefined;
 function validateAuthentication(
-  data: Map<keyof (IAuthBasicData & IAuthBearerData & IAuthHeaderData), any>
+  data: Map<keyof (IAuthBasicData & IAuthBearerData & IAuthHeaderData), any>,
 ): ICredentialData;
 function validateAuthentication(
-  data: Map<keyof (IAuthBasicData & IAuthBearerData & IAuthHeaderData), any> | undefined
+  data: Map<keyof (IAuthBasicData & IAuthBearerData & IAuthHeaderData), any> | undefined,
 ): ICredentialData | undefined {
   if (data === undefined) return undefined;
 
@@ -179,7 +177,7 @@ function validateAuthentication(
 
   throw new ConfigurationError(
     `The authentication type was not recognized. 
-    Verify authentication details (${value.slice(0, len)}...${value.slice(-len)})`
+    Verify authentication details (${value.slice(0, len)}...${value.slice(-len)})`,
   );
 }
 

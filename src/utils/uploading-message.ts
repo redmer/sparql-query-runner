@@ -4,7 +4,7 @@ import type * as RDF from "@rdfjs/types";
 export function InfoUploadingTo(
   printer: (message: string) => void,
   onlyGraphs: RDF.Quad_Graph[] | undefined,
-  target: string
+  target: string,
 ) {
   const quantifier = String(onlyGraphs?.length ?? "all");
   const quantified = onlyGraphs?.length == 1 ? "graph" : "graphs";

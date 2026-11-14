@@ -27,7 +27,7 @@ export class SparqlConstructQuery implements WorkflowPartStep {
         init: async (_stream: RDF.Stream): Promise<RDF.Stream> => {
           return await context.engine.queryQuads(
             queryBody,
-            <QueryStringContext>context.queryContext
+            <QueryStringContext>context.queryContext,
           );
         },
       };

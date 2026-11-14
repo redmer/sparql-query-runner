@@ -9,10 +9,7 @@ import { DataFactory } from "rdf-data-factory";
 import { PassThrough } from "stream";
 import { Prefixes } from "../config/types.js";
 import type { SerializationFormat } from "./rdf-extensions-mimetype.js";
-import {
-  MatchStreamReadable2,
-  MergeGraphsStream,
-} from "./rdf-stream-override.js";
+import { MatchStreamReadable2, MergeGraphsStream } from "./rdf-stream-override.js";
 
 const DF = new DataFactory();
 
@@ -43,16 +40,14 @@ export const ONLY_TRIPLES_NO_QUADS_FORMATS: SerializationFormat[] = [
 export async function serializeStream(
   stream: RDF.Stream,
   path: string,
-  options?: GraphToFileOptions
+  options?: GraphToFileOptions,
 ) {
   // Ensure that the output path exists
   await fsp.mkdir(pathlib.dirname(path), { recursive: true });
   // Pretty formats are tried first
-  if (PRETTY_FORMATS.includes(options.format))
-    return writeStreamRealPretty(stream, path, options);
+  if (PRETTY_FORMATS.includes(options.format)) return writeStreamRealPretty(stream, path, options);
   // If a pretty serialization isn't required, use streaming serializer
-  if (STREAMABLE_FORMATS.includes(options.format))
-    return writeStream(stream, path, options);
+  if (STREAMABLE_FORMATS.includes(options.format)) return writeStream(stream, path, options);
 
   return await writeStreamPretty(stream, path, options);
 }
@@ -69,16 +64,12 @@ export async function serializeStream(
  * manually with the plain Node `Readable`s we already control, and use
  * `finished()` on the file descriptor as the completion signal.
  */
-export async function writeStream(
-  stream: RDF.Stream,
-  path: string,
-  options: GraphToFileOptions
-) {
+export async function writeStream(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
   const inTriples = ONLY_TRIPLES_NO_QUADS_FORMATS.includes(options.format);
   const upstream = MatchStreamReadable2(stream).pipe(
     inTriples
       ? new MergeGraphsStream({ intoGraph: DF.defaultGraph() })
-      : new PassThrough({ objectMode: true })
+      : new PassThrough({ objectMode: true }),
   );
 
   return new Promise<void>((resolve, reject) => {
@@ -121,14 +112,14 @@ function prefixMapFromPrefixes(prefixes: Prefixes): Map<string, RDF.NamedNode> {
 export async function writeStreamRealPretty(
   stream: RDF.Stream,
   path: string,
-  options: GraphToFileOptions
+  options: GraphToFileOptions,
 ) {
   // The `prefixes` option doesn't actually require a full PrefixMap; a Map suffices.
   // Cast via `unknown` to satisfy the strict PrefixMap type shape.
   const serializer = new Serializer({
-    prefixes: prefixMapFromPrefixes(
-      options.prefixes
-    ) as unknown as ConstructorParameters<typeof Serializer>[0]["prefixes"],
+    prefixes: prefixMapFromPrefixes(options.prefixes) as unknown as ConstructorParameters<
+      typeof Serializer
+    >[0]["prefixes"],
   });
   const output = serializer.import(stream);
   // @ts-expect-error (The output stream can be piped.)
@@ -136,11 +127,7 @@ export async function writeStreamRealPretty(
 }
 
 /** Serialize an RDF.Stream to a path with a blocking, pretty formatter */
-function writeStreamPretty(
-  stream: RDF.Stream,
-  path: string,
-  options: GraphToFileOptions
-) {
+function writeStreamPretty(stream: RDF.Stream, path: string, options: GraphToFileOptions) {
   return new Promise((resolve, reject) => {
     const fd = fs.createWriteStream(path, { encoding: "utf-8" });
     const plainWriter = new N3.Writer(fd, options);
@@ -150,7 +137,7 @@ function writeStreamPretty(
     const quadStream = MatchStreamReadable2(stream).pipe(
       inTriples
         ? new MergeGraphsStream({ intoGraph: DF.defaultGraph() })
-        : new PassThrough({ objectMode: true })
+        : new PassThrough({ objectMode: true }),
     );
 
     quadStream.on("error", reject);
@@ -158,7 +145,7 @@ function writeStreamPretty(
       plainWriter.end((error, result) => {
         if (error) return reject(error);
         resolve(result);
-      })
+      }),
     );
     quadStream.on("data", (quad: RDF.Quad) => {
       plainWriter.addQuads([quad]);
