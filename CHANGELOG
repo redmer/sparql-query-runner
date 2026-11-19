@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.8](https://github.com/redmer/sparql-query-runner/compare/v7.0.7...v7.0.8) (2026-11-19)
+
+
+### Bug Fixes
+
+* **release-please:** publish tag without component name ([1aae641](https://github.com/redmer/sparql-query-runner/commit/1aae6411aa932d67ee34d8581a9b9b8a32e1c890))
+
 ## [7.0.7](https://github.com/redmer/sparql-query-runner/compare/sparql-query-runner-v7.0.6...sparql-query-runner-v7.0.7) (2026-11-19)
 
 
