@@ -3,6 +3,7 @@ import { QueryEngine } from "@comunica/query-sparql";
 import type * as RDF from "@rdfjs/types";
 import { mkdir } from "fs/promises";
 import { default as path, default as pathlib } from "path";
+import { Readable } from "stream";
 import { RdfStore } from "rdf-stores";
 import type {
   IJobData,
@@ -17,6 +18,7 @@ import {
   fileMightExistRemotely,
 } from "../utils/local-remote-file.js";
 import {
+  BufferStream,
   FilteredStream,
   ImportStream,
   MatchStreamReadable2,
@@ -226,7 +228,13 @@ export class JobSupervisor implements Supervisor<IJobData> {
           // all quads emitted by sources.
           if (!quadsOUT) return;
 
-          const streamOUT = MatchStreamReadable2(quadsOUT as RDF.Stream)
+          // Buffer the output before importing it into the quad store: the
+          // store is also a query source, so importing a live (lazy) stream
+          // back into it would feed the import with its own growing output.
+          const buffered = await BufferStream(quadsOUT as RDF.Stream);
+          ctx.debug(`buffered ${buffered.length} quads from source`);
+
+          const streamOUT = Readable.from(buffered, { objectMode: true })
             .pipe(
               new FilteredStream({ graphs: data.with.onlyGraphs }, ctx.debug)
             )
@@ -261,7 +269,14 @@ export class JobSupervisor implements Supervisor<IJobData> {
           const quadsOUT = await info.init(quadsIN, quadStore);
           if (!quadsOUT) return;
 
-          const streamOUT = MatchStreamReadable2(quadsOUT as RDF.Stream).pipe(
+          // Buffer the output before importing it into the quad store: the
+          // store is also a query source, so a lazy CONSTRUCT stream piped
+          // live back into it would never terminate (and with blank nodes,
+          // grow labels without bound until OOM).
+          const buffered = await BufferStream(quadsOUT as RDF.Stream);
+          ctx.debug(`buffered ${buffered.length} quads from step`);
+
+          const streamOUT = Readable.from(buffered, { objectMode: true }).pipe(
             new MergeGraphsStream({ intoGraph: data.with.intoGraph })
           );
 

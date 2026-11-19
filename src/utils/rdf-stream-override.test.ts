@@ -2,8 +2,10 @@ import { jest } from "@jest/globals";
 import type * as RDF from "@rdfjs/types";
 import { DataFactory } from "rdf-data-factory";
 import { RdfStore } from "rdf-stores";
+import { PassThrough } from "stream";
 import { collectStream, streamOf } from "../../test/helpers/rdf.js";
 import {
+    BufferStream,
     FilteredStream,
     First_NQuadsStream,
     ImportStream,
@@ -80,6 +82,29 @@ describe("ImportStream()", () => {
     const src = streamOf([q(g1), q(g2)]);
     await ImportStream(src, store);
     expect(store.size).toBe(2);
+  });
+});
+
+describe("BufferStream()", () => {
+  test("collects all quads in order", async () => {
+    const src = streamOf([q(g1), q(g2), q()]);
+    const buffered = await BufferStream(src);
+    expect(buffered).toHaveLength(3);
+    expect(buffered[0].graph.equals(g1)).toBe(true);
+    expect(buffered[1].graph.equals(g2)).toBe(true);
+    expect(buffered[2].graph.equals(DF.defaultGraph())).toBe(true);
+  });
+
+  test("resolves to an empty array for an empty stream", async () => {
+    const buffered = await BufferStream(streamOf([]));
+    expect(buffered).toEqual([]);
+  });
+
+  test("rejects when the stream errors", async () => {
+    const src = new PassThrough({ objectMode: true }) as RDF.Stream;
+    const promise = BufferStream(src);
+    src.emit("error", new Error("boom"));
+    await expect(promise).rejects.toThrow("boom");
   });
 });
 

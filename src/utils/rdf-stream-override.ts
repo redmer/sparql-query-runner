@@ -77,6 +77,24 @@ export async function ImportStream(stream: RDF.Stream, store: RDF.Store) {
   });
 }
 
+/**
+ * Fully consume an RDF.Stream into an array of quads.
+ *
+ * Comunica v5+ evaluates CONSTRUCT/DESCRIBE lazily: the returned stream stays
+ * attached to its source store while consumed. Piping such a live stream back
+ * into the same store it reads from creates a read-write feedback loop (with
+ * blank nodes in the data, relabeled on every re-entry, this grows without
+ * bound and exhausts memory). Buffering first breaks that loop.
+ */
+export async function BufferStream(stream: RDF.Stream): Promise<RDF.Quad[]> {
+  return new Promise((resolve, reject) => {
+    const quads: RDF.Quad[] = [];
+    stream.on("data", (quad: RDF.Quad) => quads.push(quad));
+    stream.on("end", () => resolve(quads));
+    stream.on("error", reject);
+  });
+}
+
 export class RdfStoresImportStream extends Transform implements RDF.Stream {
   store: RdfStore;
 
