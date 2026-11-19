@@ -1,6 +1,17 @@
-# Unreleased
+# Changelog
 
-# v4
+## [7.0.7](https://github.com/redmer/sparql-query-runner/compare/sparql-query-runner-v7.0.6...sparql-query-runner-v7.0.7) (2026-11-19)
+
+
+### Bug Fixes
+
+* ci permission to create gh release ([bc04be4](https://github.com/redmer/sparql-query-runner/commit/bc04be41f60c0bc85a76b2fd49d5ccc08ffbe0a6))
+* **release-please:** start counting releases from v7.0.6 ([1e15805](https://github.com/redmer/sparql-query-runner/commit/1e15805ec60b2a43525e4edb696be85f2fd7491f))
+* **runner:** buffer step/source output before importing into the quad store to prevent OOM feedback loop ([#31](https://github.com/redmer/sparql-query-runner/issues/31)) ([bacacb2](https://github.com/redmer/sparql-query-runner/commit/bacacb27d51b24259ef3810e4487e25fe81a616c))
+
+## Unreleased
+
+## v4
 
 - Configuration file can now also be a YAML file
 - Configuration file renames `pipeline:` to `jobs:`
