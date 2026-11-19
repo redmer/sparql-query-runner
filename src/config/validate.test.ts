@@ -1,8 +1,4 @@
-import {
-  configFromString,
-  ConfigurationError,
-  expandCURIE,
-} from "./validate.js";
+import { configFromString, ConfigurationError, expandCURIE } from "./validate.js";
 
 const emptySecrets = {};
 
@@ -185,6 +181,55 @@ jobs:
 `),
     ).rejects.toThrow(/authentication type/);
   });
+
+  test("parses 'only-graphs' into onlyGraphs as named nodes", async () => {
+    const config = await parse(`
+version: v5
+jobs:
+  demo:
+    sources:
+      - file: ./x.ttl
+        with:
+          only-graphs:
+            - http://example.org/g1
+            - http://example.org/g2
+`);
+    const onlyGraphs = config.jobs[0].sources![0].with.onlyGraphs;
+    expect(onlyGraphs).toHaveLength(2);
+    expect(onlyGraphs![0].termType).toBe("NamedNode");
+    expect(onlyGraphs![0].value).toBe("http://example.org/g1");
+    expect(onlyGraphs![1].value).toBe("http://example.org/g2");
+  });
+
+  test("expands CURIEs in 'only-graphs' using job prefixes", async () => {
+    const config = await parse(`
+version: v5
+prefixes:
+  ex: http://example.org/
+jobs:
+  demo:
+    sources:
+      - file: ./x.ttl
+        with:
+          only-graphs:
+            - ex:g1
+`);
+    const onlyGraphs = config.jobs[0].sources![0].with.onlyGraphs;
+    expect(onlyGraphs).toHaveLength(1);
+    expect(onlyGraphs![0].termType).toBe("NamedNode");
+    expect(onlyGraphs![0].value).toBe("http://example.org/g1");
+  });
+
+  test("leaves onlyGraphs undefined when 'only-graphs' is not set", async () => {
+    const config = await parse(`
+version: v5
+jobs:
+  demo:
+    sources:
+      - file: ./x.ttl
+`);
+    expect(config.jobs[0].sources![0].with.onlyGraphs).toBeUndefined();
+  });
 });
 
 describe("expandCURIE()", () => {
@@ -202,8 +247,6 @@ describe("expandCURIE()", () => {
   });
 
   test("returns full IRIs untouched", () => {
-    expect(expandCURIE("http://example.org/bar", prefixes)).toBe(
-      "http://example.org/bar",
-    );
+    expect(expandCURIE("http://example.org/bar", prefixes)).toBe("http://example.org/bar");
   });
 });
