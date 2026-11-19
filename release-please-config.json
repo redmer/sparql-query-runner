@@ -6,7 +6,8 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "changelog-path": "CHANGELOG"
+      "changelog-path": "CHANGELOG",
+      "include-component-in-tag": false
     }
   }
 }
