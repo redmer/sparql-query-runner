@@ -1,7 +1,5 @@
 # Unreleased
 
-- Fix: step and source output streams are now fully buffered in memory before being imported back into the job's in-memory quad store. Previously, piping a lazily-evaluated `CONSTRUCT` result live into the same store it queries from created a feedback loop that never terminated and exhausted memory when the data contained blank nodes (Comunica v5+ lazy evaluation).
-
 # v4
 
 - Configuration file can now also be a YAML file
