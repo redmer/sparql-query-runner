@@ -1,0 +1,26 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix ex: <https://example.org/> .
+
+ex:shape1 a sh:NodeShape;
+  sh:targetClass ex:Thing;
+  sh:property [
+      sh:path ex:name;
+      sh:datatype xsd:string;
+      sh:maxCount 1
+    ], [
+      sh:path ex:price;
+      sh:datatype xsd:decimal
+    ] .
+
+ex:shape2 a sh:NodeShape;
+  sh:targetClass ex:Other;
+  sh:property [
+      sh:path ex:label;
+      sh:datatype xsd:string
+    ] .
+
+ex:thing1 a ex:Thing;
+  ex:name "one";
+  ex:price 1.5 .
