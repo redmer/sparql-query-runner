@@ -16,7 +16,7 @@ jobs:
     steps:
       # A PAT (not the default GITHUB_TOKEN) is required so that the v* tag
       # pushed when the release PR merges triggers the release workflow.
-      - uses: googleapis/release-please-action@v4
+      - uses: googleapis/release-please-action@v5
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: release-please-config.json
